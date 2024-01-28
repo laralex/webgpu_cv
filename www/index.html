@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Alexey Larionov • Resume</title>
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <link href="src/common.css" rel="stylesheet">
+    <link href="src/card.css" rel="stylesheet">
+    <link href="src/sidebar.css" rel="stylesheet">
+    <link href="src/scrollify.css" rel="stylesheet">
+  </head>
+  <body>
+    <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
+    <!-- <sidebar-l space="var(--s2)" sideWidth="15rem" noStretch> -->
+      <div id="sidebar">
+        <!-- <div class="scroll-control">
+          <span class="sec-job huawei"></span>
+          <span class="sec-job samsung"></span>
+          <span class="sec-edu masters"></span>
+          <span class="sec-edu bachelors"></span>
+        </div>
+        <section class="scroll s-one" data-section-name="s-one">
+          <div class="container">
+            <div class="row">
+              <div class="col-lg-12">
+                <p>Section One</p>
+                <p style="font-size: 40px">Lorem obcaecati!</p>
+              </div>
+            </div>
+          </div>
+        </section>
+    
+        <section class="scroll s-two" data-section-name="s-two">
+          <div class="container">
+            <div class="row">
+              <div class="col-lg-12">
+                <p>Section Two</p>
+              </div>
+            </div>
+          </div>
+        </section>
+    
+        <section class="scroll s-three" data-section-name="s-three">
+          <div class="container">
+            <div class="row">
+              <div class="col-lg-12">
+                <p>Section Three</p>
+              </div>
+            </div>
+          </div>
+        </section> -->
+        <div id="side-top" class="flex-row">
+          <div id="side-top__1" class="flex-block"></div>
+          <div id="side-top__2" class="flex-block"></div>
+        </div>
+        <!-- <div class="side-head">
+          <span lang="en">Graphics Software Engineer</span><h1 lang="en"><i class="bx bx-user">&nbsp</i> Alexey <em>Larionov</em></h1>
+          <span lang="ru">Программист графики</span><h1 lang="ru"><i class="bx bx-user">&nbsp</i> Алексей <em>Ларионов</em></h1>
+        </div> -->
+        <div class="side-head content">
+          <div class="card">
+            <div class="firstinfo">
+              <div class="photo-block">
+                <img src="./assets/my_photo.jpg"/>
+                <div class="flex-grid">
+                  <div class="grid-item contact interactive btn font-huge"><a href="https://www.linkedin.com/in/alexey-larionov"><i class="bx bxl-linkedin-square" style="color: var(--color-linkedin)"></i></a></div>
+                  <div class="grid-item contact interactive btn font-huge"><a href="mailto:alxs.larionov@gmail.com"><i class="bx bxs-envelope" style="color: var(--color-gmail)"></i></a></div>
+                  <div class="grid-item contact interactive btn font-huge"><a href="https://t.me/m_laralex"><i class="bx bxl-telegram" style="color: var(--color-telegram)"></i></a></div>
+                  <div class="grid-item contact interactive btn font-huge"><a href="https://github.com/laralex"><i class="bx bxl-github" style="color: var(--color-github)"></i></a></div>
+                  <div class="contact btn" id="side-links__1" style="width:100%"></div>
+                </div>
+              </div>
+              <div class="profileinfo">
+                <h1 lang="en">Alexey <em>Larionov</em></h1>
+                <h1 lang="ru">Алексей <em>Ларионов</em></h1>
+                <h3 lang="en">Graphics Software Engineer</h3>
+                <h3 lang="ru">Программист графики</h3>
+                <p>
+                  <ul class="bio">
+                    <li lang="en">Real-time 3D computer graphics</li>
+                    <li lang="ru">Real-time 3D компьютерная графика</li>
+                    <li lang="en">Deep Learning R&D</li>
+                    <li lang="ru">R&D Глубокого обучения</li>
+                    <li lang="en">C++, Python, OpenGL ES, Android, WebGL</li>
+                    <li lang="ru">C++, Python, OpenGL ES, Android, WebGL</li>
+                  </ul>
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="badgescard"> <span class="devicons devicons-django"></span><span class="devicons devicons-python"> </span><span class="devicons devicons-codepen"></span><span class="devicons devicons-javascript_badge"></span><span class="devicons devicons-gulp"></span><span class="devicons devicons-angular"></span><span class="devicons devicons-sass"> </span></div>
+        </div>
+        <div id="side-links" class="flex-row">
+          
+        </div>
+        <ul>
+          <li><a href="#">
+              <i class="bx bxs-rocket"></i>
+              <span class="nav-item">Work experience</span>
+          </a><span class="tooltip">Work experience</span></li>
+          <li><a href="#">
+              <i class="bx bxs-palette"></i>
+              <span class="nav-item">Projects</span>
+          </a><span class="tooltip">Projects</span></li>
+          <li><a href="#">
+            <i class="bx bxs-book-open"></i>
+            <span class="nav-item">Publications</span>
+          </a><span class="tooltip">Publications</span></li>
+          <li><a href="#">
+              <i class="bx bxs-graduation"></i>
+              <span class="nav-item">Education</span>
+          </a><span class="tooltip">Education</span></li>
+        </ul>
+        </div>
+      <div id="main-content" class="scrollify-fixed theme-main">
+        <div style="position: relative; width: 0; height: 0">
+          <div class="grid-item" id="side-links__2" style="position:absolute;top:10px;left:10px;"></div>
+        </div>
+        <canvas id="main-canvas">Your browser doesn't support HTML5 :(</canvas>
+      </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/vanjs-org/van/public/van-1.2.8.nomodule.min.js"></script>
+    <!-- <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/vanjs-org/van/public/van-1.2.8.debug.js"></script> -->
+		<script
+      src="https://cdnjs.cloudflare.com/ajax/libs/scrollify/1.0.21/jquery.scrollify.min.js"
+      integrity="sha512-UyX8JsMsNRW1cYl8BoxpcamonpwU2y7mSTsN0Z52plp7oKo1u92Xqfpv6lOlTyH3yiMXK+gU1jw0DVCsPTfKew=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"></script>
+    <script src="./bootstrap.js"></script>
+    <script src="./src/util.js"></script>
+  </body>
+</html>

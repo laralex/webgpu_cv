@@ -1,0 +1,128 @@
+:root {
+}
+
+#sidebar {
+   /* position: absolute; */
+   /* display: flex; */
+   flex: 1 0 var(--sidebar-width);
+   top: 0;
+   left: 0;
+   height: 100vh;
+   background-color: var(--sidebar-color);
+   padding: .4rem .8rem;
+   box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2) inset;
+}
+
+#side-top .flex-block {
+   margin: 5px 5px 5px 5px;
+}
+
+#sidebar select {
+   display: inline-block;
+   height: 34px;
+   line-height: 30px;
+   align-self: center;
+   font-size: var(--font-size-main);
+}
+
+.language-picker,.graphics-picker select {
+   width: 90%;
+}
+
+.side-head h1 {
+   /* text-align: center;
+   padding-bottom: 0.7em;
+   position: relative;
+   padding: 0;
+   margin: 0; */
+   /* font-weight: 300; */
+   /* color: #080808; */
+   /* -webkit-transition: all 0.4s ease 0s;
+   -o-transition: all 0.4s ease 0s;
+   transition: all 0.4s ease 0s; */
+
+   /* text-align:center; */
+   /* text-transform:uppercase; */
+   
+   /* letter-spacing:1px; */
+
+   /* display: grid; */
+   /* grid-template-columns: 1fr auto 1fr; */
+   /* grid-template-rows: 16px 0; */
+   /* grid-gap: 22px; */
+   /* text-align:center; */
+
+   /* font-size: 70px; */
+   /* color: #553c9a; */
+   /* font-weight: 600;
+   list-style: none;
+   position: relative; */
+}
+
+/* .side-head h1:before, .side-head span:before {
+   position: absolute;
+   left: 0;
+   bottom: 0;
+   width: 60px;
+   height: 2px;
+   content: "";
+   left: 50%;
+   margin-left:-30px;
+}
+
+.side-head span {
+   text-align:center;
+   display: block;
+   line-height: 1.3;
+   font-weight: 300;
+   word-spacing: 3px;
+   line-height: 2em;
+   padding-bottom: 0.35em;
+   color: rgba(0, 0, 0, 0.7);
+}
+
+.side-head h1 em {
+   font-style: normal;
+   font-weight: 600;
+} */
+
+#sidebar .author {
+   /* flex: 1 0 auto;
+   flex-wrap: nowrap; */
+   /* align-items: stretch; */
+   align-items: baseline;
+}
+
+#sidebar .author .author-description {
+   display: inline-block;
+}
+
+#sidebar .author span {
+   color: #333;
+   opacity: 1;
+}
+
+#sidebar .author-photo {
+   width: 130px;
+   height: 130px;
+   border-radius: 25%;
+   border: 1px solid #aaa;
+   display: inline-block;
+}
+
+#sidebar ul li:hover .tooltip {
+   opacity: 1;
+}
+
+#sidebar.active ul li .tooltip {
+   display: none;
+}
+
+#pdf-link i {
+   float: none;
+   font-size: 2.5rem;
+}
+
+#pdf-link label {
+   font-size: 1.2rem;
+}

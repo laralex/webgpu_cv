@@ -1,5 +1,5 @@
 import { wasm_startup, wasm_loop, wasm_resize } from "my-wasm";
-const {div, button, i, label, input, li, a, option, select, span, ul} = van.tags
+const {div, button, i, label, img, svg, path, input, li, a, option, select, span, ul} = van.tags
 
 const ARROW_SVG_PATH = '<svg viewBox="0 0 16 16"><polygon points="3,5 8,11 13,5 "></polygon></svg>';
 const GLOBE_SVG_PATH = '<svg viewBox="0 0 16 16"><path d="M8,0C3.6,0,0,3.6,0,8s3.6,8,8,8s8-3.6,8-8S12.4,0,8,0z M13.9,7H12c-0.1-1.5-0.4-2.9-0.8-4.1 C12.6,3.8,13.6,5.3,13.9,7z M8,14c-0.6,0-1.8-1.9-2-5H10C9.8,12.1,8.6,14,8,14z M6,7c0.2-3.1,1.3-5,2-5s1.8,1.9,2,5H6z M4.9,2.9 C4.4,4.1,4.1,5.5,4,7H2.1C2.4,5.3,3.4,3.8,4.9,2.9z M2.1,9H4c0.1,1.5,0.4,2.9,0.8,4.1C3.4,12.2,2.4,10.7,2.1,9z M11.1,13.1 c0.5-1.2,0.7-2.6,0.8-4.1h1.9C13.6,10.7,12.6,12.2,11.1,13.1z"></path></svg>';
@@ -20,6 +20,9 @@ const UI_STRINGS = {
    cv: {en: "CV", ru: "CV"},
    pdf_cv_href: {en: "./assets/larionov_rendering_cv_eng_112023.pdf", ru: "./assets/larionov_rendering_cv_rus_112023.pdf"},
    web_cv_github: {en: "Source code of this demo", ru: "Исходный код демки"},
+   skills_title: {en: "Extra skills", ru: "Прочие компетенции"},
+   skills_languages_1: {en: "English 🇬🇧 (C1), Russian 🇷🇺 (N)", ru: "Английский 🇬🇧 (C1), Корейский 🇰🇷 (А2)"},
+   skills_languages_2: {en: "Korean 🇰🇷 (A2), Polish 🇵🇱 (A1)", ru: "Польский 🇵🇱 (А1), Русский 🇷🇺"},
 }
 
 const CURRENT_LANGUAGE = van.state("en");
@@ -99,6 +102,7 @@ function ResumePdfLink() {
    //       label(localize_ui("pdf_cv")),
    //    ));
    return button({class:"btn-block interactive btn font-normalsize", role:"button", style:"width:100%"},
+      // bxs-download
       i({ class: "bx bxs-file-pdf bx-tada font-Huge", style: "color: var(--color-gmail);"}),
       a({href: localize_ui("pdf_cv_href"), target: "_blank", class: "btn"},
          label({style: "display:block;"}, localize_ui("pdf")),
@@ -112,6 +116,36 @@ function RepositoryLink() {
          i({ class: "bx bxl-github", style: "font-size:1.3rem;color: var(--color-github)"}),
          label(localize_ui("web_cv_github")),
       ));
+}
+
+function MoreSkillsButton() {
+   const isExpanded = van.state(false);
+   return div({class: "badgescard"},
+      button({
+         class: "interactive btn font-Large expand-button",
+         onclick: e => isExpanded.val = !isExpanded.val,
+      }, i({class: () => isExpanded.val ? "bx bxs-up-arrow" : "bx bxs-down-arrow"}, "\t"), localize_ui("skills_title")),
+      div({class: "inside", style: () => isExpanded.val ? "" : "display: none;" },
+         // div({class: "icons"},
+         //    // img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/opengl/opengl-original.svg" }),
+         //    // img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-line.svg" }),
+         //    img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/rust/rust-plain.svg" }),
+         //    // img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original-wordmark.svg"}),
+         //    img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg" }),
+         //    img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original-wordmark.svg" }),
+         //    img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/unity/unity-original-wordmark.svg" }),
+         //    img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/pytorch/pytorch-original-wordmark.svg"}),
+         //    img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original-wordmark.svg"}),
+         //    ),
+         ul(
+            li("Rust, C#, Java, JavaScript"),
+            li("PyTorch, Docker, Qualcomm SNPE"),
+            span("Unity, ARCore, Linux, LaTeX"),
+            li(localize_ui("skills_languages_1")),
+            span(localize_ui("skills_languages_2")),
+            ),
+      ),
+   )
 }
 
 function js_setup_canvas() {
@@ -185,8 +219,9 @@ function js_setup_scrollify() {
 
 van.add(document.getElementById("side-top__1"), LanguagePicker(CURRENT_LANGUAGE));
 van.add(document.getElementById("side-top__2"), GraphicsLevelPicker(CURRENT_GRAPHICS_LEVEL));
-van.add(document.getElementById("side-links__1"), ResumePdfLink())
-van.add(document.getElementById("side-links__2"), RepositoryLink())
+van.add(document.getElementById("side-links__1"), ResumePdfLink());
+van.add(document.getElementById("side-links__2"), RepositoryLink());
+van.add(document.getElementById("side-card"), MoreSkillsButton());
 js_setup_canvas();
 wasm_startup();
 wasm_loop(CANVAS_ID);

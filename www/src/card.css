@@ -1,5 +1,5 @@
 @import 'https://fonts.googleapis.com/css?family=Open+Sans:300,400';
-.firstinfo, .badgescard {
+.firstinfo, .badgescard, .card-container {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -13,10 +13,11 @@
   box-sizing: border-box;
 }
 
-.content {
+.card-container {
    margin-top: 7px;
    position: relative;
-   animation: animatop 0.9s cubic-bezier(0.425, 1.14, 0.47, 1.125) forwards;
+   animation: anim-card 0.9s cubic-bezier(0.425, 1.14, 0.47, 1.125) forwards;
+   flex-direction: column;
 }
 
 .card {
@@ -32,6 +33,7 @@
 
 .card ul, .card li {
    list-style-position: inside;
+   list-style-type: none;
    padding: 0;
    margin: 0;
 }
@@ -48,21 +50,56 @@
 }
 
 .badgescard {
-  padding: 10px 20px;
+  flex-direction: column;
   border-radius: 3px;
-  background-color: #ECECEC;
-  width: 100%;
-  box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
-  position: absolute;
+  background-color: #F2F2F2;
+  color: #444;
+  width: 95%;
+  position: relative;
   z-index: -1;
-  bottom: 10px;
-  animation: animainfos 0.5s cubic-bezier(0.425, 1.04, 0.47, 1.105) 0.75s forwards;
+  top: -100px;
+  animation: anim-badge 1.5s cubic-bezier(0.425, 1.04, 0.47, 1.105) 0.75s forwards;
+  box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
 }
 
-.badgescard span {
-  font-size: 1.6em;
-  margin: 0px 6px;
-  opacity: 0.6;
+.badgescard .expand-button {
+  display: block;
+  width: 100%;
+  padding: 4px 0px;
+  border: none;
+  margin: 0;
+  text-align: center;
+  background-color: #F2F2F2;
+}
+
+.badgescard .inside {
+  /* width: 100%; */
+  padding: 2px 0 4px 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.badgescard .inside .icons {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  margin-bottom: 3px;
+}
+
+.badgescard span, .badgescard li {
+  padding: 0px 5px;
+  margin: 4px 4px 4px 30px;
+  font-size: 0.95rem;
+}
+
+.badgescard img {
+  max-width: 50px;
+}
+
+.badgescard ul {
+  /* list-style-position: inside; */
 }
 
 .firstinfo {
@@ -122,18 +159,22 @@
 }
 
 .firstinfo .profileinfo {
-  margin: 0px 10px 0px 20px;
+  margin: 0px 10px 0px 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  align-content: space-between;
+  height: 100%;
+  min-height: 100%;
 }
 .firstinfo .profileinfo h1 {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   font-weight: 600;
   /* background-image: repeating-radial-gradient(farthest-side at 5px 5px,#553c9a, #ee4b2b, #553c9a); */
   background-image: linear-gradient(to right, #7474BF 0%, #348AC7  51%, #7474BF  100%);
   color: transparent;
   -webkit-background-clip: text;
   background-clip: text; 
-  /* text-shadow: 0px 0px 5px var(--color-font-title-light), 0px 0px 10px var(--color-font-title-light), 0px 0px 10px var(--color-font-title-light),
-    0px 0px 20px var(--color-font-title-light); */
 }
 .firstinfo .profileinfo h3 {
   font-size: 1.0rem;
@@ -144,14 +185,18 @@
    font-weight: 600;
 }
 .firstinfo .profileinfo .bio {
-  padding: 10px 0px;
+  /* padding: 10px 0px;
   color: #2A2A2A;
   line-height: 1.2;
-  font-style: initial;
+  font-style: initial; */
+  color: #2A2A2A;
+  flex: 10;
+  /* margin-bottom: auto; */
+  /* margin: 5px 0px 0px 0px; */
 }
 
 
-@keyframes animatop {
+@keyframes anim-card {
   0% {
     opacity: 0;
     bottom: -500px;
@@ -161,12 +206,14 @@
     bottom: 0px;
   }
 }
-@keyframes animainfos {
+@keyframes anim-badge {
   0% {
-    bottom: 10px;
+    opacity: 0;
+    top: -100px;
   }
   100% {
-    bottom: -42px;
+    opacity: 1;
+    top: 10px;
   }
 }
 @keyframes rotatemagic {

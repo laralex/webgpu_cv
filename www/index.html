@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <title>Alexey Larionov • Resume</title>
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.15.1/devicon.min.css" rel="stylesheet">
     <link href="src/common.css" rel="stylesheet">
     <link href="src/card.css" rel="stylesheet">
     <link href="src/sidebar.css" rel="stylesheet">
@@ -57,8 +58,8 @@
           <span lang="en">Graphics Software Engineer</span><h1 lang="en"><i class="bx bx-user">&nbsp</i> Alexey <em>Larionov</em></h1>
           <span lang="ru">Программист графики</span><h1 lang="ru"><i class="bx bx-user">&nbsp</i> Алексей <em>Ларионов</em></h1>
         </div> -->
-        <div class="side-head content">
-          <div class="card">
+        <div class="side-head card-container" id="side-card">
+          <div class="card" >
             <div class="firstinfo">
               <div class="photo-block">
                 <img src="./assets/my_photo.jpg"/>
@@ -75,25 +76,25 @@
                 <h1 lang="ru">Алексей <em>Ларионов</em></h1>
                 <h3 lang="en">Graphics Software Engineer</h3>
                 <h3 lang="ru">Программист графики</h3>
-                <p>
-                  <ul class="bio">
-                    <li lang="en">Real-time 3D computer graphics</li>
-                    <li lang="ru">Real-time 3D компьютерная графика</li>
-                    <li lang="en">Deep Learning R&D</li>
-                    <li lang="ru">R&D Глубокого обучения</li>
-                    <li lang="en">C++, Python, OpenGL ES, Android, WebGL</li>
-                    <li lang="ru">C++, Python, OpenGL ES, Android, WebGL</li>
-                  </ul>
-                </p>
+                  <!-- <ul class="bio"> -->
+                <div class="bio" lang="en">Real-time 3D graphics</div>
+                <div class="bio" lang="ru">3D графика в реальном времени</div>
+                <div class="bio" lang="en">Deep Learning R&D</div>
+                <div class="bio" lang="ru">R&D Глубокого обучения</div>
+                <div class="bio" lang="en">C++, Python, OpenGL ES, Android, WebGL</div>
+                <div class="bio" lang="ru">C++, Python, OpenGL ES, Android, WebGL</div>
+                    <!-- <li style="margin-top: 7px;">
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg" width="50" height="50"/>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original-wordmark.svg" width="50" height="50"/>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/opengl/opengl-original.svg" width="50" height="50"/>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/android/android-plain.svg" width="50" height="50"/>
+                    </li> -->
+                  <!-- </ul> -->
               </div>
             </div>
           </div>
-          <div class="badgescard"> <span class="devicons devicons-django"></span><span class="devicons devicons-python"> </span><span class="devicons devicons-codepen"></span><span class="devicons devicons-javascript_badge"></span><span class="devicons devicons-gulp"></span><span class="devicons devicons-angular"></span><span class="devicons devicons-sass"> </span></div>
         </div>
-        <div id="side-links" class="flex-row">
-          
-        </div>
-        <ul>
+        <!-- <ul>
           <li><a href="#">
               <i class="bx bxs-rocket"></i>
               <span class="nav-item">Work experience</span>
@@ -110,8 +111,8 @@
               <i class="bx bxs-graduation"></i>
               <span class="nav-item">Education</span>
           </a><span class="tooltip">Education</span></li>
-        </ul>
-        </div>
+        </ul> -->
+      </div>
       <div id="main-content" class="scrollify-fixed theme-main">
         <div style="position: relative; width: 0; height: 0">
           <div class="grid-item" id="side-links__2" style="position:absolute;top:10px;left:10px;"></div>

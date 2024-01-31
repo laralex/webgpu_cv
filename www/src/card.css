@@ -112,15 +112,32 @@
    display: flex;
    flex-direction: column;
    width: 25%;
-   flex: 0 0 110px;
+   /* flex: 0 0 110px; */
    /* flex-wrap: wrap; */
 }
 
-.firstinfo .photo-block img {
-   width: 100%;
-   height: 25%;
-   border-radius: 25%;
-   object-fit: cover;
+.photo {
+  /* position: relative;
+  display: block; */
+  background: url(../assets/my_photo_tiny.png), url(../assets/bg4_tiny.jpg);
+  width: 100%;
+  padding-top: 100%;
+  /* height: 100px; */
+  /* width: 100%;
+  height: 25%; */
+  border-radius: 25%;
+  /* object-fit: cover; */
+  background-position: center ;
+  background-position: 50% 50%;
+  /* background-size: 100% auto; */
+  /* background-size: cover; */
+  /* background-size: 100% 100%; */
+  background-repeat: no-repeat;
+  background-size: cover, 130%;
+  background-color: #FFF;
+  /* /* background-repeat: no-repeat; */
+  /* resize: both;
+  overflow: scroll; */
 }
 
 .photo-block .contact {
@@ -192,7 +209,7 @@
   color: #2A2A2A;
   flex: 10;
   /* margin-bottom: auto; */
-  /* margin: 5px 0px 0px 0px; */
+  margin: 6px 0px 0px 0px;
 }
 
 

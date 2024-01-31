@@ -148,6 +148,24 @@ function MoreSkillsButton() {
    )
 }
 
+const add_parallax = function({element, sensitivityXY, bgParallax, centerPx, centerBgPx}) {
+   document.addEventListener("mousemove", parallax);
+   function parallax(e) {
+       let [cx, cy] = centerPx;
+       let [cbx, cby] = centerBgPx;
+       let [sx, sy] = sensitivityXY;
+       let _w = window.innerWidth/2;
+       let _h = window.innerHeight/2;
+       let _mouseX = e.clientX;
+       let _mouseY = e.clientY;
+       let _depth = `${cx + (_mouseX - _w) * sx}px ${Math.max(cy + _mouseY * sy, 0)}px`;
+       let _depthbg = `${cbx + (_mouseX - _w) * sx * bgParallax}px ${cby + Math.max(_mouseY * sy * bgParallax, 0)}px`;
+       let x = `${_depth}, ${_depthbg}`;
+       console.log(x);
+       element.style.backgroundPosition = x;
+   }
+}
+
 function js_setup_canvas() {
    let canvas = $("#"+CANVAS_ID)[0];
    let gl = canvas.getContext("webgl2");
@@ -222,6 +240,10 @@ van.add(document.getElementById("side-top__2"), GraphicsLevelPicker(CURRENT_GRAP
 van.add(document.getElementById("side-links__1"), ResumePdfLink());
 van.add(document.getElementById("side-links__2"), RepositoryLink());
 van.add(document.getElementById("side-card"), MoreSkillsButton());
+document.querySelectorAll('.parallax').forEach(
+   el => add_parallax({
+      element: el, sensitivityXY: [0.01, 0.005], bgParallax: 0.5,
+      centerPx: [0, 0], centerBgPx: [-20, -10]}));
 js_setup_canvas();
 wasm_startup();
 wasm_loop(CANVAS_ID);

@@ -134,6 +134,12 @@ body {
    font-size: 2.0rem;
 }
 
+.parallax {
+   /* background-repeat: no-repeat;
+   background-position: center;
+   background-position: 50% 50%; */
+}
+
 #sidebar {
    flex-grow: 0;
    /* max-width: var(--sidebar-width); */

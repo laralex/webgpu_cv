@@ -23,6 +23,20 @@ const UI_STRINGS = {
    skills_title: {en: "Extra skills", ru: "Прочие компетенции"},
    skills_languages_1: {en: "English 🇬🇧 (C1), Russian 🇷🇺 (N)", ru: "Английский 🇬🇧 (C1), Корейский 🇰🇷 (А2)"},
    skills_languages_2: {en: "Korean 🇰🇷 (A2), Polish 🇵🇱 (A1)", ru: "Польский 🇵🇱 (А1), Русский 🇷🇺"},
+   chapter_career: {en: "Career", ru: "Карьера"},
+   chapter_publications: {en: "Publications", ru: "Публикации"},
+   chapter_projects: {en: "Projects", ru: "Проекты"},
+   chapter_education: {en: "Education", ru: "Образование"},
+   button_cv_begin: {en: "To beginning", ru: "В начало"},
+   button_cv_end: {en: "To ending", ru: "В конец"},
+   button_career_latest: {en: "Latest position", ru: "К вершине карьеры"},
+   button_career_earliest: {en: "First position", ru: "К началу карьеры"},
+   career_huawei: {en: "Huawei", ru: "Huawei"},
+   career_samsung: {en: "Samsung Research", ru: "Samsung AI Center Moscow"},
+   career_freelance: {en: "Freelancing", ru: "Фриланс"},
+   publications_wacv_2024: {en: "WACV 2024", ru: "WACV 2024"},
+   education_master: {en: "Master of Computer Science", ru: "Магистратура"},
+   education_bachelor: {en: "Bachelor of Computer Science", ru: "Бакалавриат"},
 }
 
 const CURRENT_LANGUAGE = van.state("en");
@@ -43,6 +57,9 @@ function localize_d(dict) {
 }
 
 function localize_ui(key) {
+   if (UI_STRINGS[key] === undefined) {
+      return key;
+   }
    return () => localize_d(UI_STRINGS[key]);
 }
 
@@ -148,6 +165,142 @@ function MoreSkillsButton() {
    )
 }
 
+function getBackgroundColorStyle(rgbString) {
+   if (rgbString) {
+      return { style: `background-color: ${rgbString};` };
+   }
+   return {};
+}
+
+function CvButton(labelId, rgbString, onclick) {
+   let style = getBackgroundColorStyle(rgbString);
+   return div({class: "cv-button"},
+      button({
+         class: "interactive btn font-Large expand-button",
+         ...style,
+         onclick: e => onclick(),
+      }, i({class: () => "bx bxs-up-arrow"}, "\t"), localize_ui(labelId)),
+   );
+}
+
+function CvChapter(labelId, isDefaultActive, rgbString, onclick, insideConstructor = () => span("Test")) {
+   let style = getBackgroundColorStyle(rgbString);
+   return div({class: "cv-chapter"},
+      button({
+         class: "interactive btn font-Large expand-button",
+         ...style,
+         onclick: e => {
+            onclick();
+         },
+      }, /* i({class: () => isDefaultActive.val ? "bx bxs-up-arrow" : "bx bxs-down-arrow"}, "\t") */ localize_ui(labelId)),
+      div(
+         {class: "inside", style: () => isDefaultActive.val ? "" : "display: none;"},
+         div({style: "margin-left: 30px;"}, insideConstructor)
+      )
+   );
+}
+
+function CvContent() {
+   const chaptersData = [
+      { id: "chapter_career", color: "#7BD3EA", constructor: CvCareer },
+      { id: "chapter_publications", color: "#A1EEBD", constructor: CvPublications },
+      { id: "chapter_projects", color: "#F6F7C4", constructor: CvChapter },
+      { id: "chapter_education", color: "#F6D6D6", constructor: CvEducation },
+   ];
+   const ids = chaptersData.map((x) => x.id);
+   const colors = chaptersData.map((x) => x.color);
+   const activeChapter = van.state(ids[0]);
+   return div({class: "cv-content"},
+      CvButton("button_cv_begin", "#FFF", () => {
+         activeChapter.val = ids[0];
+      }),
+      () => ul(Array.from(chaptersData, (x) => {
+         const isActive = van.derive(() => x.id == activeChapter.val);
+         const onChapterActiveChange = () => {
+            activeChapter.val = x.id;
+         };
+         const chapter = x.constructor(x.id, isActive, x.color, onChapterActiveChange);
+         return chapter; }
+      )),
+      CvButton("button_cv_end", "#FFF", () => {
+         activeChapter.val = ids[ids.length - 1];
+      }),
+   );
+}
+
+function CvCareer(labelId, isDefaultActive, rgbString, onclick) {
+   const careersData = [
+      { id: "career_huawei", color: "#7BD3EA", constructor: CvChapter },
+      { id: "career_samsung", color: "#65E2E6", constructor: CvChapter },
+      // { id: "career_freelance", color: "#65E2E6", constructor: CvChapter },
+      // #64E1E5
+   ];
+   const ids = careersData.map((x) => x.id);
+   const colors = careersData.map((x) => x.color);
+   const activeCareer = van.state(ids[0]);
+   return CvChapter(labelId, isDefaultActive, rgbString, onclick,
+      () => ul(
+         // CvButton("button_career_latest", "#FFF", () => {
+         //    activeCareer.val = ids[0];
+         // }),
+         () => ul(Array.from(careersData, (x) => {
+            const isActive = van.derive(() => x.id == activeCareer.val);
+            const onCareerChange = () => {
+               activeCareer.val = x.id;
+            };
+            const chapter = x.constructor(x.id, isActive, x.color, onCareerChange);
+            return chapter; }
+         )),
+         // CvButton("button_career_earliest", "#FFF", () => {
+         //    activeCareer.val = ids[ids.length - 1];
+         // })
+      ),
+   );
+}
+
+function CvPublications(labelId, isDefaultActive, rgbString, onclick) {
+   const data = [
+      { id: "publications_wacv_2024", color: "#A1EEBD", constructor: CvChapter },
+      // #71BC8E #428D61 #428D61
+   ];
+   const ids = data.map((x) => x.id);
+   const colors = data.map((x) => x.color);
+   const active = van.state(ids[0]);
+   return CvChapter(labelId, isDefaultActive, rgbString, onclick,
+      () => ul(
+         () => ul(Array.from(data, (x) => {
+            const isActive = van.derive(() => x.id == active.val);
+            const onChange = () => {
+               active.val = x.id;
+            };
+            return x.constructor(x.id, isActive, x.color, onChange); }
+         )),
+      ),
+   );
+}
+
+function CvEducation(labelId, isDefaultActive, rgbString, onclick) {
+   const data = [
+      { id: "education_master", color: "#F6D6D6", constructor: CvChapter },
+      { id: "education_bachelor", color: "#FFCEDD", constructor: CvChapter },
+      // #FFC8F2
+   ];
+   const ids = data.map((x) => x.id);
+   const colors = data.map((x) => x.color);
+   const active = van.state(ids[0]);
+   return CvChapter(labelId, isDefaultActive, rgbString, onclick,
+      () => ul(
+         () => ul(Array.from(data, (x) => {
+            const isActive = van.derive(() => x.id == active.val);
+            const onChange = () => {
+               active.val = x.id;
+            };
+            return x.constructor(x.id, isActive, x.color, onChange); }
+         )),
+      ),
+   );
+}
+
 const add_parallax = function({element, sensitivityXY, bgParallax, centerPx, centerBgPx}) {
    document.addEventListener("mousemove", parallax);
    function parallax(e) {
@@ -161,7 +314,6 @@ const add_parallax = function({element, sensitivityXY, bgParallax, centerPx, cen
        let _depth = `${cx + (_mouseX - _w) * sx}px ${Math.max(cy + _mouseY * sy, 0)}px`;
        let _depthbg = `${cbx + (_mouseX - _w) * sx * bgParallax}px ${cby + Math.max(_mouseY * sy * bgParallax, 0)}px`;
        let x = `${_depth}, ${_depthbg}`;
-       console.log(x);
        element.style.backgroundPosition = x;
    }
 }
@@ -240,6 +392,11 @@ van.add(document.getElementById("side-top__2"), GraphicsLevelPicker(CURRENT_GRAP
 van.add(document.getElementById("side-links__1"), ResumePdfLink());
 van.add(document.getElementById("side-links__2"), RepositoryLink());
 van.add(document.getElementById("side-card"), MoreSkillsButton());
+// van.add(document.getElementById("side-content"), CvChapter("chapter_career", "#7BD3EA"));
+// van.add(document.getElementById("side-content"), CvChapter("chapter_publications", "#A1EEBD"));
+// van.add(document.getElementById("side-content"), CvChapter("chapter_projects", "#F6F7C4"));
+// van.add(document.getElementById("side-content"), CvChapter("chapter_education", "#F6D6D6"));
+van.add(document.getElementById("sidebar"), CvContent());
 document.querySelectorAll('.parallax').forEach(
    el => add_parallax({
       element: el, sensitivityXY: [0.01, 0.005], bgParallax: 0.5,

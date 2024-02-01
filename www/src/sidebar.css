@@ -3,7 +3,8 @@
 
 #sidebar {
    /* position: absolute; */
-   /* display: flex; */
+   display: flex;
+   flex-direction: column;
    flex: 1 0 var(--sidebar-width);
    top: 0;
    left: 0;

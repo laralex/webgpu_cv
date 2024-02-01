@@ -58,6 +58,7 @@
   position: relative;
   z-index: -1;
   top: -100px;
+  margin-top: 10px;
   animation: anim-badge 1.5s cubic-bezier(0.425, 1.04, 0.47, 1.105) 0.75s forwards;
   box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
 }
@@ -67,7 +68,7 @@
   width: 100%;
   padding: 4px 0px;
   border: none;
-  margin: 0;
+  margin-top: 0;
   text-align: center;
   background-color: #F2F2F2;
 }
@@ -230,7 +231,7 @@
   }
   100% {
     opacity: 1;
-    top: 10px;
+    top: 0px;
   }
 }
 @keyframes rotatemagic {

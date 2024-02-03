@@ -10,6 +10,8 @@
     <link href="src/cv.css" rel="stylesheet">
     <link href="src/sidebar.css" rel="stylesheet">
     <link href="src/scrollify.css" rel="stylesheet">
+    <link href="src/popup.css" rel="stylesheet">
+    <link href='https://fonts.googleapis.com/css?family=JetBrains Mono' rel='stylesheet'>
   </head>
   <body>
     <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
@@ -52,39 +54,54 @@
           </div>
         </section> -->
         <div id="side-top" class="flex-row">
-          <div id="side-top__1" class="flex-block"></div>
-          <div id="side-top__2" class="flex-block"></div>
+          <div id="side-top__1"></div>
+          <div id="side-top__2"></div>
         </div>
-        <!-- <div class="side-head">
-          <span lang="en">Graphics Software Engineer</span><h1 lang="en"><i class="bx bx-user">&nbsp</i> Alexey <em>Larionov</em></h1>
-          <span lang="ru">Программист графики</span><h1 lang="ru"><i class="bx bx-user">&nbsp</i> Алексей <em>Ларионов</em></h1>
-        </div> -->
         
         <div class="side-head card-container" id="side-card">
           <div class="card" >
             <div class="firstinfo">
               <div class="photo-block">
-                <div class="photo parallax"></div>
-                <div class="flex-grid">
-                  <div class="grid-item contact interactive btn font-LARGE"><a href="https://www.linkedin.com/in/alexey-larionov"><i class="bx bxl-linkedin-square" style="color: var(--color-linkedin)"></i></a></div>
-                  <div class="grid-item contact interactive btn font-LARGE"><a href="mailto:alxs.larionov@gmail.com"><i class="bx bxs-envelope" style="color: var(--color-gmail)"></i></a></div>
-                  <div class="grid-item contact interactive btn font-LARGE"><a href="https://t.me/m_laralex"><i class="bx bxl-telegram" style="color: var(--color-telegram)"></i></a></div>
-                  <div class="grid-item contact interactive btn font-LARGE"><a href="https://github.com/laralex"><i class="bx bxl-github" style="color: var(--color-github)"></i></a></div>
-                  <div class="contact btn" id="side-links__1" style="width:100%"></div>
+                <div id="my-photo" class="photo"></div>
+                <div class="flex-row" style="justify-content: space-between;">
+                  <div class="grid-item contact interactive btn font-huge"><a href="https://www.linkedin.com/in/alexey-larionov"><i class="bx bxl-linkedin-square" style="color: var(--color-linkedin)"></i></a></div>
+                  <div class="grid-item contact interactive btn font-huge"><a href="mailto:alxs.larionov@gmail.com"><i class="bx bxs-envelope" style="color: var(--color-gmail)"></i></a></div>
+                  <div class="grid-item contact interactive btn font-huge"><a href="https://t.me/m_laralex"><i class="bx bxl-telegram" style="color: var(--color-telegram)"></i></a></div>
+                  <div class="grid-item contact interactive btn font-huge"><a href="https://github.com/laralex"><i class="bx bxl-github" style="color: var(--color-github)"></i></a></div>
                 </div>
+                  <div class="contact flex" id="side-links__1" style="width:100%"></div>
               </div>
               <div class="profileinfo">
-                <h1 lang="en">Alexey <em>Larionov</em></h1>
-                <h1 lang="ru">Алексей <em>Ларионов</em></h1>
+                <h1 class="font-LARGE bold" lang="en">Alexey <em>Larionov</em></h1>
+                <h1 class="font-LARGE bold" lang="ru">Алексей <em>Ларионов</em></h1>
+                <h1 class="font-LARGE bold" lang="kr">료샤 <em>라리오노브</em></h1>
                 <h3 lang="en">Graphics Software Engineer</h3>
                 <h3 lang="ru">Программист графики</h3>
+                <h3 lang="kr">그래픽 프로그래머</h3>
                   <!-- <ul class="bio"> -->
-                <div class="bio" lang="en">Real-time 3D graphics</div>
-                <div class="bio" lang="ru">3D графика в real-time</div>
-                <div class="bio" lang="en">Deep Learning R&D</div>
-                <div class="bio" lang="ru">R&D нейронных сетей</div>
-                <div class="bio" lang="en">C++ | Python | OpenGL ES | Android | WebGL</div>
-                <div class="bio" lang="ru">C++, Python, OpenGL ES, Android, WebGL</div>
+                <div style="height:3px;"></div>
+                <div lang="en">
+                  <ul>
+                    <li>Optimization and quality of graphics</li>
+                    <li>Deep Learning R&D</li>
+                  </ul>
+                </div>
+                <div lang="ru">
+                  <ul>
+                    <li>Оптимизация и качество 3D графики</li>
+                    <li>R&D нейронных сетей</li>
+                  </ul>
+                </div>
+                <div lang="kr">
+                    저는 3D 그래픽 성능와 딥러닝 연구을 일합니다.
+                </div>
+                <div class="techlist">
+                  <div class="badge">C++</div>
+                  <div class="badge">Python</div>
+                  <div class="badge">OpenGL</div>
+                  <div class="badge">WebGL</div>
+                  <div class="badge">Android</div>
+                </div>
                     <!-- <li style="margin-top: 7px;">
                       <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg" width="50" height="50"/>
                       <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original-wordmark.svg" width="50" height="50"/>
@@ -99,41 +116,23 @@
         <div id="side-content">
 
         </div>
-        <!-- <ul>
-          <li><a href="#">
-              <i class="bx bxs-rocket"></i>
-              <span class="nav-item">Work experience</span>
-          </a><span class="tooltip">Work experience</span></li>
-          <li><a href="#">
-              <i class="bx bxs-palette"></i>
-              <span class="nav-item">Projects</span>
-          </a><span class="tooltip">Projects</span></li>
-          <li><a href="#">
-            <i class="bx bxs-book-open"></i>
-            <span class="nav-item">Publications</span>
-          </a><span class="tooltip">Publications</span></li>
-          <li><a href="#">
-              <i class="bx bxs-graduation"></i>
-              <span class="nav-item">Education</span>
-          </a><span class="tooltip">Education</span></li>
-        </ul> -->
       </div>
-      <div id="main-content" class="scrollify-fixed theme-main">
+      <div id="main-content" class="scrollify-fixed retro-border">
         <div style="position: relative; width: 0; height: 0">
           <div class="grid-item" id="side-links__2" style="position:absolute;top:10px;left:10px;"></div>
         </div>
         <canvas id="main-canvas">Your browser doesn't support HTML5 :(</canvas>
       </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/vanjs-org/van/public/van-1.2.8.nomodule.min.js"></script>
-    <!-- <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/vanjs-org/van/public/van-1.2.8.debug.js"></script> -->
-		<script
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script> -->
+		<!-- <script
       src="https://cdnjs.cloudflare.com/ajax/libs/scrollify/1.0.21/jquery.scrollify.min.js"
       integrity="sha512-UyX8JsMsNRW1cYl8BoxpcamonpwU2y7mSTsN0Z52plp7oKo1u92Xqfpv6lOlTyH3yiMXK+gU1jw0DVCsPTfKew=="
       crossorigin="anonymous"
-      referrerpolicy="no-referrer"></script>
+      referrerpolicy="no-referrer"></script> -->
     <script src="./bootstrap.js"></script>
+    <script src="./src/localization.js"></script>
     <script src="./src/util.js"></script>
   </body>
 </html>

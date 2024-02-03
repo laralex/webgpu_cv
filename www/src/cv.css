@@ -2,14 +2,42 @@
    margin-top: 10px;
 }
 
-.cv-chapter, .cv-button {
-   width: 100%;
-  border: none;
-  margin: 0;
-  text-align: center;
+.cv-content ul {
+   margin: 0;
+   padding: 0;
 }
 
-.cv-chapter .expand-button, .cv-button .expand-button {
+.cv-content .inside {
+   background-color: var(--color-theme-accent);
+}
+
+.cv-chapter .expand-button {
+   padding: 4px 0px;
+   /* overflow: hidden; */
+   width: 100%;
+}
+
+.cv-chapter .inside .expand-button {
+   margin-left: 30px;
+   width: calc(100% - 30px);
+}
+
+.cv-chapter .inside .inside .expand-button {
+   margin-left: 60px;
+   width: calc(100% - 60px);
+}
+
+
+
+.cv-chapter, .cv-button {
+   width: 100%;
+   border: none;
+   margin: 0;
+   text-align: center;
+   color: var(--color-font-title);
+}
+
+.cv-button .expand-button {
    padding: 4px 0px;
    width: 100%;
 }

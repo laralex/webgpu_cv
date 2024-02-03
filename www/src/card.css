@@ -33,12 +33,12 @@
 
 .card ul, .card li {
    list-style-position: inside;
-   list-style-type: none;
+   /* padding-inline-start: 0.2em; */
    padding: 0;
    margin: 0;
 }
 
-.card:after {
+/* .card:after {
   content: "";
   display: flex;
   flex-direction: row;
@@ -47,19 +47,19 @@
   background: linear-gradient(to right, #7474BF 0%, #348AC7  51%, #7474BF  100%);
   position: absolute;
   animation: rotatemagic 0.75s cubic-bezier(0.425, 1.04, 0.47, 1.105) 1s both;
-}
+} */
 
 .badgescard {
   flex-direction: column;
   border-radius: 3px;
   background-color: #F2F2F2;
-  color: #444;
+  /* color: var(--color-font-title-light); */
   width: 95%;
   position: relative;
   z-index: -1;
   top: -100px;
   margin-top: 10px;
-  animation: anim-badge 1.5s cubic-bezier(0.425, 1.04, 0.47, 1.105) 0.75s forwards;
+  animation: anim-badge 1.5s cubic-bezier(0.425, 1.04, 0.47, 1.105) 0.25s forwards;
   box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
 }
 
@@ -75,7 +75,7 @@
 
 .badgescard .inside {
   /* width: 100%; */
-  padding: 2px 0 4px 0;
+  padding: 4px 0 4px 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -90,9 +90,9 @@
 }
 
 .badgescard span, .badgescard li {
-  padding: 0px 5px;
-  margin: 4px 4px 4px 30px;
-  font-size: 0.95rem;
+  padding: 1px 0px;
+  margin: 0px;
+  line-height: 1em;
 }
 
 .badgescard img {
@@ -101,6 +101,7 @@
 
 .badgescard ul {
   /* list-style-position: inside; */
+  padding-inline-start: unset;
 }
 
 .firstinfo {
@@ -112,37 +113,30 @@
 .firstinfo .photo-block {
    display: flex;
    flex-direction: column;
-   width: 25%;
+   width: 40%;
    /* flex: 0 0 110px; */
    /* flex-wrap: wrap; */
 }
 
-.photo {
-  /* position: relative;
-  display: block; */
-  background: url(../assets/my_photo_tiny.png), url(../assets/bg4_tiny.jpg);
+.firstinfo li {
+  text-indent: -1.4em;
+  padding-left: 1.4em;
+}
+
+#my-photo {
   width: 100%;
   padding-top: 100%;
-  /* height: 100px; */
-  /* width: 100%;
-  height: 25%; */
   border-radius: 25%;
-  /* object-fit: cover; */
   background-position: center ;
   background-position: 50% 50%;
-  /* background-size: 100% auto; */
-  /* background-size: cover; */
-  /* background-size: 100% 100%; */
   background-repeat: no-repeat;
-  background-size: cover, 130%;
+  background-size: cover;
   background-color: #FFF;
-  /* /* background-repeat: no-repeat; */
-  /* resize: both;
-  overflow: scroll; */
 }
 
 .photo-block .contact {
-   margin: 3px 5px 0px 0px;
+   padding: 0px 1px 0px 1px;
+   margin: 0px 1px 0px 1px;
 }
 /* .firstinfo .contacts {
    display: flex;
@@ -165,8 +159,8 @@
 
 .flex-grid {
    display: flex;
-   flex-wrap: wrap;
-   justify-content: space-between;
+   /* flex-wrap: wrap; */
+   justify-content: space-evenly;
 }
 
 .grid-item {
@@ -185,32 +179,44 @@
   height: 100%;
   min-height: 100%;
 }
+
 .firstinfo .profileinfo h1 {
-  font-size: 1.3rem;
-  font-weight: 600;
   /* background-image: repeating-radial-gradient(farthest-side at 5px 5px,#553c9a, #ee4b2b, #553c9a); */
   background-image: linear-gradient(to right, #7474BF 0%, #348AC7  51%, #7474BF  100%);
   color: transparent;
   -webkit-background-clip: text;
-  background-clip: text; 
+  background-clip: text;
+  text-align: center;
+  /* font-style: oblique; */
 }
+
 .firstinfo .profileinfo h3 {
-  font-size: 1.0rem;
-  color: #5A5A5A;
+  color: var(--color-font-title-light);
+  text-align: center;
 }
+
 .firstinfo h1 em {
-   font-style: normal;
-   font-weight: 600;
+   /* font-style: normal;
+   font-weight: 600; */
 }
-.firstinfo .profileinfo .bio {
+
+.firstinfo .techlist {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+  margin-top:6px;
+}
+
+.firstinfo .profileinfo .badge {
+  padding: 0 0.5em;
   /* padding: 10px 0px;
   color: #2A2A2A;
   line-height: 1.2;
   font-style: initial; */
-  color: #2A2A2A;
-  flex: 10;
+  /* flex: 10; */
   /* margin-bottom: auto; */
-  margin: 6px 0px 0px 0px;
+  /* padding: 0px 1em; */
 }
 
 

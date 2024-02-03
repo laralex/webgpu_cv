@@ -1,48 +1,17 @@
 import { wasm_startup, wasm_loop, wasm_resize } from "my-wasm";
 const {div, button, i, label, img, svg, path, input, li, a, option, select, span, ul} = van.tags
 
-const ARROW_SVG_PATH = '<svg viewBox="0 0 16 16"><polygon points="3,5 8,11 13,5 "></polygon></svg>';
-const GLOBE_SVG_PATH = '<svg viewBox="0 0 16 16"><path d="M8,0C3.6,0,0,3.6,0,8s3.6,8,8,8s8-3.6,8-8S12.4,0,8,0z M13.9,7H12c-0.1-1.5-0.4-2.9-0.8-4.1 C12.6,3.8,13.6,5.3,13.9,7z M8,14c-0.6,0-1.8-1.9-2-5H10C9.8,12.1,8.6,14,8,14z M6,7c0.2-3.1,1.3-5,2-5s1.8,1.9,2,5H6z M4.9,2.9 C4.4,4.1,4.1,5.5,4,7H2.1C2.4,5.3,3.4,3.8,4.9,2.9z M2.1,9H4c0.1,1.5,0.4,2.9,0.8,4.1C3.4,12.2,2.4,10.7,2.1,9z M11.1,13.1 c0.5-1.2,0.7-2.6,0.8-4.1h1.9C13.6,10.7,12.6,12.2,11.1,13.1z"></path></svg>';
-const SIDEBAR = document.getElementById("sidebar");
-const SIDEBAR_TOP = document.getElementById("side-top")
+const CURRENT_LANGUAGE = van.state("kr");
+const ADD_PARALLAX = true;
+// const DEBUG = true;
+const DEBUG = false;
 const CANVAS_ID = "main-canvas";
+const UI_STRINGS = getLocalization()
 
-const UI_STRINGS = {
-   english: {en: "English", ru: "English" },
-   russian: {en: "Russian", ru: "Русский" },
-   low: {en: "Low    ", ru: "Низкое " },
-   medium: {en: "Medium", ru: "Среднее" },
-   high: {en: "High  ", ru: "Высокое" },
-   ultra: {en: "Ultra ", ru: "Ультра" },
-   ui_language: {en: "UI Language", ru: "Язык UI"},
-   graphics_levels: {en: "Graphics quality", ru: "Качество графики"},
-   pdf: {en: "PDF", ru: "PDF"},
-   cv: {en: "CV", ru: "CV"},
-   pdf_cv_href: {en: "./assets/larionov_rendering_cv_eng_112023.pdf", ru: "./assets/larionov_rendering_cv_rus_112023.pdf"},
-   web_cv_github: {en: "Source code of this demo", ru: "Исходный код демки"},
-   skills_title: {en: "Extra skills", ru: "Прочие компетенции"},
-   skills_languages_1: {en: "English 🇬🇧 (C1), Russian 🇷🇺 (N)", ru: "Английский 🇬🇧 (C1), Корейский 🇰🇷 (А2)"},
-   skills_languages_2: {en: "Korean 🇰🇷 (A2), Polish 🇵🇱 (A1)", ru: "Польский 🇵🇱 (А1), Русский 🇷🇺"},
-   chapter_career: {en: "Career", ru: "Карьера"},
-   chapter_publications: {en: "Publications", ru: "Публикации"},
-   chapter_projects: {en: "Projects", ru: "Проекты"},
-   chapter_education: {en: "Education", ru: "Образование"},
-   button_cv_begin: {en: "To beginning", ru: "В начало"},
-   button_cv_end: {en: "To ending", ru: "В конец"},
-   button_career_latest: {en: "Latest position", ru: "К вершине карьеры"},
-   button_career_earliest: {en: "First position", ru: "К началу карьеры"},
-   career_huawei: {en: "Huawei", ru: "Huawei"},
-   career_samsung: {en: "Samsung Research", ru: "Samsung AI Center Moscow"},
-   career_freelance: {en: "Freelancing", ru: "Фриланс"},
-   publications_wacv_2024: {en: "WACV 2024", ru: "WACV 2024"},
-   education_master: {en: "Master of Computer Science", ru: "Магистратура"},
-   education_bachelor: {en: "Bachelor of Computer Science", ru: "Бакалавриат"},
-}
-
-const CURRENT_LANGUAGE = van.state("en");
 const LANGUAGES = {
 	en: {label: UI_STRINGS['english'], icon: "../assets/flag_GB.png", emoji: "🇬🇧"},
 	ru: {label: UI_STRINGS['russian'], icon: "../assets/flag_RU.png", emoji: "🇷🇺"},
+	kr: {label: UI_STRINGS['korean'], icon: "../assets/flag_RU.png", emoji: "🇰🇷"},
 }
 const CURRENT_GRAPHICS_LEVEL = van.state("medium");
 const GRAPHICS_LEVELS = {
@@ -57,14 +26,14 @@ function localize_d(dict) {
 }
 
 function localize_ui(key) {
-   if (UI_STRINGS[key] === undefined) {
+   if (UI_STRINGS[key] === undefined || UI_STRINGS[key][CURRENT_LANGUAGE.val] === undefined) {
       return key;
    }
-   return () => localize_d(UI_STRINGS[key]);
+   return () => UI_STRINGS[key][CURRENT_LANGUAGE.val];
 }
 
-function LanguagePicker(currentLanguage) {
-   function localize_page(language)
+function LanguagePicker(currentLanguage, isVertical, labelLanguage=undefined, labelStringId='ui_language') {
+   function localizePage(language)
    {
       if (! (Object.keys(LANGUAGES).includes(language))) {
          return;
@@ -80,14 +49,16 @@ function LanguagePicker(currentLanguage) {
 			node.style.display = 'unset';
 		});
    }
-
-	van.derive(() => localize_page(currentLanguage.val));
+   if (!labelLanguage) {
+      labelLanguage = currentLanguage;
+   }
+	van.derive(() => localizePage(currentLanguage.val));
 	const options = Object.entries(LANGUAGES).map(([language, meta]) =>
       option({ value: language, selected: () => language == currentLanguage.val},
-         () => meta.emoji + " " + meta.label[currentLanguage.val]));
+         () => meta.emoji + " " + meta.label[labelLanguage.val]));
    return () => div(
-      { class: 'language-picker' },
-      span(localize_ui('ui_language')),
+      { class: 'language-picker ' + (isVertical ? "flex-column" : "flex-row") },
+      span(() => UI_STRINGS[labelStringId][labelLanguage.val]),
       select({
          class: 'interactive btn',
          value: currentLanguage,
@@ -96,13 +67,13 @@ function LanguagePicker(currentLanguage) {
    );
 }
 
-function GraphicsLevelPicker(currentGraphicsLevel) {
+function GraphicsLevelPicker(currentGraphicsLevel, isVertical) {
    const options = Object.entries(GRAPHICS_LEVELS).map(([level, meta]) =>
       option({ value: level, selected: () => level == currentGraphicsLevel.val},
          () => localize_d(meta.label) + " " +  meta.emoji));
    van.derive(() => console.log("Set graphics_level="+currentGraphicsLevel.val));
    return div(
-      { class: 'graphics-picker' },
+      { class: 'graphics-picker ' + isVertical ? "flex-column" : "flex-row" },
       span(localize_ui('graphics_levels')),
       select({
          class: 'interactive btn',
@@ -113,17 +84,13 @@ function GraphicsLevelPicker(currentGraphicsLevel) {
 }
 
 function ResumePdfLink() {
-   // return button({class:"btn-block interactive btn font-normalsize", role:"button"},
-   //    a({href: localize_ui("pdf_cv_href"), target: "_blank"},
-   //       i({ class: "bx bxs-file-pdf bx-tada font-Huge", style: "color: var(--color-gmail);margin:0;padding:0;"}),
-   //       label(localize_ui("pdf_cv")),
-   //    ));
-   return button({class:"btn-block interactive btn font-normalsize", role:"button", style:"width:100%"},
+   return button({class:"btn-block interactive btn", role:"button", style:"width:100%"},
       // bxs-download
       i({ class: "bx bxs-file-pdf bx-tada font-Huge", style: "color: var(--color-gmail);"}),
-      a({href: localize_ui("pdf_cv_href"), target: "_blank", class: "btn"},
-         label({style: "display:block;"}, localize_ui("pdf")),
-         label({style: "display:block;"}, localize_ui("cv")),
+      a({ class: "font-normalsize", href: localize_ui("pdf_cv_href"), target: "_blank"},
+         () => localize_ui("cv")() + " " + localize_ui("pdf")(),
+         // label({style: "display:block;"}, ),
+         // label({style: "display:block;"}, ),
       ));
 }
 
@@ -131,6 +98,7 @@ function RepositoryLink() {
    return button({class:"btn-block interactive btn font-large", role:"button"},
       a({href: "https://github.com/laralex/my_web_cv", target: "_blank"},
          i({ class: "bx bxl-github", style: "font-size:1.3rem;color: var(--color-github)"}),
+         label(" "),
          label(localize_ui("web_cv_github")),
       ));
 }
@@ -141,7 +109,7 @@ function MoreSkillsButton() {
       button({
          class: "interactive btn font-Large expand-button",
          onclick: e => isExpanded.val = !isExpanded.val,
-      }, i({class: () => isExpanded.val ? "bx bxs-up-arrow" : "bx bxs-down-arrow"}, "\t"), localize_ui("skills_title")),
+      }, i({class: () => isExpanded.val ? "bx bxs-up-arrow" : "bx bxs-down-arrow"}), i(" "), localize_ui("skills_title")),
       div({class: "inside", style: () => isExpanded.val ? "" : "display: none;" },
          // div({class: "icons"},
          //    // img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/opengl/opengl-original.svg" }),
@@ -155,10 +123,10 @@ function MoreSkillsButton() {
          //    img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original-wordmark.svg"}),
          //    ),
          ul(
-            li("Rust, C#, Java, JavaScript"),
-            li("PyTorch, Docker, Qualcomm SNPE"),
+            li(span("Rust, C#, Java, JavaScript")),
+            li(span("PyTorch, Docker, Qualcomm SNPE")),
             span("Unity, ARCore, Linux, LaTeX"),
-            li(localize_ui("skills_languages_1")),
+            li(span(localize_ui("skills_languages_1"))),
             span(localize_ui("skills_languages_2")),
             ),
       ),
@@ -183,26 +151,24 @@ function CvButton(labelId, rgbString, onclick) {
    );
 }
 
-function CvChapter(labelId, isDefaultActive, rgbString, onclick, insideConstructor = () => span("Test")) {
+function CvChapter({titleElement, isDefaultActive, rgbString, onclick, extraClasses = "", insideConstructor = () => span(localize_ui("placeholder"))}) {
    let style = getBackgroundColorStyle(rgbString);
-   return div({class: "cv-chapter"},
+   return div({class: "cv-chapter " + extraClasses},
       button({
-         class: "interactive btn font-Large expand-button",
+         class: "interactive btn font-Large expand-button ",
          ...style,
-         onclick: e => {
-            onclick();
-         },
-      }, /* i({class: () => isDefaultActive.val ? "bx bxs-up-arrow" : "bx bxs-down-arrow"}, "\t") */ localize_ui(labelId)),
+         onclick: e => { onclick(); },
+      }, titleElement),
       div(
          {class: "inside", style: () => isDefaultActive.val ? "" : "display: none;"},
-         div({style: "margin-left: 30px;"}, insideConstructor)
+         div(insideConstructor)
       )
    );
 }
 
 function CvContent() {
    const chaptersData = [
-      { id: "chapter_career", color: "#7BD3EA", constructor: CvCareer },
+      { id: "chapter_career", color: "#65E2E6", constructor: CvCareer },
       { id: "chapter_publications", color: "#A1EEBD", constructor: CvPublications },
       { id: "chapter_projects", color: "#F6F7C4", constructor: CvChapter },
       { id: "chapter_education", color: "#F6D6D6", constructor: CvEducation },
@@ -211,54 +177,65 @@ function CvContent() {
    const colors = chaptersData.map((x) => x.color);
    const activeChapter = van.state(ids[0]);
    return div({class: "cv-content"},
-      CvButton("button_cv_begin", "#FFF", () => {
-         activeChapter.val = ids[0];
-      }),
+      // CvButton("button_cv_begin", "#FFF", () => {
+      //    activeChapter.val = ids[0];
+      // }),
       () => ul(Array.from(chaptersData, (x) => {
          const isActive = van.derive(() => x.id == activeChapter.val);
          const onChapterActiveChange = () => {
             activeChapter.val = x.id;
          };
-         const chapter = x.constructor(x.id, isActive, x.color, onChapterActiveChange);
+         const args = {
+            titleElement: () => span({class: "bold"}, localize_ui(x.id)),
+            isDefaultActive: isActive,
+            rgbString: x.color,
+            onclick: onChapterActiveChange,
+         }
+         const chapter = x.constructor(args);
          return chapter; }
       )),
-      CvButton("button_cv_end", "#FFF", () => {
-         activeChapter.val = ids[ids.length - 1];
-      }),
+      // CvButton("button_cv_end", "#FFF", () => {
+      //    activeChapter.val = ids[ids.length - 1];
+      // }),
    );
 }
 
-function CvCareer(labelId, isDefaultActive, rgbString, onclick) {
+function CvCareer(chapterArgs) {
    const careersData = [
-      { id: "career_huawei", color: "#7BD3EA", constructor: CvChapter },
-      { id: "career_samsung", color: "#65E2E6", constructor: CvChapter },
+      { id: "career_huawei", color: "#65E2E6", constructor: CvChapter, icon: "../assets/huawei-2.svg" },
+      { id: "career_samsung", color: "#7BD3EA", constructor: CvChapter, icon: "../assets/samsung.svg" },
       // { id: "career_freelance", color: "#65E2E6", constructor: CvChapter },
       // #64E1E5
    ];
    const ids = careersData.map((x) => x.id);
    const colors = careersData.map((x) => x.color);
    const activeCareer = van.state(ids[0]);
-   return CvChapter(labelId, isDefaultActive, rgbString, onclick,
-      () => ul(
+   return CvChapter({...chapterArgs,
+      insideConstructor: () => ul(
          // CvButton("button_career_latest", "#FFF", () => {
          //    activeCareer.val = ids[0];
          // }),
          () => ul(Array.from(careersData, (x) => {
             const isActive = van.derive(() => x.id == activeCareer.val);
-            const onCareerChange = () => {
-               activeCareer.val = x.id;
-            };
-            const chapter = x.constructor(x.id, isActive, x.color, onCareerChange);
-            return chapter; }
-         )),
+            const onChange = () => { activeCareer.val = x.id; };
+            const titleElement = () => span(
+               localize_ui(x.id),
+               img({src: x.icon, style: "object-fit: contain;height:30px"})
+            );
+            const args = {
+               titleElement: titleElement, isDefaultActive: isActive,
+               rgbString: x.color, onclick: onChange};
+            const chapter = x.constructor(args);
+            return chapter;
+         })),
          // CvButton("button_career_earliest", "#FFF", () => {
          //    activeCareer.val = ids[ids.length - 1];
          // })
       ),
-   );
+      });
 }
 
-function CvPublications(labelId, isDefaultActive, rgbString, onclick) {
+function CvPublications(chapterArgs) {
    const data = [
       { id: "publications_wacv_2024", color: "#A1EEBD", constructor: CvChapter },
       // #71BC8E #428D61 #428D61
@@ -266,20 +243,19 @@ function CvPublications(labelId, isDefaultActive, rgbString, onclick) {
    const ids = data.map((x) => x.id);
    const colors = data.map((x) => x.color);
    const active = van.state(ids[0]);
-   return CvChapter(labelId, isDefaultActive, rgbString, onclick,
-      () => ul(
+   return CvChapter({...chapterArgs,
+      insideConstructor:() => ul(
          () => ul(Array.from(data, (x) => {
             const isActive = van.derive(() => x.id == active.val);
-            const onChange = () => {
-               active.val = x.id;
-            };
-            return x.constructor(x.id, isActive, x.color, onChange); }
-         )),
+            const onChange = () => { active.val = x.id; };
+            const args = {titleElement: localize_ui(x.id), isDefaultActive: isActive, rgbString: x.color, onclick: onChange};
+            return x.constructor(args);
+         })),
       ),
-   );
+   });
 }
 
-function CvEducation(labelId, isDefaultActive, rgbString, onclick) {
+function CvEducation(chapterArgs) {
    const data = [
       { id: "education_master", color: "#F6D6D6", constructor: CvChapter },
       { id: "education_bachelor", color: "#FFCEDD", constructor: CvChapter },
@@ -288,20 +264,54 @@ function CvEducation(labelId, isDefaultActive, rgbString, onclick) {
    const ids = data.map((x) => x.id);
    const colors = data.map((x) => x.color);
    const active = van.state(ids[0]);
-   return CvChapter(labelId, isDefaultActive, rgbString, onclick,
-      () => ul(
+   return CvChapter({...chapterArgs,
+      insideConstructor: () => ul(
          () => ul(Array.from(data, (x) => {
             const isActive = van.derive(() => x.id == active.val);
             const onChange = () => {
                active.val = x.id;
             };
-            return x.constructor(x.id, isActive, x.color, onChange); }
-         )),
-      ),
-   );
+            const args = {titleElement: localize_ui(x.id), isDefaultActive: isActive, rgbString: x.color, onclick: onChange};
+            return x.constructor(args);
+         }))),
+   });
 }
 
-const add_parallax = function({element, sensitivityXY, bgParallax, centerPx, centerBgPx}) {
+function IntroPopup() {
+   const closed = van.state(false);
+   return () => closed.val ? null :div({class: "popup retro-box checkerboard-background"},
+      div({class: "message font-LARGE"}, LanguagePicker(CURRENT_LANGUAGE, /* vertical */ false, van.state('en'), 'ui_language_intro')),
+      span({class: "message bold font-LARGE"}, localize_ui("intro_hi")),
+      span({class: "message"}, localize_ui("intro_enjoy_resume")),
+      span({class: "message"}, localize_ui("intro_using")), // ""
+      div({class: "flex-row wide"},
+         div({class: "message flex-column", style: "margin-right: 1.5em;"},
+            span(a({href: "https://www.rust-lang.org/", target: "_blank"}, "Rust"), " + ", a({href: "https://www.khronos.org/webgl/", target: "_blank"}, "WebGL2")),
+            span(localize_ui("intro_3d")),
+            div({class: "flex-row"},
+               a({href: "https://www.rust-lang.org/", target: "_blank"},
+                  img({src: "../assets/rust-plain.svg", height:"80"}, "Rust")),
+               a({href: "https://www.khronos.org/webgl/", target: "_blank"},
+                  img({src: "../assets/WebGL_Logo.svg", height:"60", style: "padding:7px;"}, "WebGL 2"))
+            ),
+         ),
+         div({class: "message flex-column", style: "margin-left: 1.5em;"},
+            span(a({href: "https://en.wikipedia.org/wiki/JavaScript", target: "_blank"}, "JavaScript"), " + ", a({href: "https://vanjs.org/", target: "_blank"}, "VanJS")),
+            span(localize_ui("intro_frontend")),
+            div({class: "flex-row"},
+               a({href: "https://en.wikipedia.org/wiki/JavaScript", target: "_blank"},
+                  img({src: "../assets/javascript-original.svg", height:"80", style: "padding:3px;"}, "JavaScript")),
+               a({href: "https://vanjs.org/", target: "_blank"},
+                  img({src: "../assets/vanjs.svg", height:"80", style: "padding:3px;"}, "VanJS")),
+            ),
+         ),
+      ),
+      div({class: "controls"},
+         button({class: "btn popup-btn font-large", onclick: (e) => closed.val = true }, localize_ui("intro_close")))
+   )
+}
+
+const addParallax = function({element, sensitivityXY, bgParallax, centerPx, centerBgPx}) {
    document.addEventListener("mousemove", parallax);
    function parallax(e) {
        let [cx, cy] = centerPx;
@@ -315,11 +325,12 @@ const add_parallax = function({element, sensitivityXY, bgParallax, centerPx, cen
        let _depthbg = `${cbx + (_mouseX - _w) * sx * bgParallax}px ${cby + Math.max(_mouseY * sy * bgParallax, 0)}px`;
        let x = `${_depth}, ${_depthbg}`;
        element.style.backgroundPosition = x;
+       element.style.backgroundScale = "cover, 200%";
    }
 }
 
 function js_setup_canvas() {
-   let canvas = $("#"+CANVAS_ID)[0];
+   let canvas = document.getElementById(CANVAS_ID);
    let gl = canvas.getContext("webgl2");
 
    function resizeCanvas() {
@@ -387,8 +398,8 @@ function js_setup_scrollify() {
 }
 
 
-van.add(document.getElementById("side-top__1"), LanguagePicker(CURRENT_LANGUAGE));
-van.add(document.getElementById("side-top__2"), GraphicsLevelPicker(CURRENT_GRAPHICS_LEVEL));
+van.add(document.getElementById("side-top__1"), LanguagePicker(CURRENT_LANGUAGE, /*vertical*/ true, van.state('en')));
+van.add(document.getElementById("side-top__2"), GraphicsLevelPicker(CURRENT_GRAPHICS_LEVEL, /*vertical*/ true));
 van.add(document.getElementById("side-links__1"), ResumePdfLink());
 van.add(document.getElementById("side-links__2"), RepositoryLink());
 van.add(document.getElementById("side-card"), MoreSkillsButton());
@@ -397,10 +408,21 @@ van.add(document.getElementById("side-card"), MoreSkillsButton());
 // van.add(document.getElementById("side-content"), CvChapter("chapter_projects", "#F6F7C4"));
 // van.add(document.getElementById("side-content"), CvChapter("chapter_education", "#F6D6D6"));
 van.add(document.getElementById("sidebar"), CvContent());
-document.querySelectorAll('.parallax').forEach(
-   el => add_parallax({
-      element: el, sensitivityXY: [0.01, 0.005], bgParallax: 0.5,
-      centerPx: [0, 0], centerBgPx: [-20, -10]}));
+if (!DEBUG) {
+   van.add(document.body, IntroPopup());
+}
+const myPhoto = document.getElementById('my-photo');
+if (ADD_PARALLAX) {
+   // myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png), url(../assets/bg6-min.png)";
+   myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png), url(../assets/bg10-min.png)";
+   myPhoto.style.backgroundSize = "cover, 150%";
+   // myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png)";
+   addParallax({
+      element: myPhoto, sensitivityXY: [0.012, 0.007], bgParallax: 0.25,
+      centerPx: [0, 0], centerBgPx: [-10, -5]});
+} else {
+   myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png)";
+}
 js_setup_canvas();
 wasm_startup();
 wasm_loop(CANVAS_ID);

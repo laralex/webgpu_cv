@@ -1,0 +1,90 @@
+@keyframes slide {
+   from {
+      background-position: 0 0;
+   }
+
+   to {
+      background-position: -120px 60px;
+   }
+}
+
+.popup {
+   font-size: 1.2rem;
+   position: absolute;
+   left: 50%;
+   top: 50%;
+   transform: translate(-50%, -50%);
+   width: auto;
+   display: inline-flex;
+   flex-direction: column;
+   align-items: center;
+   padding: 1.6rem 1.5rem;
+   
+}
+
+.checkerboard-background {
+   background-color: var(--color-theme-normal);
+   background-image: linear-gradient(
+         45deg,
+         var(--color-theme-accent) 25%,
+         transparent 25%,
+         transparent 75%,
+         var(--color-theme-accent) 75%,
+         var(--color-theme-accent)
+      ),
+      linear-gradient(
+         -45deg,
+         var(--color-theme-accent) 25%,
+         transparent 25%,
+         transparent 75%,
+         var(--color-theme-accent) 75%,
+         var(--color-theme-accent)
+      );
+   background-size: 60px 60px;
+   background-position: 0 0;
+   animation: slide 4s infinite linear;
+}
+ 
+.popup .message {
+   margin-bottom: 1.6rem;
+   margin-top: 0;
+}
+
+.popup .wide {
+   flex-grow: 2;
+}
+
+.popup img {
+   margin: 2px;
+   object-fit: cover;
+}
+.popup .popup-btn {
+   font-family:inherit;
+   font-size: inherit;
+   background: #fff;
+   padding: 0.3rem 3.4rem;
+   border: 3px solid black;
+   margin-right: 2.6rem;
+   box-shadow: 0 0 0 black;
+   transition: all 0.2s;
+}
+ 
+.popup-btn:last-child {
+   margin: 0;
+}
+
+.popup-btn:hover {
+   box-shadow: 0.2rem 0.2rem 0 black;
+   transform: translate(-0.2rem, -0.2rem);
+}
+ 
+.popup-btn:active {
+   box-shadow: 0 0 0 black;
+   transform: translate(0, 0);
+}
+ 
+.popup .controls {
+   display: flex;
+   flex-direction: row;
+   justify-content: space-between;
+}

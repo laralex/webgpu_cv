@@ -1,43 +1,155 @@
 :root {
    --canvas-min-width: 300px;
    --canvas-min-aspect: 1.0;
-   --sidebar-width: 25em;
-   --sidebar-color: #dde;
-   --font-size-main: 1.1em;
+   --sidebar-width: 27em;
+   --font-size-main: 14pt;
    --font-size-h2: 1.2rem;
-   --color-font-main: #222;
-   --color-font-title: #22a;
-   --color-font-title-light: #ddf;
+   /* --color-theme-accent: #ffd966; */
+   /* --color-theme-normal: #ffec63; */
+   --color-theme-bold: #B0A695;
+   --color-theme-accent: #EBE3D5;
+   --color-theme-normal: #F3EEEA;
+   --color-font-main: #211515;
+   --color-font-title: #4D4637;
+   --color-font-title-light: #5A5A5A;
    --color-linkedin: #0077b5;
    --color-telegram: #229ed9;
    --color-gmail: #c71610;
    --color-green: #03c04a;
    --color-github: #171515;
-   --color-stackoverflow: #f47f24;
+
+   --pixel-bg: var(--color-theme-accent);
+   --pixel-border: var(--color-font-title); /* Inner border color: */
+	--pixel-border-2: var(--color-theme-accent); /* Middle border color: */
+	--pixel-border-3: var(--pixel-border); /* Outer border color */
+	--pixel: 0.15rem; /* Pixel size */
 }
 
 * {
    margin: 0;
-   padding: 0;
-   box-sizing: border-box;
+   /* box-sizing: border-box; */
+   /* "Questrial" */
    font-family: 'JetBrains Mono', 'Segoe UI', Tahoma, Geneva, Verdana;
 }
 
 html {
    font-size: var(--font-size-main);
+   color: var(--color-font-main);
+}
+
+button {
+   color: inherit;
+   font-weight: inherit;
+}
+
+a {
+   text-decoration: underline;
+}
+
+a:hover {
+   text-decoration: underline;
+}
+
+a:active, a:visited, a:link {
+   color: var(--color-font-main);
+}
+
+.retro-box-old {
+   border: 3px solid var(--color-font-title);
+   border-radius: 5px;
+   box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.2);
+}
+
+.retro-border {
+   box-shadow:
+		calc(var(--pixel) * -1) 0 0 0 var(--pixel-border),
+		calc(var(--pixel) * -2) 0 0 0 var(--pixel-border-2),
+		calc(var(--pixel) * -3) 0 0 0 var(--pixel-border-3),
+		inset 0 0 calc(var(--pixel) * -1) 0 var(--pixel-border),
+		inset 0 0 calc(var(--pixel) * -2) 0 var(--pixel-border-2),
+		inset 0 0 calc(var(--pixel) * -3) 0 var(--pixel-border-3)
+      ;
+}
+.retro-box {
+   box-shadow:
+	/* Inner Background Color */
+		0 calc(var(--pixel) * -3) 0 calc(var(--pixel) * -1) var(--pixel-bg),
+		0 calc(var(--pixel) * 3) 0 calc(var(--pixel) * -1) var(--pixel-bg),
+		0 calc(var(--pixel) * -6) 0 calc(var(--pixel) * -2) var(--pixel-bg),
+		0 calc(var(--pixel) * 6) 0 calc(var(--pixel) * -2) var(--pixel-bg),
+		0 calc(var(--pixel) * -9) 0 calc(var(--pixel) * -4) var(--pixel-bg),
+		0 calc(var(--pixel) * 9) 0 calc(var(--pixel) * -4) var(--pixel-bg),
+		0 calc(var(--pixel) * -12) 0 calc(var(--pixel) * -6) var(--pixel-bg),
+		0 calc(var(--pixel) * 12) 0 calc(var(--pixel) * -6) var(--pixel-bg),
+		
+	/* Pixel Border Layer 1 */
+		calc(var(--pixel) * -1) 0 0 0 var(--pixel-border),
+		var(--pixel) 0 0 0 var(--pixel-border),
+		0 calc(var(--pixel) * -2) 0 0 var(--pixel-border),
+		0 calc(var(--pixel) * 2) 0 0 var(--pixel-border),
+		0 calc(var(--pixel) * -5) 0 calc(var(--pixel) * -1) var(--pixel-border),
+		0 calc(var(--pixel) * 5) 0 calc(var(--pixel) * -1) var(--pixel-border),
+		0 calc(var(--pixel) * -7) 0 calc(var(--pixel) * -2) var(--pixel-border),
+		0 calc(var(--pixel) * 7) 0 calc(var(--pixel) * -2) var(--pixel-border),
+		0 calc(var(--pixel) * -10) 0 calc(var(--pixel) * -4) var(--pixel-border),
+		0 calc(var(--pixel) * 10) 0 calc(var(--pixel) * -4) var(--pixel-border),
+		0 calc(var(--pixel) * -13) 0 calc(var(--pixel) * -6) var(--pixel-border),
+		0 calc(var(--pixel) * 13) 0 calc(var(--pixel) * -6) var(--pixel-border),
+		
+	/* Pixel Border Layer 2 */
+		calc(var(--pixel) * -2) 0 0 0 var(--pixel-border-2),
+		calc(var(--pixel) * 2) 0 0 0 var(--pixel-border-2),
+		0 calc(var(--pixel) * -1) 0 var(--pixel) var(--pixel-border-2), 
+		0 var(--pixel) 0 var(--pixel) var(--pixel-border-2),
+		0 calc(var(--pixel) * -4) 0 0 var(--pixel-border-2),
+		0 calc(var(--pixel) * 4) 0 0 var(--pixel-border-2),
+		0 calc(var(--pixel) * -6) 0 calc(var(--pixel) * -1) var(--pixel-border-2),
+		0 calc(var(--pixel) * 6) 0 calc(var(--pixel) * -1) var(--pixel-border-2),
+		0 calc(var(--pixel) * -8) 0 calc(var(--pixel) * -2) var(--pixel-border-2),
+		0 calc(var(--pixel) * 8) 0 calc(var(--pixel) * -2) var(--pixel-border-2),
+		0 calc(var(--pixel) * -11) 0 calc(var(--pixel) * -4) var(--pixel-border-2),
+		0 calc(var(--pixel) * 11) 0 calc(var(--pixel) * -4) var(--pixel-border-2),
+		0 calc(var(--pixel) * -14) 0 calc(var(--pixel) * -6) var(--pixel-border-2),
+		0 calc(var(--pixel) * 14) 0 calc(var(--pixel) * -6) var(--pixel-border-2),
+		
+	/* Border Layer 3: --pixel-border-3 */
+		calc(var(--pixel) * -3) 0 0 0 var(--pixel-border-3),
+		calc(var(--pixel) * 3) 0 0 0 var(--pixel-border-3),
+		0 0 0 calc(var(--pixel) * 2) var(--pixel-border-3),
+		0 calc(var(--pixel) * -3) 0 var(--pixel) var(--pixel-border-3),
+		0 calc(var(--pixel) * 3) 0 var(--pixel) var(--pixel-border-3),
+		0 calc(var(--pixel) * -5) 0 0 var(--pixel-border-3),
+		0 calc(var(--pixel) * 5) 0 0 var(--pixel-border-3),
+		0 calc(var(--pixel) * -7) 0 calc(var(--pixel) * -1) var(--pixel-border-3),
+		0 calc(var(--pixel) * 7) 0 calc(var(--pixel) * -1) var(--pixel-border-3),
+		0 calc(var(--pixel) * -9) 0 calc(var(--pixel) * -2) var(--pixel-border-3), 
+		0 calc(var(--pixel) * 9) 0 calc(var(--pixel) * -2) var(--pixel-border-3),
+		0 calc(var(--pixel) * -12) 0 calc(var(--pixel) * -4) var(--pixel-border-3), 
+		0 calc(var(--pixel) * 12) 0 calc(var(--pixel) * -4) var(--pixel-border-3),
+		0 calc(var(--pixel) * -15) 0 calc(var(--pixel) * -6) var(--pixel-border-3), 
+		0 calc(var(--pixel) * 15) 0 calc(var(--pixel) * -6) var(--pixel-border-3);
 }
 
 .hidden {
    display: none !important;
 }
 
-.btn * {
+.btn, .btn * {
    cursor: pointer;
 }
 
 .flex-row {
    display: flex;
    flex-direction: row;
+   align-items: center;
+   justify-content: space-around;
+}
+
+.flex-column {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   justify-content: center;
 }
 
 .interactive {
@@ -49,12 +161,11 @@ html {
    border-width: 0;
    box-shadow: rgba(45, 35, 66, 0.4) 0 2px 4px,rgba(45, 35, 66, 0.3) 0 7px 13px -3px,#D6D6E7 0 -3px 0 inset;
    box-sizing: border-box;
-   /* color: #36395A; */
    justify-content: center;
-   line-height: 1;
+   /* line-height: 1; */
    list-style: none;
    overflow: hidden;
-   padding: 0 5px 0 5px;
+   /* padding: 0 5px 0 5px; */
    position: relative;
    text-align: left;
    text-decoration: none;
@@ -82,7 +193,7 @@ html {
 }
 
 .btn-block {
-   height: 2em;
+   /* height: 2em; */
    /* font-size: var(--font-size-main); */
 }
 
@@ -95,9 +206,19 @@ html {
 }
 
 .btn-block a {
-   all: unset;
+   text-decoration: unset;
    text-align: center;
    vertical-align: middle;
+   /* all: unset; */
+}
+
+select {
+   font-family: inherit;
+   font-size: inherit;
+   padding: 0 1em 0 1em;
+}
+select option {
+   padding: inherit;
 }
 
 body {
@@ -110,6 +231,10 @@ body {
    flex-wrap: nowrap;
 }
 
+.font-small {
+   font-size: 0.8rem;
+}
+
 .font-normalsize {
    font-size: 1rem;
 }
@@ -119,7 +244,7 @@ body {
 }
 
 .font-Large {
-   font-size: 1.25rem;
+   font-size: 1.2rem;
 }
 
 .font-LARGE {
@@ -127,17 +252,15 @@ body {
 }
 
 .font-huge {
-   font-size: 1.75rem;
+   font-size: 1.6rem;
 }
 
 .font-Huge {
-   font-size: 2.0rem;
+   font-size: 1.8rem;
 }
 
 .parallax {
-   /* background-repeat: no-repeat;
-   background-position: center;
-   background-position: 50% 50%; */
+
 }
 
 #sidebar {
@@ -158,10 +281,6 @@ body {
    z-index:-1;
 }
 
-.theme-main {
-   background-color: #dde;
-}
-
 .bold {
    font-weight: 600;
 }
@@ -174,3 +293,10 @@ body {
    display: unset;
 }
 
+.language-picker {
+   justify-content: center;   
+}
+
+.language-picker.flex-row span {
+   margin-right: 1rem;
+}

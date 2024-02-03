@@ -16,8 +16,11 @@
 .card-container {
    margin-top: 7px;
    position: relative;
-   animation: anim-card 0.9s cubic-bezier(0.425, 1.14, 0.47, 1.125) forwards;
    flex-direction: column;
+  }
+  
+.card-container.animated-appear {
+    animation: anim-card 0.9s cubic-bezier(0.425, 1.14, 0.47, 1.125) forwards;
 }
 
 .card {
@@ -56,11 +59,14 @@
   /* color: var(--color-font-title-light); */
   width: 95%;
   position: relative;
+  margin-top: 10px;
+  box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.badgescard.animated-appear {
   z-index: -1;
   top: -100px;
-  margin-top: 10px;
   animation: anim-badge 1.5s cubic-bezier(0.425, 1.04, 0.47, 1.105) 0.25s forwards;
-  box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
 }
 
 .badgescard .expand-button {

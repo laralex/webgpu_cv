@@ -9,6 +9,7 @@
    --color-theme-bold: #B0A695;
    --color-theme-accent: #EBE3D5;
    --color-theme-normal: #F3EEEA;
+   --color-theme-normal-alpha: #F3EEEA99;
    --color-font-main: #211515;
    --color-font-title: #4D4637;
    --color-font-title-light: #5A5A5A;
@@ -142,7 +143,6 @@ a:active, a:visited, a:link {
    display: flex;
    flex-direction: row;
    align-items: center;
-   justify-content: space-around;
 }
 
 .flex-column {
@@ -275,6 +275,27 @@ body {
    flex-grow: 10;
 }
 
+.demo-controls {
+   position: relative;
+   width: fit-content;
+   height: 0;
+   top: 1rem;
+   left: 1rem;
+   justify-content: left;
+   align-items: unset;
+   /* align-items: center; */
+}
+
+.demo-controls div {
+   margin-top: 3px;
+   padding-bottom: 2px;
+}
+
+.demo-controls .labeled {
+   background-color: var(--color-theme-normal-alpha);
+   padding-right: 1em;
+}
+
 #main-canvas {
    width: 100%;
    height: 100%;
@@ -293,10 +314,14 @@ body {
    display: unset;
 }
 
-.language-picker {
-   justify-content: center;   
+.language-picker, .graphics-picker {
+
 }
 
 .language-picker.flex-row span {
-   margin-right: 1rem;
+   margin-left: 1rem;
+}
+
+.graphics-picker.flex-row span {
+   margin-left: 1rem;
 }

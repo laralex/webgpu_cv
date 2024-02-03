@@ -1,38 +1,30 @@
 import { wasm_startup, wasm_loop, wasm_resize } from "my-wasm";
-const {div, button, i, label, img, svg, path, input, li, a, option, select, span, ul} = van.tags
+const {div, button, i, label, img, svg, path, input, li, a, option, select, span, ul, h1, h2, h3} = van.tags
 
-const CURRENT_LANGUAGE = van.state("kr");
+const CURRENT_LANGUAGE = van.state("en");
 const ADD_PARALLAX = true;
-// const DEBUG = true;
-const DEBUG = false;
+const DEBUG = true;
+// const DEBUG = false;
 const CANVAS_ID = "main-canvas";
 const UI_STRINGS = getLocalization()
-
-const LANGUAGES = {
-	en: {label: UI_STRINGS['english'], icon: "../assets/flag_GB.png", emoji: "🇬🇧"},
-	ru: {label: UI_STRINGS['russian'], icon: "../assets/flag_RU.png", emoji: "🇷🇺"},
-	kr: {label: UI_STRINGS['korean'], icon: "../assets/flag_RU.png", emoji: "🇰🇷"},
-}
 const CURRENT_GRAPHICS_LEVEL = van.state("medium");
-const GRAPHICS_LEVELS = {
-	low: {label: UI_STRINGS['low'], emoji: "✰✰✰"},
-	medium: {label: UI_STRINGS['medium'], emoji: "★✰✰"},
-	high: {label: UI_STRINGS['high'], emoji: "★★✰"},
-	ultra: {label: UI_STRINGS['ultra'], emoji: "★★★"},
-}
 
-function localize_d(dict) {
-   return dict[CURRENT_LANGUAGE.val];
-}
-
-function localize_ui(key) {
-   if (UI_STRINGS[key] === undefined || UI_STRINGS[key][CURRENT_LANGUAGE.val] === undefined) {
-      return key;
+function localizeUi(key, nullIfMissing = false) {
+   if (!(key in UI_STRINGS)) {
+      return nullIfMissing ? null : key;
+   }
+   if (!(CURRENT_LANGUAGE.val in UI_STRINGS[key])) {
+      return nullIfMissing ? null : UI_STRINGS[key]['en']
    }
    return () => UI_STRINGS[key][CURRENT_LANGUAGE.val];
 }
 
-function LanguagePicker(currentLanguage, isVertical, labelLanguage=undefined, labelStringId='ui_language') {
+function LanguagePicker(currentLanguage, isVertical, tooltipLanguage=undefined, tooltipLabelId='ui_language') {
+   const LANGUAGES = {
+      en: {labelId: 'english', icon: "../assets/flag_GB.png", emoji: "🇬🇧"},
+      ru: {labelId: 'russian', icon: "../assets/flag_RU.png", emoji: "🇷🇺"},
+      kr: {labelId: 'korean', icon: "../assets/flag_RU.png", emoji: "🇰🇷"},
+   }
    function localizePage(language)
    {
       if (! (Object.keys(LANGUAGES).includes(language))) {
@@ -49,37 +41,49 @@ function LanguagePicker(currentLanguage, isVertical, labelLanguage=undefined, la
 			node.style.display = 'unset';
 		});
    }
-   if (!labelLanguage) {
-      labelLanguage = currentLanguage;
+   if (!tooltipLanguage) {
+      tooltipLanguage = currentLanguage;
    }
 	van.derive(() => localizePage(currentLanguage.val));
 	const options = Object.entries(LANGUAGES).map(([language, meta]) =>
       option({ value: language, selected: () => language == currentLanguage.val},
-         () => meta.emoji + " " + meta.label[labelLanguage.val]));
+         () => meta.emoji + " " + UI_STRINGS[meta.labelId][tooltipLanguage.val]));
+   const labelBefore = isVertical ? span(() => UI_STRINGS[tooltipLabelId][tooltipLanguage.val]) : null;
+   const labelAfter = !isVertical ? span(() => UI_STRINGS[tooltipLabelId][tooltipLanguage.val]) : null;
    return () => div(
       { class: 'language-picker ' + (isVertical ? "flex-column" : "flex-row") },
-      span(() => UI_STRINGS[labelStringId][labelLanguage.val]),
+      labelBefore,
       select({
          class: 'interactive btn',
          value: currentLanguage,
          oninput: e => currentLanguage.val = e.target.value,
       }, options,),
+      labelAfter,
    );
 }
 
 function GraphicsLevelPicker(currentGraphicsLevel, isVertical) {
+   const GRAPHICS_LEVELS = {
+      low: {labelId: 'graphics_low', emoji: "✰✰✰"},
+      medium: {labelId: 'graphics_medium', emoji: "★✰✰"},
+      high: {labelId: 'graphics_high', emoji: "★★✰"},
+      ultra: {labelId: 'graphics_ultra', emoji: "★★★"},
+   }
    const options = Object.entries(GRAPHICS_LEVELS).map(([level, meta]) =>
       option({ value: level, selected: () => level == currentGraphicsLevel.val},
-         () => localize_d(meta.label) + " " +  meta.emoji));
+         () => localizeUi(meta.labelId)() + " " +  meta.emoji));
    van.derive(() => console.log("Set graphics_level="+currentGraphicsLevel.val));
+   const labelBefore = isVertical ? span(localizeUi('graphics_levels')) : null;
+   const labelAfter = !isVertical ? span(localizeUi('graphics_levels')) : null;
    return div(
-      { class: 'graphics-picker ' + isVertical ? "flex-column" : "flex-row" },
-      span(localize_ui('graphics_levels')),
+      { class: 'graphics-picker ' + (isVertical ? "flex-column" : "flex-row") },
+      labelBefore,
       select({
          class: 'interactive btn',
          oninput: e => currentGraphicsLevel.val = e.target.value,
          value: currentGraphicsLevel,
       }, options,),
+      labelAfter,
    );
 }
 
@@ -87,8 +91,8 @@ function ResumePdfLink() {
    return button({class:"btn-block interactive btn", role:"button", style:"width:100%"},
       // bxs-download
       i({ class: "bx bxs-file-pdf bx-tada font-Huge", style: "color: var(--color-gmail);"}),
-      a({ class: "font-normalsize", href: localize_ui("pdf_cv_href"), target: "_blank"},
-         () => localize_ui("cv")() + " " + localize_ui("pdf")(),
+      a({ class: "font-normalsize", href: localizeUi("pdf_cv_href"), target: "_blank"},
+         () => localizeUi("cv")() + " " + localizeUi("pdf")(),
          // label({style: "display:block;"}, ),
          // label({style: "display:block;"}, ),
       ));
@@ -99,17 +103,31 @@ function RepositoryLink() {
       a({href: "https://github.com/laralex/my_web_cv", target: "_blank"},
          i({ class: "bx bxl-github", style: "font-size:1.3rem;color: var(--color-github)"}),
          label(" "),
-         label(localize_ui("web_cv_github")),
+         label(localizeUi("web_cv_github")),
       ));
 }
 
+function PersonalCard() {
+   return div({class: "profileinfo"},
+      h1({class: "font-LARGE bold"}, localizeUi("name_surname")),
+      h3(localizeUi("specialty")),
+      div(ul(
+         li(localizeUi("specialty_computer_graphics")),
+         () => localizeUi("specialty_deep_learning", /*nullIfMissing*/ true) ? li(localizeUi("specialty_deep_learning")) : null,
+      )),
+      div({class: "techlist"},
+         (["C++", "Python", "OpenGL", "WebGL", "Android"]
+            .map(text => div({class: "badge"}, text))),
+      ),
+   );
+}
 function MoreSkillsButton() {
    const isExpanded = van.state(false);
    return div({class: "badgescard"},
       button({
          class: "interactive btn font-Large expand-button",
          onclick: e => isExpanded.val = !isExpanded.val,
-      }, i({class: () => isExpanded.val ? "bx bxs-up-arrow" : "bx bxs-down-arrow"}), i(" "), localize_ui("skills_title")),
+      }, i({class: () => isExpanded.val ? "bx bxs-up-arrow" : "bx bxs-down-arrow"}), i(" "), localizeUi("skills_title")),
       div({class: "inside", style: () => isExpanded.val ? "" : "display: none;" },
          // div({class: "icons"},
          //    // img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/opengl/opengl-original.svg" }),
@@ -126,8 +144,8 @@ function MoreSkillsButton() {
             li(span("Rust, C#, Java, JavaScript")),
             li(span("PyTorch, Docker, Qualcomm SNPE")),
             span("Unity, ARCore, Linux, LaTeX"),
-            li(span(localize_ui("skills_languages_1"))),
-            span(localize_ui("skills_languages_2")),
+            li(span(localizeUi("skills_languages_1"))),
+            span(localizeUi("skills_languages_2")),
             ),
       ),
    )
@@ -147,11 +165,11 @@ function CvButton(labelId, rgbString, onclick) {
          class: "interactive btn font-Large expand-button",
          ...style,
          onclick: e => onclick(),
-      }, i({class: () => "bx bxs-up-arrow"}, "\t"), localize_ui(labelId)),
+      }, i({class: () => "bx bxs-up-arrow"}, "\t"), localizeUi(labelId)),
    );
 }
 
-function CvChapter({titleElement, isDefaultActive, rgbString, onclick, extraClasses = "", insideConstructor = () => span(localize_ui("placeholder"))}) {
+function CvChapter({titleElement, isDefaultActive, rgbString, onclick, extraClasses = "", insideConstructor = () => span(localizeUi("placeholder"))}) {
    let style = getBackgroundColorStyle(rgbString);
    return div({class: "cv-chapter " + extraClasses},
       button({
@@ -186,7 +204,7 @@ function CvContent() {
             activeChapter.val = x.id;
          };
          const args = {
-            titleElement: () => span({class: "bold"}, localize_ui(x.id)),
+            titleElement: () => span({class: "bold"}, localizeUi(x.id)),
             isDefaultActive: isActive,
             rgbString: x.color,
             onclick: onChapterActiveChange,
@@ -219,7 +237,7 @@ function CvCareer(chapterArgs) {
             const isActive = van.derive(() => x.id == activeCareer.val);
             const onChange = () => { activeCareer.val = x.id; };
             const titleElement = () => span(
-               localize_ui(x.id),
+               localizeUi(x.id),
                img({src: x.icon, style: "object-fit: contain;height:30px"})
             );
             const args = {
@@ -248,7 +266,7 @@ function CvPublications(chapterArgs) {
          () => ul(Array.from(data, (x) => {
             const isActive = van.derive(() => x.id == active.val);
             const onChange = () => { active.val = x.id; };
-            const args = {titleElement: localize_ui(x.id), isDefaultActive: isActive, rgbString: x.color, onclick: onChange};
+            const args = {titleElement: localizeUi(x.id), isDefaultActive: isActive, rgbString: x.color, onclick: onChange};
             return x.constructor(args);
          })),
       ),
@@ -271,7 +289,7 @@ function CvEducation(chapterArgs) {
             const onChange = () => {
                active.val = x.id;
             };
-            const args = {titleElement: localize_ui(x.id), isDefaultActive: isActive, rgbString: x.color, onclick: onChange};
+            const args = {titleElement: localizeUi(x.id), isDefaultActive: isActive, rgbString: x.color, onclick: onChange};
             return x.constructor(args);
          }))),
    });
@@ -281,13 +299,13 @@ function IntroPopup() {
    const closed = van.state(false);
    return () => closed.val ? null :div({class: "popup retro-box checkerboard-background"},
       div({class: "message font-LARGE"}, LanguagePicker(CURRENT_LANGUAGE, /* vertical */ false, van.state('en'), 'ui_language_intro')),
-      span({class: "message bold font-LARGE"}, localize_ui("intro_hi")),
-      span({class: "message"}, localize_ui("intro_enjoy_resume")),
-      span({class: "message"}, localize_ui("intro_using")), // ""
+      span({class: "message bold font-LARGE"}, localizeUi("intro_hi")),
+      span({class: "message"}, localizeUi("intro_enjoy_resume")),
+      span({class: "message"}, localizeUi("intro_using")), // ""
       div({class: "flex-row wide"},
          div({class: "message flex-column", style: "margin-right: 1.5em;"},
             span(a({href: "https://www.rust-lang.org/", target: "_blank"}, "Rust"), " + ", a({href: "https://www.khronos.org/webgl/", target: "_blank"}, "WebGL2")),
-            span(localize_ui("intro_3d")),
+            span(localizeUi("intro_3d")),
             div({class: "flex-row"},
                a({href: "https://www.rust-lang.org/", target: "_blank"},
                   img({src: "../assets/rust-plain.svg", height:"80"}, "Rust")),
@@ -297,7 +315,7 @@ function IntroPopup() {
          ),
          div({class: "message flex-column", style: "margin-left: 1.5em;"},
             span(a({href: "https://en.wikipedia.org/wiki/JavaScript", target: "_blank"}, "JavaScript"), " + ", a({href: "https://vanjs.org/", target: "_blank"}, "VanJS")),
-            span(localize_ui("intro_frontend")),
+            span(localizeUi("intro_frontend")),
             div({class: "flex-row"},
                a({href: "https://en.wikipedia.org/wiki/JavaScript", target: "_blank"},
                   img({src: "../assets/javascript-original.svg", height:"80", style: "padding:3px;"}, "JavaScript")),
@@ -307,11 +325,11 @@ function IntroPopup() {
          ),
       ),
       div({class: "controls"},
-         button({class: "btn popup-btn font-large", onclick: (e) => closed.val = true }, localize_ui("intro_close")))
+         button({class: "btn popup-btn font-large", onclick: (e) => closed.val = true }, localizeUi("intro_close")))
    )
 }
 
-const addParallax = function({element, sensitivityXY, bgParallax, centerPx, centerBgPx}) {
+function addParallax({element, sensitivityXY, bgParallax, centerPx, centerBgPx}) {
    document.addEventListener("mousemove", parallax);
    function parallax(e) {
        let [cx, cy] = centerPx;
@@ -398,11 +416,15 @@ function js_setup_scrollify() {
 }
 
 
-van.add(document.getElementById("side-top__1"), LanguagePicker(CURRENT_LANGUAGE, /*vertical*/ true, van.state('en')));
-van.add(document.getElementById("side-top__2"), GraphicsLevelPicker(CURRENT_GRAPHICS_LEVEL, /*vertical*/ true));
+van.add(document.getElementById("side-top__1"), LanguagePicker(CURRENT_LANGUAGE, /*vertical*/ false, van.state('en')));
+van.add(document.getElementById("side-top__2"), GraphicsLevelPicker(CURRENT_GRAPHICS_LEVEL, /*vertical*/ false));
 van.add(document.getElementById("side-links__1"), ResumePdfLink());
 van.add(document.getElementById("side-links__2"), RepositoryLink());
 van.add(document.getElementById("side-card"), MoreSkillsButton());
+document.querySelectorAll(".firstinfo").forEach(element => {
+   // console.log(element);
+   van.add(element, PersonalCard())
+});
 // van.add(document.getElementById("side-content"), CvChapter("chapter_career", "#7BD3EA"));
 // van.add(document.getElementById("side-content"), CvChapter("chapter_publications", "#A1EEBD"));
 // van.add(document.getElementById("side-content"), CvChapter("chapter_projects", "#F6F7C4"));
@@ -410,6 +432,10 @@ van.add(document.getElementById("side-card"), MoreSkillsButton());
 van.add(document.getElementById("sidebar"), CvContent());
 if (!DEBUG) {
    van.add(document.body, IntroPopup());
+   document.querySelectorAll(".card-container")
+      .forEach(el => addAppearAnimation(el));
+   document.querySelector(".badgescard")
+      .forEach(el => addAppearAnimation(el));
 }
 const myPhoto = document.getElementById('my-photo');
 if (ADD_PARALLAX) {

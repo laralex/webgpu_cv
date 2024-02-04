@@ -38,6 +38,17 @@ html {
    color: var(--color-font-main);
 }
 
+body {
+   /* height: 100vh; */
+   display: flex;
+   flex-direction: row;
+   /* align-items: center;
+   justify-content: center; */
+   margin: 0;
+   flex-wrap: nowrap;
+   overflow: hidden;
+}
+
 button {
    color: inherit;
    font-weight: inherit;
@@ -142,7 +153,6 @@ a:active, a:visited, a:link {
 .flex-row {
    display: flex;
    flex-direction: row;
-   align-items: center;
 }
 
 .flex-column {
@@ -150,6 +160,12 @@ a:active, a:visited, a:link {
    flex-direction: column;
    align-items: center;
    justify-content: center;
+}
+
+.flex-center {
+   align-items: center;
+   justify-content: center;
+   text-align: center;
 }
 
 .interactive {
@@ -219,16 +235,6 @@ select {
 }
 select option {
    padding: inherit;
-}
-
-body {
-   height: 100%;
-   display: flex;
-   flex-direction: row;
-   /* align-items: center;
-   justify-content: center; */
-   margin: 0;
-   flex-wrap: nowrap;
 }
 
 .font-small {
@@ -315,7 +321,7 @@ body {
 }
 
 .language-picker, .graphics-picker {
-
+   justify-content: space-between;
 }
 
 .language-picker.flex-row span {

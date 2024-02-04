@@ -27,6 +27,22 @@ Util.moveFocus = function (element) {
   }
 };
 
-Util.getIndexInArray = function(array, el) {
-  return Array.prototype.indexOf.call(array, el);
+Util.computeScrollSpeed = function(event, settings){
+  settings = settings || {};
+
+  var timer, delta,
+      delay = settings.delay || 50; // in "ms" (higher means lower fidelity )
+
+  function clear() {
+    delta = 0;
+  }
+
+  clear();
+
+  return function(event){
+    delta = event.deltaY;
+    clearTimeout(timer);
+    timer = setTimeout(clear, delay);
+    return delta;
+  };
 };

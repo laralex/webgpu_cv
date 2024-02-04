@@ -8,12 +8,18 @@ const DEBUG = true;
 const CANVAS_ID = "main-canvas";
 const UI_STRINGS = getLocalization()
 const CURRENT_GRAPHICS_LEVEL = van.state("medium");
+const CURRENT_CV_PAGE = van.state({ level1: "chapter_publications", level2: {
+   "chapter_publications": van.state("publications_wacv_2024"),
+}});
+const CV_PAGE_ORDER = {}
 
 function localizeUi(key, nullIfMissing = false) {
    if (!(key in UI_STRINGS)) {
+      console.log("Missing UI string=" + key);
       return nullIfMissing ? null : key;
    }
    if (!(CURRENT_LANGUAGE.val in UI_STRINGS[key])) {
+      console.log("Missing UI string=" + key + " for language=" + CURRENT_LANGUAGE.val);
       return nullIfMissing ? null : UI_STRINGS[key]['en']
    }
    return () => UI_STRINGS[key][CURRENT_LANGUAGE.val];
@@ -99,7 +105,7 @@ function ResumePdfLink() {
 }
 
 function RepositoryLink() {
-   return button({class:"btn-block interactive btn font-large", role:"button"},
+   return button({class:"btn-block interactive btn font-large", role:"button", style: "width:100%;"},
       a({href: "https://github.com/laralex/my_web_cv", target: "_blank"},
          i({ class: "bx bxl-github", style: "font-size:1.3rem;color: var(--color-github)"}),
          label(" "),
@@ -111,9 +117,9 @@ function PersonalCard() {
    return div({class: "profileinfo"},
       h1({class: "font-LARGE bold"}, localizeUi("name_surname")),
       h3(localizeUi("specialty")),
-      div(ul(
+      div(() => ul(
          li(localizeUi("specialty_computer_graphics")),
-         () => localizeUi("specialty_deep_learning", /*nullIfMissing*/ true) ? li(localizeUi("specialty_deep_learning")) : null,
+         (localizeUi("specialty_deep_learning", /*nullIfMissing*/ true) ? li(localizeUi("specialty_deep_learning")) : null),
       )),
       div({class: "techlist"},
          (["C++", "Python", "OpenGL", "WebGL", "Android"]
@@ -184,58 +190,83 @@ function CvChapter({titleElement, isDefaultActive, rgbString, onclick, extraClas
    );
 }
 
-function CvContent() {
+function CvContent(currentCvPage, chaptersConnections) {
    const chaptersData = [
       { id: "chapter_career", color: "#65E2E6", constructor: CvCareer },
       { id: "chapter_publications", color: "#A1EEBD", constructor: CvPublications },
-      { id: "chapter_projects", color: "#F6F7C4", constructor: CvChapter },
+      { id: "chapter_projects", color: "#F6F7C4", constructor: CvEducation },
       { id: "chapter_education", color: "#F6D6D6", constructor: CvEducation },
    ];
-   const ids = chaptersData.map((x) => x.id);
-   const colors = chaptersData.map((x) => x.color);
-   const activeChapter = van.state(ids[0]);
+   Object.keys(chaptersConnections).forEach(key => { delete chaptersConnections[key]; })
+   for (let i = 0; i < chaptersData.length; i++) {
+      if (!chaptersConnections[chaptersData[i].id]) {
+         chaptersConnections[chaptersData[i].id] = {};
+      }
+      let curChapterCon = chaptersConnections[chaptersData[i].id];
+      if (i > 0) {
+         curChapterCon["__begin__"] = {prev: [chaptersData[i - 1].id, "__end__"]};
+      } else {
+         curChapterCon["__begin__"] = {prev: [chaptersData[i].id, "__begin__"]};
+      }
+      if (i < chaptersData.length - 1) {
+         curChapterCon["__end__"] = {next: [chaptersData[i + 1].id, "__begin__"]};
+      } else {
+         curChapterCon["__end__"] = {next: [chaptersData[i].id, "__end__"]};
+      }
+   }
    return div({class: "cv-content"},
-      // CvButton("button_cv_begin", "#FFF", () => {
-      //    activeChapter.val = ids[0];
-      // }),
       () => ul(Array.from(chaptersData, (x) => {
-         const isActive = van.derive(() => x.id == activeChapter.val);
+         const isActive = van.derive(() => x.id == currentCvPage.val.level1);
          const onChapterActiveChange = () => {
-            activeChapter.val = x.id;
+            currentCvPage.val = { level1: x.id, level2: currentCvPage.val.level2 };
          };
-         const args = {
+         const chapterArgs = {
             titleElement: () => span({class: "bold"}, localizeUi(x.id)),
             isDefaultActive: isActive,
             rgbString: x.color,
             onclick: onChapterActiveChange,
          }
-         const chapter = x.constructor(args);
-         return chapter; }
-      )),
-      // CvButton("button_cv_end", "#FFF", () => {
-      //    activeChapter.val = ids[ids.length - 1];
-      // }),
+         if (!(x.id in currentCvPage.val.level2)) {
+            currentCvPage.val.level2[x.id] = van.state();
+         }
+         const chapter = x.constructor(currentCvPage.val.level2[x.id], chaptersConnections[x.id], x.id, chapterArgs);
+         return chapter;
+      })),
    );
 }
 
-function CvCareer(chapterArgs) {
-   const careersData = [
+function populateConnections(destinationConnections, chapterId, subchapterIds) {
+   destinationConnections["__begin__"].next = [chapterId, subchapterIds[0]];
+   for (let i = 0; i < subchapterIds.length; i++) {
+      if (!destinationConnections[subchapterIds[i]]) {
+         destinationConnections[subchapterIds[i]] = {
+            next: [chapterId, i < subchapterIds.length - 1 ? subchapterIds[i + 1] : "__end__"],
+            prev: [chapterId, i > 0 ? subchapterIds[i - 1] : "__begin__"],
+         };
+      }
+   }
+   destinationConnections["__end__"].prev = [chapterId, subchapterIds[subchapterIds.length - 1]];
+}
+
+function CvCareer(currentCvPage, chapterConnections, chapterId, chapterArgs) {
+   const data = [
       { id: "career_huawei", color: "#65E2E6", constructor: CvChapter, icon: "../assets/huawei-2.svg" },
       { id: "career_samsung", color: "#7BD3EA", constructor: CvChapter, icon: "../assets/samsung.svg" },
       // { id: "career_freelance", color: "#65E2E6", constructor: CvChapter },
       // #64E1E5
    ];
-   const ids = careersData.map((x) => x.id);
-   const colors = careersData.map((x) => x.color);
-   const activeCareer = van.state(ids[0]);
+   populateConnections(chapterConnections, chapterId, data.map(x => x.id));
+   if (!currentCvPage.val) {
+      currentCvPage.val = data[0].id;
+   }
    return CvChapter({...chapterArgs,
       insideConstructor: () => ul(
          // CvButton("button_career_latest", "#FFF", () => {
          //    activeCareer.val = ids[0];
          // }),
-         () => ul(Array.from(careersData, (x) => {
-            const isActive = van.derive(() => x.id == activeCareer.val);
-            const onChange = () => { activeCareer.val = x.id; };
+         () => ul(Array.from(data, (x) => {
+            const isActive = van.derive(() => x.id == currentCvPage.val);
+            const onChange = () => { currentCvPage.val = x.id; };
             const titleElement = () => span(
                localizeUi(x.id),
                img({src: x.icon, style: "object-fit: contain;height:30px"})
@@ -253,19 +284,22 @@ function CvCareer(chapterArgs) {
       });
 }
 
-function CvPublications(chapterArgs) {
+function CvPublications(currentCvPage, chapterConnections, chapterId, chapterArgs) {
    const data = [
       { id: "publications_wacv_2024", color: "#A1EEBD", constructor: CvChapter },
+      { id: "russian", color: "#A1EEBD", constructor: CvChapter },
+      { id: "english", color: "#A1EEBD", constructor: CvChapter },
       // #71BC8E #428D61 #428D61
    ];
-   const ids = data.map((x) => x.id);
-   const colors = data.map((x) => x.color);
-   const active = van.state(ids[0]);
+   populateConnections(chapterConnections, chapterId, data.map(x => x.id));
+   if (!currentCvPage.val) {
+      currentCvPage.val = data[0].id;
+   }
    return CvChapter({...chapterArgs,
       insideConstructor:() => ul(
          () => ul(Array.from(data, (x) => {
-            const isActive = van.derive(() => x.id == active.val);
-            const onChange = () => { active.val = x.id; };
+            const isActive = van.derive(() => x.id == currentCvPage.val);
+            const onChange = () => { currentCvPage.val = x.id; };
             const args = {titleElement: localizeUi(x.id), isDefaultActive: isActive, rgbString: x.color, onclick: onChange};
             return x.constructor(args);
          })),
@@ -273,32 +307,32 @@ function CvPublications(chapterArgs) {
    });
 }
 
-function CvEducation(chapterArgs) {
+function CvEducation(currentCvPage, chapterConnections, chapterId, chapterArgs) {
    const data = [
       { id: "education_master", color: "#F6D6D6", constructor: CvChapter },
       { id: "education_bachelor", color: "#FFCEDD", constructor: CvChapter },
       // #FFC8F2
    ];
-   const ids = data.map((x) => x.id);
-   const colors = data.map((x) => x.color);
-   const active = van.state(ids[0]);
+   populateConnections(chapterConnections, chapterId, data.map(x => x.id));
+   if (!currentCvPage.val) {
+      currentCvPage.val = data[0].id;
+   }
    return CvChapter({...chapterArgs,
       insideConstructor: () => ul(
          () => ul(Array.from(data, (x) => {
-            const isActive = van.derive(() => x.id == active.val);
-            const onChange = () => {
-               active.val = x.id;
-            };
+            const isActive = van.derive(() => x.id == currentCvPage.val);
+            const onChange = () => { currentCvPage.val = x.id; };
             const args = {titleElement: localizeUi(x.id), isDefaultActive: isActive, rgbString: x.color, onclick: onChange};
             return x.constructor(args);
          }))),
    });
 }
 
-function IntroPopup() {
+function IntroPopup({onclose}) {
    const closed = van.state(false);
-   return () => closed.val ? null :div({class: "popup retro-box checkerboard-background"},
-      div({class: "message font-LARGE"}, LanguagePicker(CURRENT_LANGUAGE, /* vertical */ false, van.state('en'), 'ui_language_intro')),
+   van.derive(() => { if (closed.val && onclose) onclose(); });
+   return () => closed.val ? null :div({class: "popup font-large retro-box checkerboard-background"},
+      div({class: "message font-Large"}, LanguagePicker(CURRENT_LANGUAGE, /* vertical */ false, van.state('en'), 'ui_language_intro')),
       span({class: "message bold font-LARGE"}, localizeUi("intro_hi")),
       span({class: "message"}, localizeUi("intro_enjoy_resume")),
       span({class: "message"}, localizeUi("intro_using")), // ""
@@ -310,7 +344,7 @@ function IntroPopup() {
                a({href: "https://www.rust-lang.org/", target: "_blank"},
                   img({src: "../assets/rust-plain.svg", height:"80"}, "Rust")),
                a({href: "https://www.khronos.org/webgl/", target: "_blank"},
-                  img({src: "../assets/WebGL_Logo.svg", height:"60", style: "padding:7px;"}, "WebGL 2"))
+                  img({src: "../assets/WebGL_Logo.svg", height:"70", style: "padding:7px;"}, "WebGL 2"))
             ),
          ),
          div({class: "message flex-column", style: "margin-left: 1.5em;"},
@@ -327,6 +361,25 @@ function IntroPopup() {
       div({class: "controls"},
          button({class: "btn popup-btn font-large", onclick: (e) => closed.val = true }, localizeUi("intro_close")))
    )
+}
+
+function ControlsPopup({onclose}) {
+   const closed = van.state(false);
+   van.derive(() => { if (closed.val && onclose !== undefined) onclose(); });
+   return () => closed.val ? null :div({class: "popup font-large retro-box checkerboard-background"},
+      div({class: "flex-row"},
+         div({class: "message flex-column flex-center ", style: "margin: 1em;"},
+            img({src: "../assets/mouse-wheel-up-down.svg", height:"200"}),
+            span({class: "message", style: "width: 10rem;"}, localizeUi("controls_mouse_wheel")),
+            ),
+         div({class: "message flex-column flex-center", style: "margin: 1em;"},
+            img({src: "../assets/mouse-drag.svg", height:"200"}),
+            span({class: "message", style: "width: 10rem;"}, localizeUi("controls_mouse_move")),
+         )
+      ),
+      div({class: "controls"},
+         button({class: "btn popup-btn font-large", onclick: (e) => closed.val = true }, localizeUi("controls_close")))
+   );
 }
 
 function addParallax({element, sensitivityXY, bgParallax, centerPx, centerBgPx}) {
@@ -415,6 +468,19 @@ function js_setup_scrollify() {
    }
 }
 
+function changeCvPage(nextOrPrev) {
+   console.assert(["next", "prev"].includes(nextOrPrev));
+   const curL1 = CURRENT_CV_PAGE.val.level1;
+   const curL2 = CURRENT_CV_PAGE.val.level2[curL1].val;
+   let [nextL1, nextL2] = CV_PAGE_ORDER[curL1][curL2][nextOrPrev];
+   let maxJumps = 100;
+   while (maxJumps-- && ["__begin__", "__end__"].includes(nextL2)) {
+      [nextL1, nextL2] = CV_PAGE_ORDER[nextL1][nextL2][nextOrPrev];
+   }
+   console.log('!!!', curL2, nextOrPrev, nextL2);
+   CURRENT_CV_PAGE.val.level2[nextL1].val = nextL2;
+   CURRENT_CV_PAGE.val = { level1: nextL1, level2: CURRENT_CV_PAGE.val.level2};
+}
 
 van.add(document.getElementById("side-top__1"), LanguagePicker(CURRENT_LANGUAGE, /*vertical*/ false, van.state('en')));
 van.add(document.getElementById("side-top__2"), GraphicsLevelPicker(CURRENT_GRAPHICS_LEVEL, /*vertical*/ false));
@@ -429,13 +495,17 @@ document.querySelectorAll(".firstinfo").forEach(element => {
 // van.add(document.getElementById("side-content"), CvChapter("chapter_publications", "#A1EEBD"));
 // van.add(document.getElementById("side-content"), CvChapter("chapter_projects", "#F6F7C4"));
 // van.add(document.getElementById("side-content"), CvChapter("chapter_education", "#F6D6D6"));
-van.add(document.getElementById("sidebar"), CvContent());
+van.add(document.getElementById("sidebar"), CvContent(CURRENT_CV_PAGE, CV_PAGE_ORDER));
+console.log('@@@', CV_PAGE_ORDER);
 if (!DEBUG) {
-   van.add(document.body, IntroPopup());
+   van.add(document.body, IntroPopup({onclose: () => {
+      van.add(document.body, ControlsPopup({}));
+   }}));
+   const addAppearAnimation = (el) => Util.addClass(el, 'animated-appear');
    document.querySelectorAll(".card-container")
-      .forEach(el => addAppearAnimation(el));
-   document.querySelector(".badgescard")
-      .forEach(el => addAppearAnimation(el));
+      .forEach(addAppearAnimation);
+   document.querySelectorAll(".badgescard")
+      .forEach(addAppearAnimation);
 }
 const myPhoto = document.getElementById('my-photo');
 if (ADD_PARALLAX) {
@@ -449,6 +519,13 @@ if (ADD_PARALLAX) {
 } else {
    myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png)";
 }
+
+// listen to "scroll" event
+const computScrollSpeed = Util.computeScrollSpeed();
+window.addEventListener('wheel', event => {
+   let wheelSpeed = computScrollSpeed(event);
+   changeCvPage(wheelSpeed > 0 ? "next" : "prev");
+},  { capture: true });
 js_setup_canvas();
 wasm_startup();
 wasm_loop(CANVAS_ID);

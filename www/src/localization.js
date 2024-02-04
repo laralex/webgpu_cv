@@ -42,5 +42,9 @@ function getLocalization() {
       intro_3d: {en: "for 3D graphics", ru: "для 3D графики", kr: "(3D 그래픽)"},
       intro_frontend: {en: "for reactive front-end", ru: "для реактивного фронтенда", kr: "(웹사이트)"},
       intro_close: {en: "Let's go 🚀", ru: "Поехали 🚀", kr: "ㄱㄱ 🚀"},
+      controls_mouse_wheel: {en: "Mouse wheel changes CV chapters", ru: "Колесо мыши - перемещение по резюме", /* kr: "" */},
+      controls_mouse_move: {en: "Mouse movement rotates 3D scene", ru: "Движение мыши - поворот в 3D сцене", /* kr: "" */},
+      controls_close: { en: "OK", ru: "OK", kr: "OK" },
+      // xxx: {en: "", ru: "", kr: ""}б
    };
 }

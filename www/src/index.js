@@ -27,9 +27,9 @@ function localizeUi(key, nullIfMissing = false) {
 
 function LanguagePicker(currentLanguage, isVertical, tooltipLanguage=undefined, tooltipLabelId='ui_language') {
    const LANGUAGES = {
-      en: {labelId: 'english', icon: "../assets/flag_GB.png", emoji: "🇬🇧"},
-      ru: {labelId: 'russian', icon: "../assets/flag_RU.png", emoji: "🇷🇺"},
-      kr: {labelId: 'korean', icon: "../assets/flag_RU.png", emoji: "🇰🇷"},
+      en: {labelId: 'english_en', icon: "../assets/flag_GB.png", emoji: "🇬🇧"},
+      ru: {labelId: 'russian_en', icon: "../assets/flag_RU.png", emoji: "🇷🇺"},
+      kr: {labelId: 'korean_en', icon: "../assets/flag_RU.png", emoji: "🇰🇷"},
    }
    function localizePage(language)
    {

@@ -1,7 +1,9 @@
 function getLocalization() {
    return {
       placeholder: {en: "<TODO>", ru: "<TODO>", kr: "<TODO>"},
-      english: {en: "English", ru: "Английский", kr: "영어"},
+      english_en: {en: "English", ru: "English", kr: "English"},
+      russian_en: {en: "Russian", ru: "Russian", kr: "Russian"},
+      korean_en: {en: "Korean", ru: "Korean", kr: "Korean"},
       russian: {en: "Russian", ru: "Русский", kr: "러시아어" },
       korean: {en: "Korean", ru: "Корейский", kr: "한국어" },
       graphics_low: {en: "Low    ", ru: "Низкое ", kr: "낮음" },
@@ -21,7 +23,7 @@ function getLocalization() {
       web_cv_github: {en: "Source code of this demo", ru: "Исходный код демки", kr: "데모 소스 코드"},
       skills_title: {en: "Extra skills", ru: "Прочие компетенции", kr: "다른 기술들"},
       skills_languages_1: {en: "English 🇬🇧 (C1), Russian 🇷🇺 (N)", ru: "Английский C1 🇬🇧, Корейский A2 🇰🇷", kr: "영어 🇬🇧 (C1), 한국어 🇰🇷 (А2)"},
-      skills_languages_2: {en: "Korean 🇰🇷 (A2), Polish 🇵🇱 (A1)", ru: "Польский A1 🇵🇱, Русский 🇷🇺", kr: "폴란드 🇵🇱 (А1), 러시아 사람 🇷🇺"},
+      skills_languages_2: {en: "Korean 🇰🇷 (A2), Polish 🇵🇱 (A1)", ru: "Польский A1 🇵🇱, Русский 🇷🇺", kr: "폴란드어 🇵🇱 (А1), 러시아 사람 🇷🇺"},
       chapter_career: {en: "Career", ru: "Карьера", kr: "경력"},
       chapter_publications: {en: "Publications", ru: "Публикации", kr: "연구 출판"},
       chapter_projects: {en: "Projects", ru: "Проекты", kr: "프로젝트"},

@@ -1,5 +1,10 @@
 .cv-content {
    margin-top: 10px;
+   width: 100%;
+   height: 100%;
+   flex: 1 1 auto;
+   gap: 0.2rem;
+   align-items: stretch;
 }
 
 .cv-content ul {
@@ -9,6 +14,11 @@
 
 .cv-content .inside {
    background-color: var(--color-theme-accent);
+   transition: max-height 0.5s ease;
+}
+
+.cv-chapter {
+   align-items: stretch;
 }
 
 .cv-chapter .expand-button {
@@ -22,17 +32,37 @@
    width: calc(100% - 30px);
 }
 
+.cv-chapter .inside.smooth {
+   max-height: auto;
+}
+
 .cv-chapter .inside .inside .expand-button {
    margin-left: 60px;
    width: calc(100% - 60px);
 }
 
+.cv-chapter.inactive .inside {
+   display: none;
+}
 
+.cv-chapter.active {
+   /* overflow-y: scroll; */
+   flex: 10 1 auto;
+}
+
+.vert-margin {
+   /* margin: 1em 0; */
+}
+
+.active .inside {
+   flex: 10 1 auto;
+   overflow-y: auto;
+   height: 0;
+}
 
 .cv-chapter, .cv-button {
    width: 100%;
    border: none;
-   margin: 0;
    text-align: center;
    color: var(--color-font-title);
 }

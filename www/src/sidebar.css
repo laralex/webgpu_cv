@@ -21,12 +21,9 @@
 .side-head h1 em {
    font-style: normal;
    font-weight: 600;
-} */
+}
 
 #sidebar .author {
-   /* flex: 1 0 auto;
-   flex-wrap: nowrap; */
-   /* align-items: stretch; */
    align-items: baseline;
 }
 

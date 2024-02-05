@@ -1,5 +1,5 @@
 import { wasm_startup, wasm_loop, wasm_resize } from "my-wasm";
-const {div, button, i, label, img, svg, path, input, li, a, option, select, span, ul, h1, h2, h3} = van.tags
+const {div, button, i, label, img, svg, path, input, details, summary, p, li, a, option, select, span, ul, h1, h2, h3} = van.tags
 
 const CURRENT_LANGUAGE = van.state("en");
 const ADD_PARALLAX = true;
@@ -8,8 +8,8 @@ const DEBUG = true;
 const CANVAS_ID = "main-canvas";
 const UI_STRINGS = getLocalization()
 const CURRENT_GRAPHICS_LEVEL = van.state("medium");
-const CURRENT_CV_PAGE = van.state({ level1: "chapter_publications", level2: {
-   "chapter_publications": van.state("publications_wacv_2024"),
+const CURRENT_CV_PAGE = van.state({ level1: "chapter_career", level2: {
+   "chapter_career": van.state("career_samsung"),
 }});
 const CV_PAGE_ORDER = {}
 
@@ -159,34 +159,41 @@ function MoreSkillsButton() {
 
 function getBackgroundColorStyle(rgbString) {
    if (rgbString) {
-      return { style: `background-color: ${rgbString};` };
+      return `background-color: ${rgbString};`;
    }
-   return {};
+   return "";
 }
 
 function CvButton(labelId, rgbString, onclick) {
-   let style = getBackgroundColorStyle(rgbString);
+   let bg = getBackgroundColorStyle(rgbString);
    return div({class: "cv-button"},
       button({
          class: "interactive btn font-Large expand-button",
-         ...style,
+         style: bg,
          onclick: e => onclick(),
       }, i({class: () => "bx bxs-up-arrow"}, "\t"), localizeUi(labelId)),
    );
 }
 
-function CvChapter({titleElement, isDefaultActive, rgbString, onclick, extraClasses = "", insideConstructor = () => span(localizeUi("placeholder"))}) {
-   let style = getBackgroundColorStyle(rgbString);
-   return div({class: "cv-chapter " + extraClasses},
+function CvChapter({titleElement, isDefaultActive, rgbString, onclick, extraClasses = "", extraActiveClasses = "", insideConstructor = () => span(localizeUi("placeholder"))}) {
+   let bg = () => isDefaultActive.val ? getBackgroundColorStyle(rgbString) : "";
+   return div({class: () => "cv-chapter flex-column " + (isDefaultActive.val ? extraActiveClasses + " active " : "inactive ") + extraClasses},
       button({
          class: "interactive btn font-Large expand-button ",
-         ...style,
+         style: () => bg(),
          onclick: e => { onclick(); },
       }, titleElement),
       div(
-         {class: "inside", style: () => isDefaultActive.val ? "" : "display: none;"},
-         div(insideConstructor)
-      )
+         {class: () => "inside flex-column " + (isDefaultActive.val ? "active " : "inactive "), style: () => bg()},
+         insideConstructor()
+      ),
+      // details({class: "cv-chapter" + extraClasses, /* ontoggle: e => { if (e.target.open) onclick(); } */ open: () => isDefaultActive.val ? "true" : undefined },
+      //    summary({class: "interactive btn font-Large expand-button ", ...style}, titleElement),
+      //    div(
+      //       {class: "inside", /* style: () =>  ? "" : "display: none, */ },
+      //       div(insideConstructor)
+      //    )
+      // )
    );
 }
 
@@ -194,7 +201,7 @@ function CvContent(currentCvPage, chaptersConnections) {
    const chaptersData = [
       { id: "chapter_career", color: "#65E2E6", constructor: CvCareer },
       { id: "chapter_publications", color: "#A1EEBD", constructor: CvPublications },
-      { id: "chapter_projects", color: "#F6F7C4", constructor: CvEducation },
+      { id: "chapter_projects", color: "#F6F7C4", constructor: CvProjects },
       { id: "chapter_education", color: "#F6D6D6", constructor: CvEducation },
    ];
    Object.keys(chaptersConnections).forEach(key => { delete chaptersConnections[key]; })
@@ -214,14 +221,20 @@ function CvContent(currentCvPage, chaptersConnections) {
          curChapterCon["__end__"] = {next: [chaptersData[i].id, "__end__"]};
       }
    }
-   return div({class: "cv-content"},
-      () => ul(Array.from(chaptersData, (x) => {
+   return div({class: "cv-content flex-column"},
+      Array.from(chaptersData, (x) => {
          const isActive = van.derive(() => x.id == currentCvPage.val.level1);
          const onChapterActiveChange = () => {
             currentCvPage.val = { level1: x.id, level2: currentCvPage.val.level2 };
          };
          const chapterArgs = {
-            titleElement: () => span({class: "bold"}, localizeUi(x.id)),
+            titleElement: () => isActive.val ?
+               span({class: "bold"},
+               i({class: "bx bxs-chevron-right"}), i({class: "bx bxs-chevron-right"}), i({class: "bx bxs-chevron-right"}),
+               localizeUi(x.id),
+               i({class: "bx bxs-chevron-left"}), i({class: "bx bxs-chevron-left"}), i({class: "bx bxs-chevron-left"}),
+               ) : span(localizeUi(x.id)),
+            extraActiveClasses: "vert-margin",
             isDefaultActive: isActive,
             rgbString: x.color,
             onclick: onChapterActiveChange,
@@ -231,7 +244,7 @@ function CvContent(currentCvPage, chaptersConnections) {
          }
          const chapter = x.constructor(currentCvPage.val.level2[x.id], chaptersConnections[x.id], x.id, chapterArgs);
          return chapter;
-      })),
+      }),
    );
 }
 
@@ -251,7 +264,7 @@ function populateConnections(destinationConnections, chapterId, subchapterIds) {
 function CvCareer(currentCvPage, chapterConnections, chapterId, chapterArgs) {
    const data = [
       { id: "career_huawei", color: "#65E2E6", constructor: CvChapter, icon: "../assets/huawei-2.svg" },
-      { id: "career_samsung", color: "#7BD3EA", constructor: CvChapter, icon: "../assets/samsung.svg" },
+      { id: "career_samsung", color: "#7BD3EA", constructor: CvSamsung, icon: "../assets/samsung.svg" },
       // { id: "career_freelance", color: "#65E2E6", constructor: CvChapter },
       // #64E1E5
    ];
@@ -260,11 +273,11 @@ function CvCareer(currentCvPage, chapterConnections, chapterId, chapterArgs) {
       currentCvPage.val = data[0].id;
    }
    return CvChapter({...chapterArgs,
-      insideConstructor: () => ul(
+      insideConstructor: () =>
          // CvButton("button_career_latest", "#FFF", () => {
          //    activeCareer.val = ids[0];
          // }),
-         () => ul(Array.from(data, (x) => {
+         Array.from(data, (x) => {
             const isActive = van.derive(() => x.id == currentCvPage.val);
             const onChange = () => { currentCvPage.val = x.id; };
             const titleElement = () => span(
@@ -276,17 +289,31 @@ function CvCareer(currentCvPage, chapterConnections, chapterId, chapterArgs) {
                rgbString: x.color, onclick: onChange};
             const chapter = x.constructor(args);
             return chapter;
-         })),
+         }),
          // CvButton("button_career_earliest", "#FFF", () => {
          //    activeCareer.val = ids[ids.length - 1];
          // })
-      ),
       });
+}
+
+function CvSamsung(chapterArgs) {
+   chapterArgs.insideConstructor = () => {
+      return div({class: "font-small smooth"},
+         p("This detail element requires the use of the height and transition attributes to open smoothly. The downside to this is that it's less flexible since you must know how long the content will be in order to display content properly"),
+         p("Max-height will only work for opening the collapsible, but not for closing it. Closure using max-height will cause the element to close mostly like the default version, but slightly collapse at the end. This is due to changes to the <code>&lt;slot&gt;</code> made when opening and closing the details."),
+         p("The slot's inline styling is changed to include content-visibility: hidden, which functions similarly to display: none in that it just removes the content from the layout and removes visibility."),
+         p("the slot belongs to the user-agent shadow DOM, and is seemingly unable to be targeted using the slot or ::slotted() CSS selectors. Need to do more research"),
+         p("the slot belongs to the user-agent shadow DOM, and is seemingly unable to be targeted using the slot or ::slotted() CSS selectors. Need to do more research"),
+         p("the slot belongs to the user-agent shadow DOM, and is seemingly unable to be targeted using the slot or ::slotted() CSS selectors. Need to do more research"),
+         p("the slot belongs to the user-agent shadow DOM, and is seemingly unable to be targeted using the slot or ::slotted() CSS selectors. Need to do more research"),
+       )
+   }
+   return CvChapter(chapterArgs);
 }
 
 function CvPublications(currentCvPage, chapterConnections, chapterId, chapterArgs) {
    const data = [
-      { id: "publications_wacv_2024", color: "#A1EEBD", constructor: CvChapter },
+      { id: "publications_wacv_2024", color: "#A1EEBD", constructor: CvSamsung },
       { id: "russian", color: "#A1EEBD", constructor: CvChapter },
       { id: "english", color: "#A1EEBD", constructor: CvChapter },
       // #71BC8E #428D61 #428D61
@@ -296,13 +323,36 @@ function CvPublications(currentCvPage, chapterConnections, chapterId, chapterArg
       currentCvPage.val = data[0].id;
    }
    return CvChapter({...chapterArgs,
-      insideConstructor:() => ul(
-         () => ul(Array.from(data, (x) => {
+      insideConstructor: () =>
+         Array.from(data, (x) => {
             const isActive = van.derive(() => x.id == currentCvPage.val);
             const onChange = () => { currentCvPage.val = x.id; };
             const args = {titleElement: localizeUi(x.id), isDefaultActive: isActive, rgbString: x.color, onclick: onChange};
             return x.constructor(args);
-         })),
+         },
+      ),
+   });
+}
+
+function CvProjects(currentCvPage, chapterConnections, chapterId, chapterArgs) {
+   const data = [
+      { id: "This CV", color: "#F6F7C4", constructor: CvSamsung },
+      { id: "Unity 4X strategy volunteer", color: "#FFE6A8", constructor: CvChapter },
+      { id: "Image processing tool", color: "#FFD196", constructor: CvChapter },
+      // #FFB993
+   ];
+   populateConnections(chapterConnections, chapterId, data.map(x => x.id));
+   if (!currentCvPage.val) {
+      currentCvPage.val = data[0].id;
+   }
+   return CvChapter({...chapterArgs,
+      insideConstructor: () =>
+         Array.from(data, (x) => {
+            const isActive = van.derive(() => x.id == currentCvPage.val);
+            const onChange = () => { currentCvPage.val = x.id; };
+            const args = {titleElement: localizeUi(x.id), isDefaultActive: isActive, rgbString: x.color, onclick: onChange};
+            return x.constructor(args);
+         },
       ),
    });
 }
@@ -310,7 +360,7 @@ function CvPublications(currentCvPage, chapterConnections, chapterId, chapterArg
 function CvEducation(currentCvPage, chapterConnections, chapterId, chapterArgs) {
    const data = [
       { id: "education_master", color: "#F6D6D6", constructor: CvChapter },
-      { id: "education_bachelor", color: "#FFCEDD", constructor: CvChapter },
+      { id: "education_bachelor", color: "#FFCEDD", constructor: CvSamsung },
       // #FFC8F2
    ];
    populateConnections(chapterConnections, chapterId, data.map(x => x.id));
@@ -318,13 +368,13 @@ function CvEducation(currentCvPage, chapterConnections, chapterId, chapterArgs) 
       currentCvPage.val = data[0].id;
    }
    return CvChapter({...chapterArgs,
-      insideConstructor: () => ul(
-         () => ul(Array.from(data, (x) => {
+      insideConstructor: () =>
+         Array.from(data, (x) => {
             const isActive = van.derive(() => x.id == currentCvPage.val);
             const onChange = () => { currentCvPage.val = x.id; };
             const args = {titleElement: localizeUi(x.id), isDefaultActive: isActive, rgbString: x.color, onclick: onChange};
             return x.constructor(args);
-         }))),
+         }),
    });
 }
 
@@ -332,7 +382,7 @@ function IntroPopup({onclose}) {
    const closed = van.state(false);
    van.derive(() => { if (closed.val && onclose) onclose(); });
    return () => closed.val ? null :div({class: "popup font-large retro-box checkerboard-background"},
-      div({class: "message font-Large"}, LanguagePicker(CURRENT_LANGUAGE, /* vertical */ false, van.state('en'), 'ui_language_intro')),
+      div({class: "message font-Large"}, LanguagePicker(CURRENT_LANGUAGE, /* vertical */ false, undefined, 'ui_language_intro')),
       span({class: "message bold font-LARGE"}, localizeUi("intro_hi")),
       span({class: "message"}, localizeUi("intro_enjoy_resume")),
       span({class: "message"}, localizeUi("intro_using")), // ""
@@ -382,21 +432,22 @@ function ControlsPopup({onclose}) {
    );
 }
 
-function addParallax({element, sensitivityXY, bgParallax, centerPx, centerBgPx}) {
+function addParallax({element, sensitivityXY, parallaxes, centers}) {
    document.addEventListener("mousemove", parallax);
    function parallax(e) {
-       let [cx, cy] = centerPx;
-       let [cbx, cby] = centerBgPx;
        let [sx, sy] = sensitivityXY;
        let _w = window.innerWidth/2;
        let _h = window.innerHeight/2;
        let _mouseX = e.clientX;
        let _mouseY = e.clientY;
-       let _depth = `${cx + (_mouseX - _w) * sx}px ${Math.max(cy + _mouseY * sy, 0)}px`;
-       let _depthbg = `${cbx + (_mouseX - _w) * sx * bgParallax}px ${cby + Math.max(_mouseY * sy * bgParallax, 0)}px`;
-       let x = `${_depth}, ${_depthbg}`;
-       element.style.backgroundPosition = x;
-       element.style.backgroundScale = "cover, 200%";
+       let bgPositions = parallaxes.map(function(parallax, i) {
+         let [cx, cy] = centers[i];
+         return `${cx + (_mouseX - _w) * sx * parallax}px ${cy + Math.max(_mouseY * sy * parallax, 0)}px`;
+       }).join(',');
+      //  let _depth = `${cx + (_mouseX - _w) * sx}px ${Math.max(cy + _mouseY * sy, 0)}px`;
+      //  let _depthbg = ``;
+      //  let x = `${_depth}, ${_depthbg}`;
+       element.style.backgroundPosition = bgPositions;
    }
 }
 
@@ -473,16 +524,18 @@ function changeCvPage(nextOrPrev) {
    const curL1 = CURRENT_CV_PAGE.val.level1;
    const curL2 = CURRENT_CV_PAGE.val.level2[curL1].val;
    let [nextL1, nextL2] = CV_PAGE_ORDER[curL1][curL2][nextOrPrev];
-   let maxJumps = 100;
-   while (maxJumps-- && ["__begin__", "__end__"].includes(nextL2)) {
+   let maxJumps = 64;
+   while (maxJumps-- >= 0 && ["__begin__", "__end__"].includes(nextL2)) {
       [nextL1, nextL2] = CV_PAGE_ORDER[nextL1][nextL2][nextOrPrev];
    }
-   console.log('!!!', curL2, nextOrPrev, nextL2);
+   if (maxJumps <= 0) {
+      return;
+   }
    CURRENT_CV_PAGE.val.level2[nextL1].val = nextL2;
    CURRENT_CV_PAGE.val = { level1: nextL1, level2: CURRENT_CV_PAGE.val.level2};
 }
 
-van.add(document.getElementById("side-top__1"), LanguagePicker(CURRENT_LANGUAGE, /*vertical*/ false, van.state('en')));
+van.add(document.getElementById("side-top__1"), LanguagePicker(CURRENT_LANGUAGE, /*vertical*/ false));
 van.add(document.getElementById("side-top__2"), GraphicsLevelPicker(CURRENT_GRAPHICS_LEVEL, /*vertical*/ false));
 van.add(document.getElementById("side-links__1"), ResumePdfLink());
 van.add(document.getElementById("side-links__2"), RepositoryLink());
@@ -510,12 +563,14 @@ if (!DEBUG) {
 const myPhoto = document.getElementById('my-photo');
 if (ADD_PARALLAX) {
    // myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png), url(../assets/bg6-min.png)";
-   myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png), url(../assets/bg10-min.png)";
-   myPhoto.style.backgroundSize = "cover, 150%";
+   myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png), url(../assets/clouds.png), url(../assets/cloud2.png), url(../assets/moon.png), url(../assets/bg10-min.png)";
+   myPhoto.style.backgroundSize = "cover, 0%, 0%, 25%, 150%";
+   myPhoto.style.backgroundScale = "cover, 100%, 60%, 25%, 150%";
    // myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png)";
    addParallax({
-      element: myPhoto, sensitivityXY: [0.012, 0.007], bgParallax: 0.25,
-      centerPx: [0, 0], centerBgPx: [-10, -5]});
+      element: myPhoto, sensitivityXY: [0.015, 0.010],
+      parallaxes: [1.0, 0.6, 0.4, 0.3, 0.15], centers: [[0, 0], [0, -10], [75, 10], [100, 5], [-10, -5]]
+   });
 } else {
    myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png)";
 }

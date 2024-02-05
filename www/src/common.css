@@ -238,7 +238,7 @@ select option {
 }
 
 .font-small {
-   font-size: 0.8rem;
+   font-size: 0.9rem;
 }
 
 .font-normalsize {
@@ -267,6 +267,27 @@ select option {
 
 .parallax {
 
+}
+
+.content {
+   height: 100%;
+   overflow: hidden;
+ }
+ 
+details.smooth {
+   width: 100%;
+   overflow: hidden;
+   margin-bottom: 2.5rem;
+   height: 20px;
+}
+
+details.smooth[open] {
+   height: 300px;
+   padding-bottom: 100px;
+}
+
+.smooth {
+   transition: height 0.3s ease-in-out;
 }
 
 #sidebar {

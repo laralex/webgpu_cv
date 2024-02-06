@@ -104,6 +104,44 @@ function ResumePdfLink() {
       ));
 }
 
+function ResizeTooltip({timeoutMillisec}) {
+   const resizeElement = document.getElementById("resize-border");
+   const sidebar = document.getElementById("sidebar");
+   const shouldHide = van.state(false);
+   setTimeout(() => shouldHide.val = true, timeoutMillisec);
+   let m_pos;
+
+   function pauseEvent(e){
+      if(e.stopPropagation) e.stopPropagation();
+      if(e.preventDefault) e.preventDefault();
+      e.cancelBubble=true;
+      e.returnValue=false;
+      return false;
+   }
+
+   function resize(e){
+      const dx = e.x - m_pos;
+      m_pos = e.x;
+      sidebar.style.flexBasis = (parseInt(getComputedStyle(sidebar, '').flexBasis) + dx) + "px";
+      shouldHide.val = true;
+      return pauseEvent(e);
+   }
+
+   resizeElement.addEventListener("mousedown", function(e){
+      if (e.offsetX >= 0) {
+         m_pos = e.x;
+         document.addEventListener("mousemove", resize, false);
+      }
+   }, false);
+
+   document.addEventListener("mouseup", function(){
+      console.log("mouseup")
+      document.removeEventListener("mousemove", resize, false);
+   }, false);
+   
+   return () => shouldHide.val ? null : div({class: "bubble shadow left", onclick: (e) => shouldHide.val = true}, localizeUi("resize_tooltip"));
+}
+
 function RepositoryLink() {
    return button({class:"btn-block interactive btn font-large", role:"button", style: "width:100%;"},
       a({href: "https://github.com/laralex/my_web_cv", target: "_blank"},
@@ -175,7 +213,7 @@ function CvButton(labelId, rgbString, onclick) {
    );
 }
 
-function CvChapter({titleElement, isDefaultActive, rgbString, onclick, extraClasses = "", extraActiveClasses = "", insideConstructor = () => span(localizeUi("placeholder"))}) {
+function CvChapter({titleElement, isDefaultActive, rgbString, onclick, extraClasses = "", extraActiveClasses = "", extraInsideClasses = "", insideConstructor = () => span(localizeUi("placeholder"))}) {
    let bg = () => isDefaultActive.val ? getBackgroundColorStyle(rgbString) : "";
    return div({class: () => "cv-chapter flex-column " + (isDefaultActive.val ? extraActiveClasses + " active " : "inactive ") + extraClasses},
       button({
@@ -184,7 +222,7 @@ function CvChapter({titleElement, isDefaultActive, rgbString, onclick, extraClas
          onclick: e => { onclick(); },
       }, titleElement),
       div(
-         {class: () => "inside flex-column " + (isDefaultActive.val ? "active " : "inactive "), style: () => bg()},
+         {class: () => extraInsideClasses + " inside flex-column " + (isDefaultActive.val ? "active " : "inactive "), style: () => bg()},
          insideConstructor()
       ),
       // details({class: "cv-chapter" + extraClasses, /* ontoggle: e => { if (e.target.open) onclick(); } */ open: () => isDefaultActive.val ? "true" : undefined },
@@ -286,6 +324,7 @@ function CvCareer(currentCvPage, chapterConnections, chapterId, chapterArgs) {
             );
             const args = {
                titleElement: titleElement, isDefaultActive: isActive,
+               extraInsideClasses: "cv-text",
                rgbString: x.color, onclick: onChange};
             const chapter = x.constructor(args);
             return chapter;
@@ -327,7 +366,8 @@ function CvPublications(currentCvPage, chapterConnections, chapterId, chapterArg
          Array.from(data, (x) => {
             const isActive = van.derive(() => x.id == currentCvPage.val);
             const onChange = () => { currentCvPage.val = x.id; };
-            const args = {titleElement: localizeUi(x.id), isDefaultActive: isActive, rgbString: x.color, onclick: onChange};
+            const args = {titleElement: localizeUi(x.id), extraInsideClasses: "cv-text",
+               isDefaultActive: isActive, rgbString: x.color, onclick: onChange};
             return x.constructor(args);
          },
       ),
@@ -350,7 +390,8 @@ function CvProjects(currentCvPage, chapterConnections, chapterId, chapterArgs) {
          Array.from(data, (x) => {
             const isActive = van.derive(() => x.id == currentCvPage.val);
             const onChange = () => { currentCvPage.val = x.id; };
-            const args = {titleElement: localizeUi(x.id), isDefaultActive: isActive, rgbString: x.color, onclick: onChange};
+            const args = {titleElement: localizeUi(x.id), extraInsideClasses: "cv-text",
+               isDefaultActive: isActive, rgbString: x.color, onclick: onChange};
             return x.constructor(args);
          },
       ),
@@ -372,7 +413,8 @@ function CvEducation(currentCvPage, chapterConnections, chapterId, chapterArgs) 
          Array.from(data, (x) => {
             const isActive = van.derive(() => x.id == currentCvPage.val);
             const onChange = () => { currentCvPage.val = x.id; };
-            const args = {titleElement: localizeUi(x.id), isDefaultActive: isActive, rgbString: x.color, onclick: onChange};
+            const args = {titleElement: localizeUi(x.id), extraInsideClasses: "cv-text",
+               isDefaultActive: isActive, rgbString: x.color, onclick: onChange};
             return x.constructor(args);
          }),
    });
@@ -467,57 +509,13 @@ function js_setup_canvas() {
    resizeCanvas();
 }
 
-function js_setup_scrollify() {
-   $(document).ready(function () {
-      screenCheck();
-
-      $('.scroll-control .one').click(function () {
-         $.scrollify.move('#s-one');
-      });
-      $('.scroll-control .two').click(function () {
-         $.scrollify.move('#s-two');
-      });
-      $('.scroll-control .three').click(function () {
-         $.scrollify.move('#s-three');
-      });
-   });
-
-   $(window).on('resize', function () {
-      screenCheck();
-   });
-
-   function applyScroll() {
-      $.scrollify({
-         section: '.scroll',
-         sectionName: 'section-name',
-         standardScrollElements: 'canvas',
-         easing: 'easeOutExpo',
-         scrollSpeed: 200,
-         offset: 0,
-         scrollbars: true,
-         setHeights: false,
-         overflowScroll: true,
-         updateHash: false,
-         touchScroll: true,
-      });
+function isScrolled(e) {
+   if (e.offsetHeight + e.scrollTop >= e.scrollHeight) {
+      changeCvPage("next");
+   } else if (e.offsetHeight <= e.scrollTop) {
+      changeCvPage("prev");
    }
-
-   function screenCheck() {
-      var deviceAgent = navigator.userAgent.toLowerCase();
-      var agentID = deviceAgent.match(/(iphone|ipod|ipad)/);
-      if (agentID || $(window).width() <= 1024) {
-         // its mobile screen
-         $.scrollify.destroy();
-         $('section').removeClass('scroll').removeAttr('style');
-         $.scrollify.disable();
-      } else {
-         // its desktop
-         $('section').addClass('scroll');
-         applyScroll();
-         $.scrollify.enable();
-      }
-   }
-}
+ }
 
 function changeCvPage(nextOrPrev) {
    console.assert(["next", "prev"].includes(nextOrPrev));
@@ -540,6 +538,7 @@ van.add(document.getElementById("side-top__2"), GraphicsLevelPicker(CURRENT_GRAP
 van.add(document.getElementById("side-links__1"), ResumePdfLink());
 van.add(document.getElementById("side-links__2"), RepositoryLink());
 van.add(document.getElementById("side-card"), MoreSkillsButton());
+van.add(document.getElementById("resize-tooltip"), ResizeTooltip({timeoutMillisec: 5000}));
 document.querySelectorAll(".firstinfo").forEach(element => {
    // console.log(element);
    van.add(element, PersonalCard())

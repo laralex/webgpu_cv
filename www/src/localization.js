@@ -47,6 +47,7 @@ function getLocalization() {
       controls_mouse_wheel: {en: "Mouse wheel changes CV chapters", ru: "Колесо мыши - перемещение по резюме", /* kr: "" */},
       controls_mouse_move: {en: "Mouse movement rotates 3D scene", ru: "Движение мыши - поворот в 3D сцене", /* kr: "" */},
       controls_close: { en: "OK", ru: "OK", kr: "OK" },
-      // xxx: {en: "", ru: "", kr: ""}б
+      resize_tooltip: { en: "Resize by dragging the border", ru: "Потянув за границу, можно настроить ширину", kr: "테두리를 끌으면 크기가 바꿉니다" },
+      // xxx: {en: "", ru: "", kr: ""},
    };
 }

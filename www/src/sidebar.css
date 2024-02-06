@@ -5,13 +5,25 @@
    /* position: absolute; */
    display: flex;
    flex-direction: column;
-   flex: 1 0 var(--sidebar-width);
+   flex: 1 1 var(--sidebar-width);
+   min-width: var(--sidebar-width);
    top: 0;
    left: 0;
    height: 100vh;
    background-color: var(--color-theme-normal);
    padding: .4rem .8rem;
    box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2) inset;
+   /* resize: horizontal;
+   overflow-x: auto; */
+}
+
+#resize-border {
+   flex: 0 0 calc(var(--pixel) * 3);
+   content: '';
+   position: relative;
+   left: 0;
+   /* height: 1000%; */
+   cursor: ew-resize;
 }
 
 #side-top .flex-block {
@@ -50,4 +62,42 @@
 
 #sidebar.active ul li .tooltip {
    display: none;
+}
+
+#resize-tooltip {
+   width: 0;
+}
+
+/* https://freefrontend.com/css-speech-bubbles/ */
+/* https://codepen.io/josfabre/pen/EBMWwW */
+.bubble {
+   position: relative;
+   display: inline-block;
+   margin-left: 2em;
+   top: 20%;
+   text-align: center;
+   background-color: var(--color-theme-normal);
+   padding: 12px;
+   box-shadow: 0 -4px var(--color-theme-accent), 0 -8px var(--color-theme-bold), 4px 0 var(--color-theme-accent), 4px -4px var(--color-theme-bold), 8px 0 var(--color-theme-bold), 0 4px var(--color-theme-accent), 0 8px var(--color-theme-bold), -4px 0 var(--color-theme-accent), -4px 4px var(--color-theme-bold), -8px 0 var(--color-theme-bold), -4px -4px var(--color-theme-bold), 4px 4px var(--color-theme-bold);
+   box-sizing: border-box;
+   min-width: 200px;
+   width: initial;
+}
+.bubble::after {
+   content: "";
+   display: block;
+   position: absolute;
+   box-sizing: border-box;
+}
+.bubble.shadow {
+   box-shadow: 0 -4px var(--color-theme-accent), 0 -8px var(--color-theme-bold), 4px 0 var(--color-theme-accent), 4px -4px var(--color-theme-bold), 8px 0 var(--color-theme-bold), 0 4px var(--color-theme-accent), 0 8px var(--color-theme-bold), -4px 0 var(--color-theme-accent), -4px 4px var(--color-theme-bold), -8px 0 var(--color-theme-bold), -4px -4px var(--color-theme-bold), 4px 4px var(--color-theme-bold), 4px 12px rgba(0, 0, 0, 0.1), 12px 4px rgba(0, 0, 0, 0.1), 8px 8px rgba(0, 0, 0, 0.1);
+}
+
+.bubble.left::after {
+   height: 4px;
+   width: 4px;
+   top: 20px;
+   left: -8px;
+   background: var(--color-theme-normal);
+   box-shadow: -4px -4px var(--color-theme-accent), -4px 0 var(--color-theme-accent), -8px 0 var(--color-theme-accent), 0 -8px var(--color-theme-accent), -4px 4px var(--color-theme-bold), -8px 4px var(--color-theme-bold), -12px 4px var(--color-theme-bold), -16px 4px var(--color-theme-bold), -12px 0 var(--color-theme-bold), -8px -4px var(--color-theme-bold), -4px -8px var(--color-theme-bold), 0 -4px var(--color-theme-accent);
 }

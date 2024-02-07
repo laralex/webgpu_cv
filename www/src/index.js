@@ -3,8 +3,8 @@ const {div, button, i, label, img, svg, path, input, details, summary, p, li, a,
 
 const CURRENT_LANGUAGE = van.state("en");
 const ADD_PARALLAX = true;
-const DEBUG = true;
-// const DEBUG = false;
+// const DEBUG = true;
+const DEBUG = false;
 const CANVAS_ID = "main-canvas";
 const UI_STRINGS = getLocalization()
 const CURRENT_GRAPHICS_LEVEL = van.state("medium");
@@ -186,10 +186,8 @@ function MoreSkillsButton() {
          //    ),
          ul(
             li(span("Rust, C#, Java, JavaScript")),
-            li(span("PyTorch, Docker, Qualcomm SNPE")),
-            span("Unity, ARCore, Linux, LaTeX"),
+            li(span("PyTorch, Docker, Qualcomm\xa0SNPE, Unity, ARCore, Linux, LaTeX")),
             li(span(localizeUi("skills_languages_1"))),
-            span(localizeUi("skills_languages_2")),
             ),
       ),
    )
@@ -537,12 +535,12 @@ van.add(document.getElementById("side-top__1"), LanguagePicker(CURRENT_LANGUAGE,
 van.add(document.getElementById("side-top__2"), GraphicsLevelPicker(CURRENT_GRAPHICS_LEVEL, /*vertical*/ false));
 van.add(document.getElementById("side-links__1"), ResumePdfLink());
 van.add(document.getElementById("side-links__2"), RepositoryLink());
-van.add(document.getElementById("side-card"), MoreSkillsButton());
 van.add(document.getElementById("resize-tooltip"), ResizeTooltip({timeoutMillisec: 5000}));
 document.querySelectorAll(".firstinfo").forEach(element => {
    // console.log(element);
    van.add(element, PersonalCard())
 });
+van.add(document.getElementById("side-card-info"), MoreSkillsButton());
 // van.add(document.getElementById("side-content"), CvChapter("chapter_career", "#7BD3EA"));
 // van.add(document.getElementById("side-content"), CvChapter("chapter_publications", "#A1EEBD"));
 // van.add(document.getElementById("side-content"), CvChapter("chapter_projects", "#F6F7C4"));

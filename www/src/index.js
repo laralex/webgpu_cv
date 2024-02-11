@@ -3,8 +3,8 @@ const {div, button, i, label, img, svg, path, input, details, summary, p, li, a,
 
 const CURRENT_LANGUAGE = van.state("en");
 const ADD_PARALLAX = true;
-// const DEBUG = true;
-const DEBUG = false;
+const DEBUG = true;
+// const DEBUG = false;
 const CANVAS_ID = "main-canvas";
 const UI_STRINGS = getLocalization()
 const CURRENT_GRAPHICS_LEVEL = van.state("medium");
@@ -212,15 +212,15 @@ function CvButton(labelId, rgbString, onclick) {
 }
 
 function CvChapter({titleElement, isDefaultActive, rgbString, onclick, extraClasses = "", extraActiveClasses = "", extraInsideClasses = "", insideConstructor = () => span(localizeUi("placeholder"))}) {
-   let bg = () => isDefaultActive.val ? getBackgroundColorStyle(rgbString) : "";
-   return div({class: () => "cv-chapter flex-column " + (isDefaultActive.val ? extraActiveClasses + " active " : "inactive ") + extraClasses},
+   let bg = () => getBackgroundColorStyle(rgbString); //isDefaultActive.val ? getBackgroundColorStyle(rgbString) : "";
+   return div({class: () => "cv-chapter flex-column smooth" + (isDefaultActive.val ? extraActiveClasses + " active " : " inactive ") + extraClasses},
       button({
          class: "interactive btn font-Large expand-button ",
          style: () => bg(),
          onclick: e => { onclick(); },
       }, titleElement),
       div(
-         {class: () => extraInsideClasses + " inside flex-column " + (isDefaultActive.val ? "active " : "inactive "), style: () => bg()},
+         {class: () => extraInsideClasses + " inside flex-column " + (isDefaultActive.val ? " active " : " inactive "), style: () => bg()},
          insideConstructor()
       ),
       // details({class: "cv-chapter" + extraClasses, /* ontoggle: e => { if (e.target.open) onclick(); } */ open: () => isDefaultActive.val ? "true" : undefined },
@@ -335,7 +335,7 @@ function CvCareer(currentCvPage, chapterConnections, chapterId, chapterArgs) {
 
 function CvSamsung(chapterArgs) {
    chapterArgs.insideConstructor = () => {
-      return div({class: "font-small smooth"},
+      return div({class: "font-small"},
          p("This detail element requires the use of the height and transition attributes to open smoothly. The downside to this is that it's less flexible since you must know how long the content will be in order to display content properly"),
          p("Max-height will only work for opening the collapsible, but not for closing it. Closure using max-height will cause the element to close mostly like the default version, but slightly collapse at the end. This is due to changes to the <code>&lt;slot&gt;</code> made when opening and closing the details."),
          p("The slot's inline styling is changed to include content-visibility: hidden, which functions similarly to display: none in that it just removes the content from the layout and removes visibility."),

@@ -268,25 +268,14 @@ select option {
 
 }
 
-.content {
-   height: 100%;
-   overflow: hidden;
- }
- 
-details.smooth {
-   width: 100%;
-   overflow: hidden;
-   margin-bottom: 2.5rem;
-   height: 20px;
+.active.smooth {
+   max-height:100em;
 }
-
-details.smooth[open] {
-   height: 300px;
-   padding-bottom: 100px;
-}
-
 .smooth {
-   transition: height 0.3s ease-in-out;
+   transition: 0.3s ease;
+}
+.inactive.smooth {
+   max-height: auto;
 }
 
 #sidebar {

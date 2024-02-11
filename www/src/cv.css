@@ -46,17 +46,30 @@
    padding: 0;
    margin: 0;
    color: #0000;
-   flex: 0.1 1 auto;
+   flex: 1 1 auto;
    overflow-y: hidden;
    height: 100%;
    line-height: 0;
    border-width: 0;
 }
 
-.cv-chapter.active .inside {
-   flex: 100 1 auto;
-   overflow-y: hidden;
+.cv-chapter.inactive .cv-chapter .inside {
    height: 0;
+   display: none;
+}
+
+.cv-chapter.active .inside {
+   height: 0;
+}
+
+#sidebar > div.cv-content.flex-column > div.cv-chapter > div.inside {
+   height: 0;
+}
+
+.cv-chapter.active .cv-chapter.active .inside {
+   flex: 100 1 auto;
+   overflow-y: auto;
+   /* height: 0; */
 }
 
 .cv-chapter {

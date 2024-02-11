@@ -271,11 +271,13 @@ select option {
 .active.smooth {
    max-height:100em;
 }
+
 .smooth {
-   transition: 0.3s ease;
+   transition: all 0.25s ease-out;
 }
+
 .inactive.smooth {
-   max-height: auto;
+   /* max-height: auto; */
 }
 
 #sidebar {

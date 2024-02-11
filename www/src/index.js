@@ -193,9 +193,10 @@ function MoreSkillsButton() {
    )
 }
 
-function getBackgroundColorStyle(rgbString) {
+function getBackgroundColorStyle(rgbString, withBorder=false) {
    if (rgbString) {
-      return `background-color: ${rgbString};`;
+      return (withBorder === true ? `border-color:${rgbString};` : "")
+         + `background-color:${rgbString};`;
    }
    return "";
 }
@@ -212,17 +213,17 @@ function CvButton(labelId, rgbString, onclick) {
 }
 
 function CvChapter({titleElement, isDefaultActive, rgbString, onclick, extraClasses = "", extraActiveClasses = "", extraInsideClasses = "", insideConstructor = () => span(localizeUi("placeholder"))}) {
-   let bg = () => getBackgroundColorStyle(rgbString); //isDefaultActive.val ? getBackgroundColorStyle(rgbString) : "";
-   return div({class: () => "cv-chapter flex-column smooth" + (isDefaultActive.val ? extraActiveClasses + " active " : " inactive ") + extraClasses},
+   let bg = () => getBackgroundColorStyle(rgbString, isDefaultActive.val); //isDefaultActive.val ? getBackgroundColorStyle(rgbString) : "";
+   return div({class: () => "cv-chapter flex-column smooth " + (isDefaultActive.val ? extraActiveClasses + " active " : " inactive ") + extraClasses},
       button({
          class: "interactive btn font-Large expand-button ",
          style: () => bg(),
          onclick: e => { onclick(); },
       }, titleElement),
-      div(
-         {class: () => extraInsideClasses + " inside flex-column " + (isDefaultActive.val ? " active " : " inactive "), style: () => bg()},
-         insideConstructor()
-      ),
+      div({
+         class: () => extraInsideClasses + " inside flex-column " /* + (isDefaultActive.val ? " active " : " inactive ") */, 
+         style: () => bg()
+      }, insideConstructor()),
       // details({class: "cv-chapter" + extraClasses, /* ontoggle: e => { if (e.target.open) onclick(); } */ open: () => isDefaultActive.val ? "true" : undefined },
       //    summary({class: "interactive btn font-Large expand-button ", ...style}, titleElement),
       //    div(
@@ -268,7 +269,7 @@ function CvContent(currentCvPage, chaptersConnections) {
                span({class: "bold"},
                i({class: "bx bxs-chevron-right"}), i({class: "bx bxs-chevron-right"}), i({class: "bx bxs-chevron-right"}),
                localizeUi(x.id),
-               i({class: "bx bxs-chevron-left"}), i({class: "bx bxs-chevron-left"}), i({class: "bx bxs-chevron-left"}),
+               // i({class: "bx bxs-chevron-left"}), i({class: "bx bxs-chevron-left"}), i({class: "bx bxs-chevron-left"}),
                ) : span(localizeUi(x.id)),
             extraActiveClasses: "vert-margin",
             isDefaultActive: isActive,
@@ -318,7 +319,7 @@ function CvCareer(currentCvPage, chapterConnections, chapterId, chapterArgs) {
             const onChange = () => { currentCvPage.val = x.id; };
             const titleElement = () => span(
                localizeUi(x.id),
-               img({src: x.icon, style: "object-fit: contain;height:30px"})
+               // img({src: x.icon, style: "object-fit: contain;height:30px"})
             );
             const args = {
                titleElement: titleElement, isDefaultActive: isActive,

@@ -269,11 +269,15 @@ select option {
 }
 
 .active.smooth {
-   max-height:100em;
+   max-height:1000rem;
+}
+
+.inactive.smooth {
+   /* max-height: 0rem; */
 }
 
 .smooth {
-   transition: all 0.25s ease-out;
+   transition: flex-grow 0.25s ease-out;
 }
 
 .inactive.smooth {

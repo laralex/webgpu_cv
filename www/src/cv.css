@@ -46,16 +46,16 @@
    padding: 0;
    margin: 0;
    color: #0000;
-   flex: 0.001 1 auto;
+   flex: 0.1 1 auto;
    overflow-y: hidden;
-   height: 0px;
+   height: 100%;
    line-height: 0;
    border-width: 0;
 }
 
 .cv-chapter.active .inside {
    flex: 100 1 auto;
-   overflow-y: auto;
+   overflow-y: hidden;
    height: 0;
 }
 

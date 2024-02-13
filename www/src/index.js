@@ -3,8 +3,8 @@ const {div, button, i, label, img, svg, path, input, details, summary, p, li, a,
 
 const CURRENT_LANGUAGE = van.state("en");
 const ADD_PARALLAX = true;
-const DEBUG = true;
-// const DEBUG = false;
+// const DEBUG = true;
+const DEBUG = false;
 const CANVAS_ID = "main-canvas";
 const UI_STRINGS = getLocalization()
 const CURRENT_GRAPHICS_LEVEL = van.state("medium");
@@ -139,7 +139,7 @@ function ResizeTooltip({timeoutMillisec}) {
       document.removeEventListener("mousemove", resize, false);
    }, false);
    
-   return () => shouldHide.val ? null : div({class: "bubble shadow left", onclick: (e) => shouldHide.val = true}, localizeUi("resize_tooltip"));
+   return () => DEBUG || shouldHide.val ? null : div({class: "bubble shadow left", onclick: (e) => shouldHide.val = true}, localizeUi("resize_tooltip"));
 }
 
 function RepositoryLink() {
@@ -212,9 +212,9 @@ function CvButton(labelId, rgbString, onclick) {
    );
 }
 
-function CvChapter({titleElement, isDefaultActive, rgbString, onclick, extraClasses = "", extraActiveClasses = "", extraInsideClasses = "", insideConstructor = () => span(localizeUi("placeholder"))}) {
+function CvChapter({uniqueId, titleElement, isDefaultActive, rgbString, onclick, extraClasses = "", extraActiveClasses = "", extraInsideClasses = "", insideConstructor = () => span(localizeUi("placeholder"))}) {
    let bg = () => getBackgroundColorStyle(rgbString, isDefaultActive.val); //isDefaultActive.val ? getBackgroundColorStyle(rgbString) : "";
-   return div({class: () => "cv-chapter flex-column smooth " + (isDefaultActive.val ? extraActiveClasses + " active " : " inactive ") + extraClasses},
+   return div({id: uniqueId, class: () => "cv-chapter flex-column " + (DEBUG ? "" : " smooth ") + (isDefaultActive.val ? extraActiveClasses + " active " : " inactive ") + extraClasses},
       button({
          class: "interactive btn font-Large expand-button ",
          style: () => bg(),
@@ -322,8 +322,8 @@ function CvCareer(currentCvPage, chapterConnections, chapterId, chapterArgs) {
                // img({src: x.icon, style: "object-fit: contain;height:30px"})
             );
             const args = {
+               uniqueId: x.id, extraInsideClasses: "cv-text",
                titleElement: titleElement, isDefaultActive: isActive,
-               extraInsideClasses: "cv-text",
                rgbString: x.color, onclick: onChange};
             const chapter = x.constructor(args);
             return chapter;
@@ -365,7 +365,9 @@ function CvPublications(currentCvPage, chapterConnections, chapterId, chapterArg
          Array.from(data, (x) => {
             const isActive = van.derive(() => x.id == currentCvPage.val);
             const onChange = () => { currentCvPage.val = x.id; };
-            const args = {titleElement: localizeUi(x.id), extraInsideClasses: "cv-text",
+            const args = {
+               uniqueId: x.id, extraInsideClasses: "cv-text",
+               titleElement: localizeUi(x.id),
                isDefaultActive: isActive, rgbString: x.color, onclick: onChange};
             return x.constructor(args);
          },
@@ -389,7 +391,9 @@ function CvProjects(currentCvPage, chapterConnections, chapterId, chapterArgs) {
          Array.from(data, (x) => {
             const isActive = van.derive(() => x.id == currentCvPage.val);
             const onChange = () => { currentCvPage.val = x.id; };
-            const args = {titleElement: localizeUi(x.id), extraInsideClasses: "cv-text",
+            const args = {
+               uniqueId: x.id, extraInsideClasses: "cv-text",
+               titleElement: localizeUi(x.id),
                isDefaultActive: isActive, rgbString: x.color, onclick: onChange};
             return x.constructor(args);
          },
@@ -412,7 +416,9 @@ function CvEducation(currentCvPage, chapterConnections, chapterId, chapterArgs) 
          Array.from(data, (x) => {
             const isActive = van.derive(() => x.id == currentCvPage.val);
             const onChange = () => { currentCvPage.val = x.id; };
-            const args = {titleElement: localizeUi(x.id), extraInsideClasses: "cv-text",
+            const args = {
+               uniqueId: x.id, extraInsideClasses: "cv-text",
+               titleElement: localizeUi(x.id),
                isDefaultActive: isActive, rgbString: x.color, onclick: onChange};
             return x.constructor(args);
          }),
@@ -421,9 +427,14 @@ function CvEducation(currentCvPage, chapterConnections, chapterId, chapterArgs) 
 
 function IntroPopup({onclose}) {
    const closed = van.state(false);
+   const needAnimation = van.state(true);
    van.derive(() => { if (closed.val && onclose) onclose(); });
    return () => closed.val ? null :div({class: "popup font-large retro-box checkerboard-background"},
       div({class: "message font-Large"}, LanguagePicker(CURRENT_LANGUAGE, /* vertical */ false, undefined, 'ui_language_intro')),
+      div({
+         class: () => (needAnimation.val ? " animated-appear " : "") + " flex-column",
+         onanimationend: () => needAnimation.val = false, // to prevent animation repeat when language switched
+      },
       span({class: "message bold font-LARGE"}, localizeUi("intro_hi")),
       span({class: "message"}, localizeUi("intro_enjoy_resume")),
       span({class: "message"}, localizeUi("intro_using")), // ""
@@ -448,6 +459,7 @@ function IntroPopup({onclose}) {
                   img({src: "../assets/vanjs.svg", height:"80", style: "padding:3px;"}, "VanJS")),
             ),
          ),
+      ),
       ),
       div({class: "controls"},
          button({class: "btn popup-btn font-large", onclick: (e) => closed.val = true }, localizeUi("intro_close")))
@@ -508,35 +520,50 @@ function js_setup_canvas() {
    resizeCanvas();
 }
 
-function isScrolled(e) {
-   if (e.offsetHeight + e.scrollTop >= e.scrollHeight) {
-      changeCvPage("next");
-   } else if (e.offsetHeight <= e.scrollTop) {
-      changeCvPage("prev");
-   }
- }
-
-function changeCvPage(nextOrPrev) {
-   console.assert(["next", "prev"].includes(nextOrPrev));
-   const curL1 = CURRENT_CV_PAGE.val.level1;
-   const curL2 = CURRENT_CV_PAGE.val.level2[curL1].val;
-   let [nextL1, nextL2] = CV_PAGE_ORDER[curL1][curL2][nextOrPrev];
-   let maxJumps = 64;
-   while (maxJumps-- >= 0 && ["__begin__", "__end__"].includes(nextL2)) {
-      [nextL1, nextL2] = CV_PAGE_ORDER[nextL1][nextL2][nextOrPrev];
-   }
-   if (maxJumps <= 0) {
-      return;
-   }
-   CURRENT_CV_PAGE.val.level2[nextL1].val = nextL2;
-   CURRENT_CV_PAGE.val = { level1: nextL1, level2: CURRENT_CV_PAGE.val.level2};
+function getScrollCallback() {
+   const MAX_SCROLL_BORDER_HITS = DEBUG ? 3 : 6;
+   let borderHitsLeft = MAX_SCROLL_BORDER_HITS;
+   function impl(scrollSpeed) {
+      const nextOrPrev = scrollSpeed > 0 ? "next" : "prev";
+      console.assert(["next", "prev"].includes(nextOrPrev));
+      const curL1 = CURRENT_CV_PAGE.val.level1;
+      const curL2 = CURRENT_CV_PAGE.val.level2[curL1].val;
+      const curTextDiv = document.getElementById(curL2).getElementsByClassName("inside")[0];
+      if (borderHitsLeft > 0) {
+         if (curTextDiv.scrollTop + scrollSpeed <= 0) {
+            --borderHitsLeft;
+            curTextDiv.scrollTop = 0;
+         } else if (curTextDiv.scrollTop + scrollSpeed >= curTextDiv.scrollHeight - curTextDiv.offsetHeight) {
+            --borderHitsLeft;
+            curTextDiv.scrollTop = curTextDiv.scrollHeight;
+         } else {
+            // TODO: change scroll
+            curTextDiv.scrollTop += scrollSpeed;
+            borderHitsLeft = MAX_SCROLL_BORDER_HITS;
+         }
+      }
+      if (borderHitsLeft > 0) {
+         return;
+      }
+      let [nextL1, nextL2] = CV_PAGE_ORDER[curL1][curL2][nextOrPrev];
+      let maxJumps = 64;
+      while (maxJumps-- >= 0 && ["__begin__", "__end__"].includes(nextL2)) {
+         [nextL1, nextL2] = CV_PAGE_ORDER[nextL1][nextL2][nextOrPrev];
+      }
+      if (maxJumps <= 0) {
+         return;
+      }
+      CURRENT_CV_PAGE.val.level2[nextL1].val = nextL2;
+      CURRENT_CV_PAGE.val = { level1: nextL1, level2: CURRENT_CV_PAGE.val.level2};
+      borderHitsLeft = MAX_SCROLL_BORDER_HITS;
+   };
+   return impl;
 }
 
 van.add(document.getElementById("side-top__1"), LanguagePicker(CURRENT_LANGUAGE, /*vertical*/ false));
 van.add(document.getElementById("side-top__2"), GraphicsLevelPicker(CURRENT_GRAPHICS_LEVEL, /*vertical*/ false));
 van.add(document.getElementById("side-links__1"), ResumePdfLink());
 van.add(document.getElementById("side-links__2"), RepositoryLink());
-van.add(document.getElementById("resize-tooltip"), ResizeTooltip({timeoutMillisec: 5000}));
 document.querySelectorAll(".firstinfo").forEach(element => {
    // console.log(element);
    van.add(element, PersonalCard())
@@ -550,7 +577,9 @@ van.add(document.getElementById("sidebar"), CvContent(CURRENT_CV_PAGE, CV_PAGE_O
 console.log('@@@', CV_PAGE_ORDER);
 if (!DEBUG) {
    van.add(document.body, IntroPopup({onclose: () => {
-      van.add(document.body, ControlsPopup({}));
+      van.add(document.body, ControlsPopup({onclose: () => {
+         van.add(document.getElementById("resize-tooltip"), ResizeTooltip({timeoutMillisec: 7000}));
+      }}));
    }}));
    const addAppearAnimation = (el) => Util.addClass(el, 'animated-appear');
    document.querySelectorAll(".card-container")
@@ -574,10 +603,12 @@ if (ADD_PARALLAX) {
 }
 
 // listen to "scroll" event
-const computScrollSpeed = Util.computeScrollSpeed();
+const callbackScrollSpeed = Util.computeScrollSpeed();
+const scrollCallback = getScrollCallback();
 window.addEventListener('wheel', event => {
-   let wheelSpeed = computScrollSpeed(event);
-   changeCvPage(wheelSpeed > 0 ? "next" : "prev");
+   let wheelSpeed = callbackScrollSpeed(event);
+   const ELEMENT_SCROLL_SPEED = DEBUG ? 0.3 : 0.15;
+   scrollCallback(wheelSpeed * ELEMENT_SCROLL_SPEED);
 },  { capture: true });
 js_setup_canvas();
 wasm_startup();

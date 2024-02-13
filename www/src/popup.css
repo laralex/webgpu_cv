@@ -20,6 +20,12 @@
    padding: 1rem 1rem;
 }
 
+.popup .animated-appear {
+   opacity: 0;
+   max-height: 0;
+   animation: anim-popup 1.5s linear 2s forwards, anim-popup-expand 3.5s linear 1.5s forwards;
+}
+
 .checkerboard-background {
    background-color: var(--color-theme-normal);
    background-image: linear-gradient(
@@ -85,4 +91,24 @@
    display: flex;
    flex-direction: row;
    justify-content: space-between;
+}
+
+@keyframes anim-popup {
+   0% {
+      opacity: 0;
+      top: -100px;
+   }
+   100% {
+      opacity: 1;
+      top: 0px;
+   }
+}
+
+@keyframes anim-popup-expand {
+   0% {
+      max-height: 0;
+   }
+   100% {
+      max-height: 300rem;
+   }
 }

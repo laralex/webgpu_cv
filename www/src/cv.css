@@ -1,9 +1,8 @@
 .cv-content {
-   margin-top: 10px;
+   margin-top: 1rem;
    width: 100%;
    height: 100%;
    flex: 1 1 auto;
-   gap: 0.2rem;
    align-items: stretch;
 }
 
@@ -19,11 +18,35 @@
 
 .cv-chapter {
    align-items: stretch;
+   will-change: height,max-height;
 }
 
-.cv-chapter .expand-button {
-   padding: 2px 0px;
-   width: 100%;
+.cv-chapter-head {
+   border-color: var( --color-theme-bold);
+   border-width: 1px;
+   border-style: solid inset;
+   /* box-shadow: var(--color-font-title) 2px 2px 0 0; */
+   display: inline-block;
+   touch-action: manipulation;
+ }
+
+.cv-chapter-head .wrappee {
+  height: 100%;
+  width: 100%;
+  text-align: center;
+}
+
+.active .cv-chapter-head .wrappee {
+   transition: box-shadow 0.3s ease-in;
+}
+
+.inactive .cv-chapter-head .wrappee {
+   transition: box-shadow 0.0s ease;
+}
+
+.cv-chapter-head:hover {
+  transform: translate(-2px, 0px);
+  filter: brightness(105%);
 }
 
 .cv-chapter .inside .expand-button {
@@ -132,19 +155,23 @@
 
 .cv-chapter, .cv-button {
    width: 100%;
-   border: none;
+   border-left-width: 8px;
    text-align: center;
    color: var(--color-font-title);
 }
 
-.cv-button .expand-button {
-   padding: 4px 0px;
-   width: 100%;
+.cv-chapter .expand-button {
+   /* border-width: 0 8px 0 8px; */
+   border-style: solid;
+   padding: 0;
 }
 
 .active .cv-text {
-   border: solid;
+   border-style: solid;
+   /* border-left-width: 0.5rem; */
+   /* border-width: 0.5rem 0 0 0.5rem; */
    border-width: 0.5rem;
+   border-color: var(--color-theme-accent);
 }
 
 .cv-text {

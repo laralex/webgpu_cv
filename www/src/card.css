@@ -102,14 +102,6 @@
   /* justify-content: center; */
 }
 
-.badgescard .inside .icons {
-  width: 100%;
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  margin-bottom: 3px;
-}
-
 .badgescard span, .badgescard li {
   padding: 1px 0px;
   margin: 0px;

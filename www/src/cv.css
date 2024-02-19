@@ -170,11 +170,52 @@
    border-style: solid;
    /* border-left-width: 0.5rem; */
    /* border-width: 0.5rem 0 0 0.5rem; */
-   border-width: 0.5rem;
+   border-width: 0.35rem 0.5rem 0.35rem 0.5rem;
    border-color: var(--color-theme-accent);
 }
 
 .cv-text {
-   padding: 0.5em;
-   text-align: left;
+   padding-right: 0.5em;
+   text-align: justify;
+}
+
+.years-block {
+   display: flex;
+   flex-direction: column;
+   justify-content: space-between;
+   align-items: center;
+   color: var(--color-font-title-light);
+   margin: 0rem 1rem 0rem 0rem;
+}
+
+.year-separator {    
+   height: 6px;
+   width: 6px;
+   background-color: var(--color-font-title-light);
+   border-radius: 50%;
+   display: inline-block;
+   position: relative;
+}
+
+.years-duration {
+
+}
+
+.icons {
+   display: flex;
+   flex-direction: row;
+   flex-wrap: wrap;
+   justify-content: space-between;
+   gap: 0.2rem;
+   margin-bottom: 0.5rem;
+}
+
+.icons img {
+   object-fit: cover;
+   width: 4rem;
+}
+
+.cv-chapter ul {
+   list-style-type: disc;
+   list-style-position: inside;
 }

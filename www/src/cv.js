@@ -137,31 +137,36 @@ function CvSamsung(chapterArgs) {
    chapterArgs.insideConstructor = () => {
       return div({class: "font-small"},
          div({class: "flex-row flex-center"},
-            YearsBlock([2021, 2022, 2023]),
+            YearsBlock(["2021", "2022", "2023"]),
             div({class: "flex-column", style: "align-items:center;"},
-               p({class: "font-Large"}, "Neural Networks R&D"),
-               p("Middle engineer (1 yr 9 mos)"),
-               p("Junior engineer (9 months)"),
-               p("Intern (2 months)"),
+               p({class: "font-Large bold"}, "Neural Networks R&D"),
+               LeftRightAlignedList({
+                  leftItems: [p("Middle engineer"), p("Junior engineer"), p("Intern"),],
+                  rightItems: [p("1 yr 8 mos"), p("7 months"), p("2 months"), ],
+               }),
             )
          ),
          div({class: "icons"},
-            img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/opengl/opengl-original.svg" }),
+            img({class: "large", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/opengl/opengl-original.svg" }),
             // img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-line.svg" }),
             // img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/rust/rust-plain.svg" }),
             img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original-wordmark.svg"}),
-            img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/pytorch/pytorch-original-wordmark.svg"}),
+            img({class: "large", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/pytorch/pytorch-original-wordmark.svg"}),
             // img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg" }),
             img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original-wordmark.svg" }),
-            img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/unity/unity-original-wordmark.svg" }),
+            img({class: "large", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/unity/unity-original-wordmark.svg" }),
             // img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original-wordmark.svg"}),
          ),
          ul(
-            li("Solely developed an Android/Java/OpenGL techdemo, with realistic human avatars rendered via deferred neural rendering"),
-            li("Achieved 60 FPS neural rendering in 512px resolution on mobile, by running on Qualcomm NPU with optimal data flow from GPU"),
-            li("Ported the Android techdemo as Unity app with augmented reality"),
-            li("Completed a crucial KPI, being the only production developer on a research project"),
-            li("Researched the neural network architecture and published a paper on WACV 2024 conference: ", a({"href": "https://openaccess.thecvf.com/content/WACV2024/html/Bashirov_MoRF_Mobile_Realistic_Fullbody_Avatars_From_a_Monocular_Video_WACV_2024_paper.html"}, "Link")),
+            li("Solely created an Android techdemo with realistic human avatars, featuring:", ul(
+                li("implementation with plain Java/OpenGL"),
+                li("rendering via neural networks, running 60 FPS in 512x512px on Qualcomm NPU"),
+                li("augmented reality via ARCore"),
+                li("my animation system and skinning"),
+                li("also ported into Unity application"),
+            )),
+            li("Completed a crucial KPI, being a solo developer on a research project"),
+            li("Published a paper on neural networks, at WACV 2024 conference: ", a({"href": "https://openaccess.thecvf.com/content/WACV2024/html/Bashirov_MoRF_Mobile_Realistic_Fullbody_Avatars_From_a_Monocular_Video_WACV_2024_paper.html"}, "Link")),
          ),
        )
    }
@@ -247,9 +252,21 @@ function CvEducation(currentCvPage, chapterConnections, chapterId, chapterArgs) 
 
 function YearsBlock(years, totalDuration1, totalDuration2) {
    return div({class: "years-block font-Large"},
-      totalDuration1 ? span({class: "font-normalsize bold years-duration"}, totalDuration1) : null,
-      totalDuration2 ? span({class: "font-normalsize bold years-duration"}, totalDuration2) : null,
-      years.flatMap((year, i) => i < years.length - 1 ?
-         [span(year), span({class: 'year-separator'})]
-         : span(year)).reverse());
+      totalDuration1 ? span({class: "year-duration"}, totalDuration1) : null,
+      totalDuration2 ? span({class: "year-duration"}, totalDuration2) : null,
+      years.flatMap((year, i) =>
+         [
+            span({class: 'year-value'}, year),
+            i < years.length - 1 ? span({class: 'year-separator'}) : null
+         ]).reverse());
+}
+
+function LeftRightAlignedList({leftItems, rightItems, separator=() => span("·")}) {
+   console.assert(leftItems.length === rightItems.length);
+   return div({class: "flex-row"},
+      div({class: "flex-column", style: "align-items:end;"}, leftItems, ),
+      div({class: "flex-column", style: "margin: 0 0.5rem 0 0.5rem; align-items:center;"}, 
+         Array(leftItems.length).fill(separator)),
+      div({class: "flex-column", style: "align-items:start;"}, rightItems),
+   )
 }

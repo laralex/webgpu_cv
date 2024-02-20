@@ -32,7 +32,7 @@ function getLocalization() {
       button_career_latest: {en: "Latest position", ru: "К вершине карьеры", kr: "최신 직업"},
       button_career_earliest: {en: "First position", ru: "К началу карьеры", kr: "첫 직업"},
       career_huawei: {en: "Huawei", ru: "Huawei", kr: "Huawei"},
-      career_samsung: {en: "Samsung AI Center", ru: "Samsung AI Center Moscow", kr: "삼성 AI 모스크바 연구센터"},
+      career_samsung: {en: "Samsung AI Center (2yr 5mos)", ru: "Samsung AI Center Moscow", kr: "삼성 AI 모스크바 연구센터"},
       career_freelance: {en: "Freelancing", ru: "Фриланс", kr: "프리랜소"},
       publications_wacv_2024: {en: "WACV 2024", ru: "WACV 2024", kr: "WACV 2024"},
       education_master: {en: "Master of Computer Science", ru: "Магистратура", kr: "석사"},

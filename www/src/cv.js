@@ -104,7 +104,7 @@ function populateConnections(destinationConnections, chapterId, subchapterIds) {
 
 function CvCareer(currentCvPage, chapterConnections, chapterId, chapterArgs) {
    const data = [
-      { id: "career_huawei", color: SUBCHAPTER_COLOR, constructor: CvChapter, icon: "../assets/huawei-2.svg" },
+      { id: "career_huawei", color: SUBCHAPTER_COLOR, constructor: CvHuawei, icon: "../assets/huawei-2.svg" },
       { id: "career_samsung", color: SUBCHAPTER_COLOR, constructor: CvSamsung, icon: "../assets/samsung.svg" },
       // { id: "career_freelance", color: "#65E2E6", constructor: CvChapter },
       // #64E1E5
@@ -133,6 +133,33 @@ function CvCareer(currentCvPage, chapterConnections, chapterId, chapterArgs) {
       }});
 }
 
+function CvHuawei(chapterArgs) {
+   chapterArgs.insideConstructor = () => {
+      return div({class: "font-small"},
+         div({class: "flex-row flex-center"},
+            YearsBlock(["2023", "2024", "Current"]),
+            div({class: "flex-column", style: "align-items:center;"},
+               p({class: "font-Large bold"}, "Frame prediction SDK for mobile games"),
+               LeftRightAlignedList({
+                  leftItems: [ p("Senior engineer"), ],
+                  rightItems: [ p("3 months"), ],
+               }),
+            )
+         ),
+         div({class: "icons"},
+            img({class: "huge", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/opengl/opengl-original.svg" }),
+            img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-plain.svg" }),
+            img({class: "huge", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/unity/unity-original-wordmark.svg" }),
+         ),
+         ul(
+            li("Researched how to speed up rendering of a premade mobile game (Genshin Impact, stencil checkerboarding via GLES hooks)"),
+            li("Integrated in-house frame prediction SDK as a Unity plugin (URP pipeline)"),
+            li("Proudly helped to develop the next generation mobile operating system OpenHarmony"),
+         ),
+       )
+   }
+   return CvChapter(chapterArgs);
+}
 function CvSamsung(chapterArgs) {
    chapterArgs.insideConstructor = () => {
       return div({class: "font-small"},

@@ -6,7 +6,7 @@ const CANVAS_ID = "main-canvas";
 
 const CURRENT_GRAPHICS_LEVEL = van.state("medium");
 const DEFAULT_MAIN_CHAPTER = "chapter_career";
-const DEFAULT_SUB_CHAPTER = "career_samsung";
+const DEFAULT_SUB_CHAPTER = "career_huawei";
 const CURRENT_CV_PAGE = [van.state(DEFAULT_MAIN_CHAPTER), van.state(DEFAULT_SUB_CHAPTER)];
 const CV_PAGE_ORDER = {}
 

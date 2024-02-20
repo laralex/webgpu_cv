@@ -186,11 +186,11 @@
    justify-content: space-between;
    align-items: center;
    color: var(--color-theme-bold);
-   margin: 0rem 1rem 0rem 0rem;
+   margin: 0rem 1rem 0rem 1rem;
 }
 
 .year-separator {    
-   height: 10px;
+   height: 9px;
    width: 2px;
    background-color: var(--color-theme-bold);
    /* border-radius: 50%; */

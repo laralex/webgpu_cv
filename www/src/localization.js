@@ -35,7 +35,7 @@ function getLocalization() {
       career_samsung: {en: "Samsung AI Center, 2 yr 5 mos", ru: "Samsung AI Center, 2 г 5 мес", kr: "삼성 AI 연구센터, 2년 5월"},
       career_freelance: {en: "Freelancing", ru: "Фриланс", kr: "프리랜소"},
       publications_wacv_2024: {en: "WACV 2024", ru: "WACV 2024", kr: "WACV 2024"},
-      education_master: {en: "Master of Computer Science", ru: "Магистратура", kr: "석사"},
+      education_master: {en: "Master of Information Science", ru: "Магистратура", kr: "석사"},
       education_bachelor: {en: "Bachelor of Computer Science", ru: "Бакалавриат", kr: "학사"},
       intro_hi: {en: "Hi, I'm Alexey :)", ru: "Привет, меня зовут Лёша :)", kr: "안녕하세요! 저는 \"료샤\"라고 합니다 :)"},
       intro_enjoy_resume: {en: "Enjoy my interactive résumé !", ru: "Вы наткнулись на мое интерактивное резюме", kr: "제 이력서를 방문해줘서 반갑습니다!"},

@@ -136,7 +136,7 @@ function CvCareer(currentCvPage, chapterConnections, chapterId, chapterArgs) {
 function CvHuawei(chapterArgs) {
    chapterArgs.insideConstructor = () => {
       return div({class: "font-small"},
-         div({class: "flex-row flex-center"},
+         div({class: "flex-row flex-center", style: "margin-bottom: 0.5rem;"},
             YearsBlock(["2023", "2024", "Current"]),
             div({class: "flex-column", style: "align-items:center;"},
                p({class: "font-Large bold"}, "Frame prediction SDK for mobile games"),
@@ -160,10 +160,11 @@ function CvHuawei(chapterArgs) {
    }
    return CvChapter(chapterArgs);
 }
+
 function CvSamsung(chapterArgs) {
    chapterArgs.insideConstructor = () => {
       return div({class: "font-small"},
-         div({class: "flex-row flex-center"},
+         div({class: "flex-row flex-center", style: "margin-bottom: 0.5rem;"},
             YearsBlock(["2021", "2022", "2023"]),
             div({class: "flex-column", style: "align-items:center;"},
                p({class: "font-Large bold"}, "Neural Networks R&D"),
@@ -179,7 +180,6 @@ function CvSamsung(chapterArgs) {
             // img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/rust/rust-plain.svg" }),
             img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original-wordmark.svg"}),
             img({class: "large", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/pytorch/pytorch-original-wordmark.svg"}),
-            // img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg" }),
             img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original-wordmark.svg" }),
             img({class: "large", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/unity/unity-original-wordmark.svg" }),
             // img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original-wordmark.svg"}),
@@ -254,8 +254,8 @@ function CvProjects(currentCvPage, chapterConnections, chapterId, chapterArgs) {
 
 function CvEducation(currentCvPage, chapterConnections, chapterId, chapterArgs) {
    const data = [
-      { id: "education_master", color: SUBCHAPTER_COLOR, constructor: CvChapter },
-      { id: "education_bachelor", color: SUBCHAPTER_COLOR, constructor: CvSamsung },
+      { id: "education_master", color: SUBCHAPTER_COLOR, constructor: CvMaster },
+      { id: "education_bachelor", color: SUBCHAPTER_COLOR, constructor: CvBachelor },
       // #FFC8F2
    ];
    populateConnections(chapterConnections, chapterId, data.map(x => x.id));
@@ -275,6 +275,64 @@ function CvEducation(currentCvPage, chapterConnections, chapterId, chapterArgs) 
          });
       }
    });
+}
+
+function CvMaster(chapterArgs) {
+   chapterArgs.insideConstructor = () => {
+      return div({class: "font-small"},
+         div({class: "flex-row flex-center", style: "margin-bottom: 0.5rem;"},
+            YearsBlock(["2020", "2021", "2022"]),
+            div({class: "flex-column", style: "align-items:center;"},
+               p({class: "font-Large"}, "Skolkovo Institute of Science & Technology"),
+               p("MSc of Information Science"),
+               p("with Honors"),
+               LeftRightAlignedList({leftItems: [ p("GPA"), ], rightItems: [ p("5/5"), ], }),
+            )
+         ),
+         div({class: "icons"},
+            img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original-wordmark.svg"}),
+            img({class: "huge", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/pytorch/pytorch-original-wordmark.svg"}),
+            img({class: "huge", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/unity/unity-original-wordmark.svg" }),
+         ),
+         ul(
+            li("Researched augmented and virtual reality based on neural networks, supervised by renowned ", a({href: "https://scholar.google.com/citations?user=gYYVokYAAAAJ&hl=en"}, "Dr. Victor Lempitsky")),
+            li("Thesis on real-time rendering via neural networks on mobile hardware"),
+            li("Took courses on:", ul(li("Machine Learning / Deep Learning"),li("3D Computer Vision"),li("Parallel computing"),li("Unity game engine"),)
+            ),
+         ),
+       )
+   }
+   return CvChapter(chapterArgs);
+}
+
+function CvBachelor(chapterArgs) {
+   chapterArgs.insideConstructor = () => {
+      return div({class: "font-small"},
+         div({class: "flex-row flex-center", style: "margin-bottom: 0.5rem;"},
+            YearsBlock(["2016", "2017", "2018", "2019", "2020"]),
+            div({class: "flex-column", style: "align-items:center;"},
+               p({class: "font-Large"}, "Peter The Great St. Petersburg Polytechnic University"),
+               p("BSc of Computer Science"),
+               p("with Honors"),
+               LeftRightAlignedList({leftItems: [ p("GPA"), ], rightItems: [ p("5/5"), ], }),
+            )
+         ),
+         div({class: "icons"},
+            img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-plain.svg" }),
+            img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/csharp/csharp-plain.svg" }),
+            img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original-wordmark.svg"}),
+            img({class: "huge", src: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/oracle/oracle-original.svg" }),
+         ),
+         ul(
+            li("Winner of project marathon jointly with TU Graz, Austria"),
+            li("ICPC world olympiad, twice half-finalist"),
+            li("\"Student of the year\" badge"),
+            li("Thesis on procedural generation of 3D meshes for buildings"),
+            li("Took courses on:", ul(li("Core math"),li("Computer Architecture"),li("Oracle Database  administration"))),
+         ),
+       )
+   }
+   return CvChapter(chapterArgs);
 }
 
 function YearsBlock(years, totalDuration1, totalDuration2) {

@@ -5,8 +5,10 @@ const ADD_PARALLAX = true;
 const CANVAS_ID = "main-canvas";
 
 const CURRENT_GRAPHICS_LEVEL = van.state("medium");
-const DEFAULT_MAIN_CHAPTER = "chapter_career";
-const DEFAULT_SUB_CHAPTER = "career_huawei";
+// const DEFAULT_MAIN_CHAPTER = "chapter_career";
+// const DEFAULT_SUB_CHAPTER = "career_huawei";
+const DEFAULT_MAIN_CHAPTER = "chapter_education";
+const DEFAULT_SUB_CHAPTER = "education_master";
 const CURRENT_CV_PAGE = [van.state(DEFAULT_MAIN_CHAPTER), van.state(DEFAULT_SUB_CHAPTER)];
 const CV_PAGE_ORDER = {}
 

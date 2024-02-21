@@ -12,6 +12,60 @@ const DEFAULT_SUB_CHAPTER = "education_master";
 const CURRENT_CV_PAGE = [van.state(DEFAULT_MAIN_CHAPTER), van.state(DEFAULT_SUB_CHAPTER)];
 const CV_PAGE_ORDER = {}
 
+function FullscreenButton(fullscreenElement) {
+   const IS_FULLSCREEN = van.state(false);
+   // van.derive(() => console.log('full', IS_FULLSCREEN.val));
+   function setFullScreen(elem, enableFullscreen) {
+      // ## The below if statement seems to work better ## if ((document.fullScreenElement && document.fullScreenElement !== null) || (document.msfullscreenElement && document.msfullscreenElement !== null) || (!document.mozFullScreen && !document.webkitIsFullScreen)) {
+      if (enableFullscreen && (document.fullScreenElement !== undefined && document.fullScreenElement === null) || (document.msFullscreenElement !== undefined && document.msFullscreenElement === null) || (document.mozFullScreen !== undefined && !document.mozFullScreen) || (document.webkitIsFullScreen !== undefined && !document.webkitIsFullScreen)) {
+          if (elem.requestFullScreen) {
+              elem.requestFullScreen();
+          } else if (elem.mozRequestFullScreen) {
+              elem.mozRequestFullScreen();
+          } else if (elem.webkitRequestFullScreen) {
+              elem.webkitRequestFullscreen();
+          } else if (elem.msRequestFullscreen) {
+              elem.msRequestFullscreen();
+          }
+          IS_FULLSCREEN.val = true;
+      } else if (!enableFullscreen) {
+          if (document.cancelFullScreen) {
+              document.cancelFullScreen();
+          } else if (document.mozCancelFullScreen) {
+              document.mozCancelFullScreen();
+          } else if (document.webkitCancelFullScreen) {
+              document.webkitCancelFullScreen();
+          } else if (document.msExitFullscreen) {
+              document.msExitFullscreen();
+          }
+          IS_FULLSCREEN.val = false;
+      }
+  }
+   document.body.onfullscreenchange = (e) => {
+      setFullScreen(fullscreenElement, !IS_FULLSCREEN.val)
+   };
+   const checkFullscreen = function(event) {
+      const enable = (window.outerWidth-screen.width) ==0 && (window.outerHeight-screen.height) ==0;
+      console.log("CHECK", enable, window.outerWidth-screen.width, window.outerHeight-screen.height);
+      setFullScreen(fullscreenElement, enable);
+   };
+   window.addEventListener("keyup", function(event){
+      var code = event.keyCode || event.which;
+      if(code == 122){
+          setTimeout(function(){checkFullscreen();},150);
+      }
+   });
+   return div({class: "fullscreen-button", onclick: () => setFullScreen(fullscreenElement, !IS_FULLSCREEN.val)},
+      img({
+         src: () => IS_FULLSCREEN.val ? "../assets/collapse-regular-240.png" : "../assets/expand-regular-240.png",
+      })
+   );
+}
+
+function GeoLocation() {
+
+}
+
 function LanguagePicker(currentLanguage, isVertical, tooltipLanguage=undefined, tooltipLabelId='ui_language') {
    const LANGUAGES = {
       en: {labelId: 'english_en', icon: "../assets/flag_GB.png", emoji: "🇬🇧"},
@@ -318,6 +372,7 @@ function getScrollCallback() {
 }
 
 window.onload = function() {
+   van.add(document.getElementById("main-content"), FullscreenButton(document.getElementById("main-content")));
    van.add(document.getElementById("side-top__1"), LanguagePicker(CURRENT_LANGUAGE, /*vertical*/ false));
    van.add(document.getElementById("side-top__2"), GraphicsLevelPicker(CURRENT_GRAPHICS_LEVEL, /*vertical*/ false));
    van.add(document.getElementById("side-links__1"), ResumePdfLink());

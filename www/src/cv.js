@@ -324,7 +324,7 @@ function CvBachelor(chapterArgs) {
             img({class: "huge", src: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/oracle/oracle-original.svg" }),
          ),
          ul(
-            li("Winner of project marathon jointly with TU Graz, Austria"),
+            li("Winner of project marathon jointly with TU Graz (Austria); visited Austria"),
             li("ICPC world olympiad, twice half-finalist"),
             li("\"Student of the year\" badge"),
             li("Thesis on procedural generation of 3D meshes for buildings"),

@@ -378,3 +378,27 @@ select option {
 .graphics-picker.flex-row span {
    margin-left: 1rem;
 }
+
+.fullscreen-button {
+   position: absolute;
+   left: calc(100% - 5rem);
+   top: 0%;
+   display: block;
+   width: auto;
+   height: auto;
+   transition: scale 0.3s ease-in-out;
+}
+
+.fullscreen-button img:hover {
+   scale: 0.9;
+}
+
+.fullscreen-button img {
+   width: 4.5rem;
+   height: 4.5rem;
+   mix-blend-mode: difference;
+   /* -webkit-filter: grayscale(1) invert(1); */
+   filter: invert(0.5);
+   
+   /* backdrop-filter: hue-rotate(30deg); */
+}

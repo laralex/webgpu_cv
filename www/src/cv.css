@@ -215,6 +215,7 @@
 .icons img {
    object-fit: cover;
    height: 3.5rem;
+   transition: scale 100ms ease-in-out;
 }
 
 .icons img:hover {

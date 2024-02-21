@@ -23,7 +23,7 @@ function FullscreenButton(fullscreenElement) {
           } else if (elem.mozRequestFullScreen) {
               elem.mozRequestFullScreen();
           } else if (elem.webkitRequestFullScreen) {
-              elem.webkitRequestFullscreen();
+              elem.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
           } else if (elem.msRequestFullscreen) {
               elem.msRequestFullscreen();
           }
@@ -52,7 +52,7 @@ function FullscreenButton(fullscreenElement) {
    window.addEventListener("keyup", function(event){
       var code = event.keyCode || event.which;
       if(code == 122){
-          setTimeout(function(){checkFullscreen();},150);
+          setTimeout(function(){checkFullscreen();},250);
       }
    });
    return div({class: "fullscreen-button", onclick: () => setFullScreen(fullscreenElement, !IS_FULLSCREEN.val)},
@@ -372,7 +372,7 @@ function getScrollCallback() {
 }
 
 window.onload = function() {
-   van.add(document.getElementById("main-content"), FullscreenButton(document.getElementById("main-content")));
+   van.add(document.getElementById("canvas-wrapper"), FullscreenButton(document.getElementById("canvas-wrapper")));
    van.add(document.getElementById("side-top__1"), LanguagePicker(CURRENT_LANGUAGE, /*vertical*/ false));
    van.add(document.getElementById("side-top__2"), GraphicsLevelPicker(CURRENT_GRAPHICS_LEVEL, /*vertical*/ false));
    van.add(document.getElementById("side-links__1"), ResumePdfLink());
@@ -387,7 +387,6 @@ window.onload = function() {
    // van.add(document.getElementById("side-content"), CvChapter("chapter_projects", "#F6F7C4"));
    // van.add(document.getElementById("side-content"), CvChapter("chapter_education", "#F6D6D6"));
    van.add(document.getElementById("sidebar"), CvContent(CURRENT_CV_PAGE, CV_PAGE_ORDER));
-   console.log('&&&&&&&&&&', document.getElementById("this_cv"));
    // CURRENT_CV_PAGE[0].val = DEFAULT_MAIN_CHAPTER;
    // CURRENT_CV_PAGE[1].val = DEFAULT_SUB_CHAPTER;
    if (!DEBUG) {

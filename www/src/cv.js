@@ -138,7 +138,8 @@ function CvHuawei(chapterArgs) {
       return div({class: "font-small"},
          div({class: "flex-row flex-center", style: "margin-bottom: 0.5rem;"},
             YearsBlock(["2023", "2024", "Current"]),
-            div({class: "flex-column", style: "align-items:center;"},
+            div({class: "flex-column", style: "align-items:center; gap:0.5rem;"},
+               img({src: "../assets/huawei-small.svg", style: "height:2rem;"}),
                p({class: "font-Large bold"}, "Frame prediction SDK for mobile games"),
                LeftRightAlignedList({
                   leftItems: [ p("Senior engineer"), ],
@@ -152,7 +153,7 @@ function CvHuawei(chapterArgs) {
             img({class: "huge", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/unity/unity-original-wordmark.svg" }),
          ),
          ul(
-            li("Researched how to speed up rendering of a premade mobile game (Genshin Impact, stencil checkerboarding via GLES hooks)"),
+            li("Researched OpenGL hook-based rendering speed up in \"Genshin Impact\" game"),
             li("Integrated in-house frame prediction SDK as a Unity plugin (URP pipeline)"),
             li("Proudly helped to develop the next generation mobile operating system OpenHarmony"),
          ),
@@ -166,7 +167,8 @@ function CvSamsung(chapterArgs) {
       return div({class: "font-small"},
          div({class: "flex-row flex-center", style: "margin-bottom: 0.5rem;"},
             YearsBlock(["2021", "2022", "2023"]),
-            div({class: "flex-column", style: "align-items:center;"},
+            div({class: "flex-column", style: "align-items:center;gap: 0.5rem;"},
+               img({src: "../assets/samsung.svg", style: "height:1.5rem;"}),
                p({class: "font-Large bold"}, "Neural Networks R&D"),
                LeftRightAlignedList({
                   leftItems: [p("Middle engineer"), p("Junior engineer"), p("Intern"),],
@@ -185,7 +187,7 @@ function CvSamsung(chapterArgs) {
             // img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original-wordmark.svg"}),
          ),
          ul(
-            li("Solely created an Android techdemo with realistic human avatars, featuring:", ul(
+            li("Solely created an Android techdemo to render realistic human avatars, with:", ul(
                 li("implementation with plain Java/OpenGL"),
                 li("rendering via neural networks, running 60 FPS in 512x512px on Qualcomm NPU"),
                 li("augmented reality via ARCore"),
@@ -282,11 +284,11 @@ function CvMaster(chapterArgs) {
       return div({class: "font-small"},
          div({class: "flex-row flex-center", style: "margin-bottom: 0.5rem;"},
             YearsBlock(["2020", "2021", "2022"]),
-            div({class: "flex-column", style: "align-items:center;"},
-               p({class: "font-Large"}, "Skolkovo Institute of Science & Technology"),
-               p("MSc of Information Science"),
-               p("with Honors"),
-               LeftRightAlignedList({leftItems: [ p("GPA"), ], rightItems: [ p("5/5"), ], }),
+            div({class: "flex-column", style: "align-items:center; gap:0.2rem;"},
+               p({class: "font-Large"}, "MSc of Information Science"),
+               LeftRightAlignedList({leftItems: [ p("with Honors"), ], rightItems: [ p("GPA 5/5"), ], }),
+               img({src: "../assets/Skoltech_Logo.svg", style: "height:1.5rem; filter: invert(0.5) sepia(1) saturate(5) hue-rotate(35deg);"}),
+               p("Skolkovo Institute of Science & Technology"),
             )
          ),
          div({class: "icons"},
@@ -310,11 +312,11 @@ function CvBachelor(chapterArgs) {
       return div({class: "font-small"},
          div({class: "flex-row flex-center", style: "margin-bottom: 0.5rem;"},
             YearsBlock(["2016", "2017", "2018", "2019", "2020"]),
-            div({class: "flex-column", style: "align-items:center;"},
-               p({class: "font-Large"}, "Peter The Great St. Petersburg Polytechnic University"),
-               p("BSc of Computer Science"),
-               p("with Honors"),
-               LeftRightAlignedList({leftItems: [ p("GPA"), ], rightItems: [ p("5/5"), ], }),
+            div({class: "flex-column", style: "align-items:center; gap:0.2rem;"},
+               p({class: "font-Large"}, "BSc of Computer Science"),
+               LeftRightAlignedList({leftItems: [ p("with Honors"), ], rightItems: [ p("GPA 5/5"), ], }),
+               img({src: "../assets/polytech_logo_small.svg", style: "height:1.5rem;"}),
+               p("Peter The Great St. Petersburg Polytechnic University"),
             )
          ),
          div({class: "icons"},

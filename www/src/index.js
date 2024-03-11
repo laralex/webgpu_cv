@@ -46,7 +46,6 @@ function FullscreenButton(fullscreenElement) {
    };
    const checkFullscreen = function(event) {
       const enable = (window.outerWidth-screen.width) ==0 && (window.outerHeight-screen.height) ==0;
-      console.log("CHECK", enable, window.outerWidth-screen.width, window.outerHeight-screen.height);
       setFullScreen(fullscreenElement, enable);
    };
    window.addEventListener("keyup", function(event){

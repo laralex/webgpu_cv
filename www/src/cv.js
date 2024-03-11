@@ -1,7 +1,18 @@
 const {div, button, i, label, img, svg, path, input, details, summary, p, br, li, a, option, select, span, ul, h1, h2, h3} = van.tags
 const SMOOTH = true;
-const CHAPTER_COLORS = ["#e8ac65", "#dc9c63", "#d08c60", "#c38862"];
-const SUBCHAPTER_COLOR = "#f2cc8f";
+// const CHAPTER_COLORS = ["#7BD3EA", "#A1EEBD", "#F6F7C4", "#F6D6D6", "#D57E7E"];
+// const CHAPTER_COLORS = ["#B9BAC2", "#D4D2D5", "#BFAFA6", "#AA968A"];
+// const CHAPTER_COLORS = ["#7474bf", "#667ac3", "#5680c6", "#4685c7", "#348ac7"];
+// const CHAPTER_COLORS = ["#8f8fc2", "#8796c8", "#7f9ccd", "#77a3d0", "#70a9d2"];
+const CHAPTER_COLORS = ["#a5a5e1", "#9bade8", "#91b4ee", "#87bcf3", "#7dc3f5"];
+const CHAPTER_BORDER_COLORS = ["#a5a5e1", "#9bade8", "#91b4ee", "#87bcf3", "#7dc3f5"];
+// const SUBCHAPTER_COLOR = ["#f2cc8f", "#FFCA93", "#FFC69E", "#FFC1B3"];
+// const SUBCHAPTER_COLOR = ["#e8ac65", "#dc9c63", "#d08c60", "#c38862"];
+// const SUBCHAPTER_COLOR = ["#CFEBE6", "#B2ECD5", "#A3EAB7", "#A6E590"];
+// const SUBCHAPTER_COLOR = ["#87dceb", "#80d0f0", "#85c3f1", "#93b5ec", "#a5a5e1"];
+// const SUBCHAPTER_COLOR = ["#a5a5e1", "#9bade8", "#91b4ee", "#87bcf3", "#7dc3f5"];
+const SUBCHAPTER_COLOR = ["#bec4d0", "#bec5d7", "#bfc5dd", "#c1c5e3", "#c5c5e9"];
+const SUBCHAPTER_BORDER_COLOR = ["#bec4d0", "#bec5d7", "#bfc5dd", "#c1c5e3", "#c5c5e9"];
 
 function getCssColor(colorString) {
    if (!colorString) {
@@ -26,14 +37,16 @@ function CvButton(labelId, rgbString, onclick) {
          class: "interactive btn font-Large expand-button",
          style: bg,
          onclick: e => onclick(),
-      }, i({class: () => "bx bxs-up-arrow"}, "\t"), localizeUi(labelId)),
+      }, i({class: () => "bx bxs-up-arrow"}, "\t"), span(localizeUi(labelId))),
    );
 }
 
-function CvChapter({uniqueId, titleElement, isDefaultActive, rgbString, onclick, extraClasses = "", extraActiveClasses = "", extraInsideClasses = "", insideConstructor = () => span(localizeUi("placeholder"))}) {
+function CvChapter({uniqueId, titleElement, isDefaultActive, rgbString, borderRgbString, onclick, extraClasses = "", extraActiveClasses = "", extraInsideClasses = "", insideConstructor = () => span(localizeUi("placeholder"))}) {
+   const border = `border-color: ${getCssColor(borderRgbString)}`;
    return div({id: uniqueId, class: () => "cv-chapter flex-column " + (DEBUG && !SMOOTH ? "" : " smooth ") + (isDefaultActive.val ? extraActiveClasses + " active " : " inactive ") + extraClasses},
       button({
-         class: "cv-chapter-head btn font-Large expand-button ",
+         class: "cv-chapter-head btn expand-button ",
+         style: () => `${border};`,
          //style: () => getBackgroundColorStyle(rgbString, false, false),
          onclick: e => { onclick(); },
       }, div({class:"wrappee", style: ()=>`box-shadow: inset ${isDefaultActive.val ? 60 : 3}rem 0 ${getCssColor(rgbString)};`}, titleElement)),
@@ -46,10 +59,10 @@ function CvChapter({uniqueId, titleElement, isDefaultActive, rgbString, onclick,
 
 function CvContent(currentCvPage, chaptersConnections) {
    const chaptersData = [
-      { id: "chapter_career",       color: CHAPTER_COLORS[0], constructor: CvCareer },
-      { id: "chapter_publications", color: CHAPTER_COLORS[1], constructor: CvPublications },
-      { id: "chapter_projects",     color: CHAPTER_COLORS[2], constructor: CvProjects },
-      { id: "chapter_education",    color: CHAPTER_COLORS[3], constructor: CvEducation },
+      { id: "chapter_career",       color: CHAPTER_COLORS[0], borderColor: CHAPTER_BORDER_COLORS[0], constructor: CvCareer },
+      { id: "chapter_publications", color: CHAPTER_COLORS[1], borderColor: CHAPTER_BORDER_COLORS[1], constructor: CvPublications },
+      { id: "chapter_projects",     color: CHAPTER_COLORS[2], borderColor: CHAPTER_BORDER_COLORS[2], constructor: CvProjects },
+      { id: "chapter_education",    color: CHAPTER_COLORS[3], borderColor: CHAPTER_BORDER_COLORS[3], constructor: CvEducation },
    ];
    Object.keys(chaptersConnections).forEach(key => { delete chaptersConnections[key]; })
    for (let i = 0; i < chaptersData.length; i++) {
@@ -79,8 +92,10 @@ function CvContent(currentCvPage, chaptersConnections) {
             uniqueId: x.id,
             titleElement: span({class: () => isActive.val ? " bold " : ""}, localizeUi(x.id)),
             extraActiveClasses: "vert-margin",
+            extraClasses: "toplevel",
             isDefaultActive: isActive,
             rgbString: x.color,
+            borderRgbString: x.borderColor,
             onclick: onChapterActiveChange,
          }
          const chapter = x.constructor(currentCvPage[1], chaptersConnections[x.id], x.id, chapterArgs);
@@ -104,8 +119,8 @@ function populateConnections(destinationConnections, chapterId, subchapterIds) {
 
 function CvCareer(currentCvPage, chapterConnections, chapterId, chapterArgs) {
    const data = [
-      { id: "career_huawei", color: SUBCHAPTER_COLOR, constructor: CvHuawei, icon: "../assets/huawei-2.svg" },
-      { id: "career_samsung", color: SUBCHAPTER_COLOR, constructor: CvSamsung, icon: "../assets/samsung.svg" },
+      { id: "career_huawei",  color: SUBCHAPTER_COLOR[0], borderColor: SUBCHAPTER_BORDER_COLOR[0], constructor: CvHuawei },
+      { id: "career_samsung", color: SUBCHAPTER_COLOR[1], borderColor: SUBCHAPTER_BORDER_COLOR[1], constructor: CvSamsung },
       // { id: "career_freelance", color: "#65E2E6", constructor: CvChapter },
       // #64E1E5
    ];
@@ -121,9 +136,9 @@ function CvCareer(currentCvPage, chapterConnections, chapterId, chapterArgs) {
             const onChange = () => { currentCvPage.val = x.id; };
             const titleElement = span({class: () => isActive.val ? " bold " : ""}, localizeUi(x.id));
             const args = {
-               uniqueId: x.id, extraInsideClasses: "cv-text",
+               uniqueId: x.id, extraInsideClasses: "cv-text", extraClasses: "toplevel",
                titleElement: titleElement, isDefaultActive: isActive,
-               rgbString: x.color, onclick: onChange};
+               rgbString: x.color, borderRgbString: x.borderColor, onclick: onChange};
             const chapter = x.constructor(args);
             return chapter;
          });
@@ -204,9 +219,9 @@ function CvSamsung(chapterArgs) {
 
 function CvPublications(currentCvPage, chapterConnections, chapterId, chapterArgs) {
    const data = [
-      { id: "publications_wacv_2024", color: SUBCHAPTER_COLOR, constructor: CvSamsung },
-      { id: "russian", color: SUBCHAPTER_COLOR, constructor: CvChapter },
-      { id: "english", color: SUBCHAPTER_COLOR, constructor: CvChapter },
+      { id: "publications_wacv_2024", color: SUBCHAPTER_COLOR[0], borderColor: SUBCHAPTER_BORDER_COLOR[0], constructor: CvSamsung },
+      { id: "russian"               , color: SUBCHAPTER_COLOR[1], borderColor: SUBCHAPTER_BORDER_COLOR[1], constructor: CvChapter },
+      { id: "english"               , color: SUBCHAPTER_COLOR[2], borderColor: SUBCHAPTER_BORDER_COLOR[2], constructor: CvChapter },
       // #71BC8E #428D61 #428D61
    ];
    populateConnections(chapterConnections, chapterId, data.map(x => x.id));
@@ -219,9 +234,10 @@ function CvPublications(currentCvPage, chapterConnections, chapterId, chapterArg
             const isActive = van.derive(() => x.id == currentCvPage.val);
             const onChange = () => { currentCvPage.val = x.id; };
             const args = {
-               uniqueId: x.id, extraInsideClasses: "cv-text",
+               uniqueId: x.id, extraInsideClasses: "cv-text", extraClasses: "toplevel",
                titleElement: span({class: () => isActive.val ? " bold " : ""}, localizeUi(x.id)),
-               isDefaultActive: isActive, rgbString: x.color, onclick: onChange};
+               isDefaultActive: isActive, rgbString: x.color,
+               borderRgbString: x.borderColor, onclick: onChange};
             return x.constructor(args);
          });
       }
@@ -230,9 +246,9 @@ function CvPublications(currentCvPage, chapterConnections, chapterId, chapterArg
 
 function CvProjects(currentCvPage, chapterConnections, chapterId, chapterArgs) {
    const data = [
-      { id: "this_cv", color: SUBCHAPTER_COLOR, constructor: CvSamsung },
-      { id: "unity_4X_strategy_volunteer", color: SUBCHAPTER_COLOR, constructor: CvChapter },
-      { id: "image_processing_tool", color: SUBCHAPTER_COLOR, constructor: CvChapter },
+      { id: "this_cv"                     , color: SUBCHAPTER_COLOR[0], borderColor: SUBCHAPTER_BORDER_COLOR[0], constructor: CvSamsung },
+      { id: "unity_4X_strategy_volunteer" , color: SUBCHAPTER_COLOR[1], borderColor: SUBCHAPTER_BORDER_COLOR[1], constructor: CvChapter },
+      { id: "image_processing_tool"       , color: SUBCHAPTER_COLOR[2], borderColor: SUBCHAPTER_BORDER_COLOR[2], constructor: CvChapter },
       // #FFB993
    ];
    populateConnections(chapterConnections, chapterId, data.map(x => x.id));
@@ -245,9 +261,10 @@ function CvProjects(currentCvPage, chapterConnections, chapterId, chapterArgs) {
             const isActive = van.derive(() => x.id == currentCvPage.val);
             const onChange = () => { currentCvPage.val = x.id; };
             const args = {
-               uniqueId: x.id, extraInsideClasses: "cv-text",
+               uniqueId: x.id, extraInsideClasses: "cv-text", extraClasses: "toplevel",
                titleElement: span({class: () => isActive.val ? " bold " : ""}, localizeUi(x.id)),
-               isDefaultActive: isActive, rgbString: x.color, onclick: onChange};
+               isDefaultActive: isActive, rgbString: x.color,
+               borderRgbString: x.borderColor, onclick: onChange};
             return x.constructor(args);
          });
       }
@@ -256,8 +273,8 @@ function CvProjects(currentCvPage, chapterConnections, chapterId, chapterArgs) {
 
 function CvEducation(currentCvPage, chapterConnections, chapterId, chapterArgs) {
    const data = [
-      { id: "education_master", color: SUBCHAPTER_COLOR, constructor: CvMaster },
-      { id: "education_bachelor", color: SUBCHAPTER_COLOR, constructor: CvBachelor },
+      { id: "education_master"   , color: SUBCHAPTER_COLOR[0], borderColor: SUBCHAPTER_BORDER_COLOR[0], constructor: CvMaster },
+      { id: "education_bachelor" , color: SUBCHAPTER_COLOR[1], borderColor: SUBCHAPTER_BORDER_COLOR[1], constructor: CvBachelor },
       // #FFC8F2
    ];
    populateConnections(chapterConnections, chapterId, data.map(x => x.id));
@@ -272,7 +289,8 @@ function CvEducation(currentCvPage, chapterConnections, chapterId, chapterArgs) 
             const args = {
                uniqueId: x.id, extraInsideClasses: "cv-text",
                titleElement: span({class: () => isActive.val ? " bold " : ""}, localizeUi(x.id)),
-               isDefaultActive: isActive, rgbString: x.color, onclick: onChange};
+               isDefaultActive: isActive, rgbString: x.color,
+               borderRgbString: x.borderColor, onclick: onChange};
             return x.constructor(args);
          });
       }
@@ -287,7 +305,7 @@ function CvMaster(chapterArgs) {
             div({class: "flex-column", style: "align-items:center; gap:0.2rem;"},
                p({class: "font-Large"}, "MSc of Information Science"),
                LeftRightAlignedList({leftItems: [ p("with Honors"), ], rightItems: [ p("GPA 5/5"), ], }),
-               img({src: "../assets/Skoltech_Logo.svg", style: "height:1.5rem; filter: invert(0.5) sepia(1) saturate(5) hue-rotate(35deg);"}),
+               img({src: "../assets/Skoltech_Logo.svg", style: "height:1.3rem; filter: invert(0.5) sepia(1) saturate(5) hue-rotate(35deg);"}),
                p("Skolkovo Institute of Science & Technology"),
             )
          ),
@@ -315,7 +333,7 @@ function CvBachelor(chapterArgs) {
             div({class: "flex-column", style: "align-items:center; gap:0.2rem;"},
                p({class: "font-Large"}, "BSc of Computer Science"),
                LeftRightAlignedList({leftItems: [ p("with Honors"), ], rightItems: [ p("GPA 5/5"), ], }),
-               img({src: "../assets/polytech_logo_small.svg", style: "height:1.5rem;"}),
+               img({src: "../assets/polytech_logo_small.svg", style: "height:1.3rem;"}),
                p("Peter The Great St. Petersburg Polytechnic University"),
             )
          ),

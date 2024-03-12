@@ -62,7 +62,7 @@ function FullscreenButton(fullscreenElement) {
 }
 
 function GeoLocation() {
-
+   return img({src: "../assets/1globe_tss.png", style: "width: 2rem; height: 2rem"}, )
 }
 
 function LanguagePicker(currentLanguage, isVertical, tooltipLanguage=undefined, tooltipLabelId='ui_language') {
@@ -200,7 +200,7 @@ function PersonalCard() {
          (localizeUi("specialty_deep_learning", /*nullIfMissing*/ true) ? li(localizeUi("specialty_deep_learning")) : null),
       )),
       div({class: "techlist"},
-         (["C++", "Python", "OpenGL", "WebGL", "Android"]
+         (["C++", "Python", "OpenGL", /*"WebGL",*/ "Android"]
             .map(text => div({class: "badge"}, text))),
       ),
    );
@@ -293,6 +293,40 @@ function ControlsPopup({onclose}) {
    );
 }
 
+function getFontFamilies(elements){
+   let usedFonts = [];
+   elements.forEach(function(el,i){
+     let nodeType = el.nodeName.toLowerCase();
+     let fontFamily = getComputedStyle(el).fontFamily;
+     let familyArr = fontFamily.split(',');
+     let fontApplied = false;
+     let renderedFont = '';
+     for(let i=0; i<familyArr.length && !fontApplied; i++){
+       let currentFamily = familyArr[i];
+       fontApplied = document.fonts.check(`12px ${currentFamily}`);
+       if(fontApplied){
+         //font is loaded - return family name
+         renderedFont = currentFamily;
+       }
+     }
+     usedFonts.push({ type:nodeType, font: renderedFont});
+   })
+   return usedFonts;
+ }
+
+function configureFontSize() {
+   let para = document.querySelector('p');
+   let fontFamily = getFontFamilies([para])[0].font;
+   const fontMap = new Map();
+   fontMap.set("\"Share Tech\"", {size: '15pt'});
+   fontMap.set("\"JetBrains Mono\"", {size: '13pt'});
+   fontMap.set("\"Segoe UI\"", {size: '15pt'});
+   let fontData = fontMap.get(fontFamily) || {size: '15pt'};
+   let fontSize = fontData.size;
+   console.log("-- FONT " + fontFamily + " : " + fontSize);
+   document.documentElement.style.setProperty('--font-size-main', fontSize);
+}
+
 function addParallax({element, sensitivityXY, parallaxes, centers}) {
    document.addEventListener("mousemove", parallax);
    function parallax(e) {
@@ -312,7 +346,7 @@ function addParallax({element, sensitivityXY, parallaxes, centers}) {
    }
 }
 
-function js_setup_canvas() {
+function configureCanvas() {
    let canvas = document.getElementById(CANVAS_ID);
    let gl = canvas.getContext("webgl2");
 
@@ -409,7 +443,7 @@ window.onload = function() {
       // myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png)";
       addParallax({
          element: myPhoto, sensitivityXY: [0.015, 0.010],
-         parallaxes: [1.0, 0.6, 0.4, 0.3, 0.15], centers: [[0, 0], [0, -10], [75, 10], [100, 5], [-10, -5]]
+         parallaxes: [1.0, 0.6, 0.4, 0.3, 0.15], centers: [[0, 0], [0, -10], [75, 10], [/*100*/10000, 5], [-10, -5]]
       });
    } else {
       myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png)";
@@ -424,7 +458,8 @@ window.onload = function() {
       scrollCallback(wheelSpeed * ELEMENT_SCROLL_SPEED);
    }, { capture: true });
 
-   js_setup_canvas();
+   configureFontSize();
+   configureCanvas();
    wasm_startup();
    wasm_loop(CANVAS_ID);
 }

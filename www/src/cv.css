@@ -1,5 +1,5 @@
 .cv-content {
-   margin-top: 1rem;
+   margin-top: 0.5rem;
    width: 100%;
    height: 100%;
    flex: 1 1 auto;
@@ -106,7 +106,7 @@
 }
 
 .cv-chapter.active .inside {
-   justify-content: space-around;
+   justify-content:safe;
    height: 0;
 }
 
@@ -230,7 +230,7 @@
 .icons {
    display: flex;
    flex-direction: row;
-   flex-wrap: wrap;
+   /* flex-wrap: wrap; */
    justify-content: space-evenly;
    /* gap: 0.2rem; */
    margin-bottom: 0.5rem;

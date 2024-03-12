@@ -2,7 +2,7 @@
    --canvas-min-width: 300px;
    --canvas-min-aspect: 1.0;
    --sidebar-width: 27em;
-   --font-size-main: 13pt;
+   /* --font-size-main: 15pt; configured in index.js */ 
    --font-size-h2: 1.2rem;
    /* --color-theme-accent: #ffd966; */
    /* --color-theme-normal: #ffec63; */
@@ -23,13 +23,14 @@
    --pixel-border: var(--color-theme-bold); /* Inner border color: */
 	--pixel-border-2: var(--color-theme-accent); /* Middle border color: */
 	--pixel-border-3: var(--pixel-border); /* Outer border color */
-	--pixel: 0.2rem; /* Pixel size */
+	--pixel: 3px; /* Pixel size */
 }
 
 * {
    margin: 0;
    /* box-sizing: border-box; */
    /* "Questrial" */
+   /* font-family: 'Share Tech', 'JetBrains Mono', 'Segoe UI', Tahoma, Geneva, Verdana; */
    font-family: 'JetBrains Mono', 'Segoe UI', Tahoma, Geneva, Verdana;
 }
 
@@ -394,8 +395,8 @@ select option {
 }
 
 .fullscreen-button img {
-   width: 4.5rem;
-   height: 4.5rem;
+   width: 80px;
+   height: 80px;
    mix-blend-mode: difference;
    /* -webkit-filter: grayscale(1) invert(1); */
    filter: invert(0.5);

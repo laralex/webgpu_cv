@@ -73,7 +73,16 @@ function FontPicker(currentFont) {
       "\"Segoe UI\"",
    ];
    van.derive(() => {
-      document.documentElement.style.setProperty('--font-families', currentFont.val);
+      const baseFamilies = getComputedStyle(document.body).getPropertyValue('--font-families-const');
+      let customFamilies = currentFont.val + ", ";
+      // FONTS.forEach((f) => {
+      //    if (f !== currentFont.val) {
+      //       customFamilies += f + ", ";
+      //    }
+      // });
+      const overrideFamilies = customFamilies + baseFamilies;
+      console.log('@@', overrideFamilies);
+      document.documentElement.style.setProperty('--font-families', overrideFamilies);
       configureFontSize(currentFont.val);
    });
 	const options = FONTS.map((fontFamily, index) =>
@@ -92,11 +101,11 @@ function FontPicker(currentFont) {
    );
 }
 
-function LanguagePicker(currentLanguage, isVertical, tooltipLanguage=undefined, tooltipLabelId='ui_language') {
+function LanguagePicker(currentLanguage, currentFont, isVertical, tooltipLanguage=undefined, tooltipLabelId='ui_language') {
    const LANGUAGES = {
-      en: {labelId: 'english_en', icon: "../assets/flag_GB.png", emoji: "🇬🇧"},
-      ru: {labelId: 'russian_en', icon: "../assets/flag_RU.png", emoji: "🇷🇺"},
-      kr: {labelId: 'korean_en', icon: "../assets/flag_RU.png", emoji: "🇰🇷"},
+      en: {labelId: 'english_en', icon: "../assets/flag_GB.png", emoji: "🇬🇧", font: "\"Share Tech\""},
+      ru: {labelId: 'russian_en', icon: "../assets/flag_RU.png", emoji: "🇷🇺", font: "\"JetBrains Mono\""},
+      kr: {labelId: 'korean_en', icon: "../assets/flag_RU.png", emoji: "🇰🇷", font: "\"Share Tech\""},
    }
    function localizePage(language)
    {
@@ -106,13 +115,13 @@ function LanguagePicker(currentLanguage, isVertical, tooltipLanguage=undefined, 
       console.log("Set language=" + language);
       let lang = ':lang(' + language + ')';
 		let hide = '[lang]:not(' + lang + ')';
-		document.querySelectorAll(hide).forEach(function (node) {
-			node.style.display = 'none';
-		});
+		// document.querySelectorAll(hide).forEach(function (node) {
+		// 	node.style.display = 'none';
+		// });
 		let show = '[lang]' + lang;
-		document.querySelectorAll(show).forEach(function (node) {
-			node.style.display = 'unset';
-		});
+		// document.querySelectorAll(show).forEach(function (node) {
+		// 	node.style.display = 'unset';
+		// });
    }
    if (!tooltipLanguage) {
       tooltipLanguage = currentLanguage;
@@ -129,7 +138,10 @@ function LanguagePicker(currentLanguage, isVertical, tooltipLanguage=undefined, 
       select({
          class: 'interactive btn',
          value: currentLanguage,
-         oninput: e => currentLanguage.val = e.target.value,
+         oninput: e => {
+            currentLanguage.val = e.target.value;
+            currentFont.val = LANGUAGES[currentLanguage.val].font;
+         },
       }, options,),
       labelAfter,
    );
@@ -144,10 +156,10 @@ function GraphicsLevelPicker(currentGraphicsLevel, isVertical) {
    }
    const options = Object.entries(GRAPHICS_LEVELS).map(([level, meta]) =>
       option({ value: level, selected: () => level == currentGraphicsLevel.val},
-         () => localizeUi(meta.labelId)() + " " +  meta.emoji));
+         () => localizeString(meta.labelId)().text + " " +  meta.emoji));
    van.derive(() => console.log("Set graphics_level="+currentGraphicsLevel.val));
-   const labelBefore = isVertical ? span(localizeUi('graphics_levels')) : null;
-   const labelAfter = !isVertical ? span(localizeUi('graphics_levels')) : null;
+   const labelBefore = isVertical ? localizeUi('graphics_levels') : null;
+   const labelAfter = !isVertical ? localizeUi('graphics_levels') : null;
    return div(
       { class: 'graphics-picker ' + (isVertical ? "flex-column" : "flex-row") },
       labelBefore,
@@ -164,8 +176,8 @@ function ResumePdfLink() {
    return button({class:"btn-block interactive btn", role:"button", style:"width:100%"},
       // bxs-download
       i({ class: "bx bxs-file-pdf bx-tada font-Huge", style: "color: var(--color-gmail);"}),
-      a({ class: "font-normalsize", href: localizeUi("pdf_cv_href"), target: "_blank"},
-         () => localizeUi("cv")() + " " + localizeUi("pdf")(),
+      a({ class: "font-normalsize", href: localizeString("pdf_cv_href")().text, target: "_blank"},
+         () => localizeString("cv")().text + " " + localizeString("pdf")().text,
          // label({style: "display:block;"}, ),
          // label({style: "display:block;"}, ),
       ));
@@ -265,7 +277,7 @@ function IntroPopup({onclose}) {
    const needAnimation = van.state(true);
    van.derive(() => { if (closed.val && onclose) onclose(); });
    return () => closed.val ? null :div({class: "popup font-large retro-box checkerboard-background"},
-      div({class: "message font-Large"}, LanguagePicker(CURRENT_LANGUAGE, /* vertical */ false, undefined, 'ui_language_intro')),
+      div({class: "message font-Large"}, LanguagePicker(CURRENT_LANGUAGE, CURRENT_FONT_FAMILY, /* vertical */ false, undefined, 'ui_language_intro')),
       div({
          class: () => (needAnimation.val ? " animated-appear " : "") + " flex-column",
          onanimationend: () => needAnimation.val = false, // to prevent animation repeat when language switched
@@ -352,7 +364,7 @@ function configureFontSize(fontFamily = null) {
       {fontSize: '13pt', sidebarWidth: '28rem', cardDescriptionBasis: '13rem', relativeBasis: '1.0rem'}
    );
    fontMap.set("\"Segoe UI\"",
-      {fontSize: '15pt', sidebarWidth: '24rem', cardDescriptionBasis: '11rem', relativeBasis: '1.0rem'}
+      {fontSize: '13pt', sidebarWidth: '28rem', cardDescriptionBasis: '11rem', relativeBasis: '1.0rem'}
    );
    let fontData = fontMap.get(actualFontFamily) ||
       {fontSize: '15pt', sidebarWidth: '27rem', cardDescriptionBasis: '13rem', relativeBasis: '1.0rem'};
@@ -442,7 +454,7 @@ function getScrollCallback() {
 
 window.onload = function() {
    van.add(document.getElementById("canvas-wrapper"), FullscreenButton(document.getElementById("canvas-wrapper")));
-   van.add(document.getElementById("side-top__1"), LanguagePicker(CURRENT_LANGUAGE, /*vertical*/ false));
+   van.add(document.getElementById("side-top__1"), LanguagePicker(CURRENT_LANGUAGE, CURRENT_FONT_FAMILY, /*vertical*/ false));
    if (DEBUG || true) {
       van.add(document.getElementById("side-top__1"), FontPicker(CURRENT_FONT_FAMILY));
    }

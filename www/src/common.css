@@ -12,7 +12,8 @@
    --size-LARGE: calc(var(--size-normalsize)*1.4);
    --size-huge: calc(var(--size-normalsize)*1.6);
    --size-Huge: calc(var(--size-normalsize)*1.8);
-   --font-families: 'Share Tech', 'JetBrains Mono', 'Segoe UI', Tahoma, Geneva, Verdana;
+   --font-families-const: Tahoma, Geneva, Verdana;
+   --font-families: var(--font-families-const);
    /* --color-theme-accent: #ffd966; */
    /* --color-theme-normal: #ffec63; */
    --color-theme-bold: #8b7e67;
@@ -40,7 +41,6 @@
    /* box-sizing: border-box; */
    /* "Questrial" */
    font-family: var(--font-families);
-   /* font-family: 'JetBrains Mono', 'Segoe UI', Tahoma, Geneva, Verdana; */
 
    /* unselectable */
    user-select: none;
@@ -365,6 +365,12 @@ select option {
    padding-bottom: 2px;
 }
 
+.demo-controls select, .demo-controls option {
+   width: 9rem;
+   align-items: center;
+   text-align: center;
+}
+
 .demo-controls .labeled {
    background-color: var(--color-theme-normal-alpha);
 }
@@ -383,13 +389,9 @@ select option {
    font-weight: 600;
 }
 
-[lang] {
+/* [lang] {
    display: none;
-}
-
-[lang=en] {
-   display: unset;
-}
+} */
 
 .language-picker, .graphics-picker, .font-picker{
    justify-content: space-between;

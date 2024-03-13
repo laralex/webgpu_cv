@@ -101,7 +101,7 @@ function CvContent(currentCvPage, chaptersConnections) {
             currentCvPage[0].val = x.id;
             currentCvPage[1].val = chaptersConnections[x.id]["__begin__"].next[1];
          };
-         const borderBgValue = `getCssColor(x.borderColor)}`;
+         const borderBgValue = `${getCssColor(x.borderColor)}`;
          const bgValue = `linear-gradient(${getCssColor(x.color)}, ${getCssColor((data[i+1] || data[i]).color)})`;
          const chapterArgs = {
             uniqueId: x.id,

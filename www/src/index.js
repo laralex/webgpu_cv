@@ -81,14 +81,13 @@ function FontPicker(currentFont) {
       //    }
       // });
       const overrideFamilies = customFamilies + baseFamilies;
-      console.log('@@', overrideFamilies);
       document.documentElement.style.setProperty('--font-families', overrideFamilies);
       configureFontSize(currentFont.val);
    });
 	const options = FONTS.map((fontFamily, index) =>
       option({ value: fontFamily, selected: () => fontFamily == currentFont.val}, fontFamily));
    const labelBefore = null;
-   const labelAfter = span(localizeUi('font_family'));
+   const labelAfter = localizeUi('font_family');
    return () => div(
       { class: 'font-picker ' + "flex-row" },
       labelBefore,
@@ -358,16 +357,16 @@ function configureFontSize(fontFamily = null) {
    let actualFontFamily = fontFamily || getFontFamilies([para])[0].font;
    const fontMap = new Map();
    fontMap.set("\"Share Tech\"",
-      {fontSize: '16pt', sidebarWidth: '23rem', cardDescriptionBasis: '11rem', relativeBasis: '0.95rem'}
+      {fontSize: '16pt', sidebarWidth: '26rem', cardDescriptionBasis: '11rem', relativeBasis: '0.95rem'}
    );
    fontMap.set("\"JetBrains Mono\"",
-      {fontSize: '13pt', sidebarWidth: '28rem', cardDescriptionBasis: '13rem', relativeBasis: '1.0rem'}
+      {fontSize: '13pt', sidebarWidth: '31rem', cardDescriptionBasis: '13rem', relativeBasis: '1.0rem'}
    );
    fontMap.set("\"Segoe UI\"",
-      {fontSize: '13pt', sidebarWidth: '28rem', cardDescriptionBasis: '11rem', relativeBasis: '1.0rem'}
+      {fontSize: '13pt', sidebarWidth: '31rem', cardDescriptionBasis: '11rem', relativeBasis: '1.0rem'}
    );
    let fontData = fontMap.get(actualFontFamily) ||
-      {fontSize: '15pt', sidebarWidth: '27rem', cardDescriptionBasis: '13rem', relativeBasis: '1.0rem'};
+      {fontSize: '15pt', sidebarWidth: '30rem', cardDescriptionBasis: '13rem', relativeBasis: '1.0rem'};
    console.log("-- FONT " + actualFontFamily + " : " + fontData.fontSize);
    document.documentElement.style.setProperty('--font-size-main', fontData.fontSize);
    document.documentElement.style.setProperty('--sidebar-width', fontData.sidebarWidth);

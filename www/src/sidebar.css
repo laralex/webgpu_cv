@@ -11,7 +11,7 @@
    left: 0;
    height: 100vh;
    background-color: var(--color-theme-normal);
-   padding: .4rem .8rem;
+   padding: 6px 12px;
    box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2) inset;
    /* resize: horizontal;
    overflow-x: auto; */

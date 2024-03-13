@@ -47,6 +47,7 @@ function getLocalization() {
       controls_mouse_move: {en: "Mouse movement rotates 3D scene", ru: "Движение мыши - поворот в 3D сцене", /* kr: "" */},
       controls_close: { en: "OK", ru: "OK", kr: "OK" },
       resize_tooltip: { en: "Resize by dragging the border", ru: "Потянув за границу, можно настроить ширину", kr: "테두리를 끌으면 크기가 바꿉니다" },
+      font_family: { en: "Font family", ru: "Шрифт", kr: "글꼴" },
       // xxx: {en: "", ru: "", kr: ""},
    };
 }

@@ -1,9 +1,18 @@
 :root {
    --canvas-min-width: 300px;
    --canvas-min-aspect: 1.0;
-   --sidebar-width: 27em;
+   --sidebar-width: 27rem;
+   --card-description-basis: 13rem;
    /* --font-size-main: 15pt; configured in index.js */ 
    --font-size-h2: 1.2rem;
+   --size-normalsize: 1.0rem;
+   --size-small: calc(var(--size-normalsize)*0.9);
+   --size-large: calc(var(--size-normalsize)*1.1);
+   --size-Large: calc(var(--size-normalsize)*1.2);
+   --size-LARGE: calc(var(--size-normalsize)*1.4);
+   --size-huge: calc(var(--size-normalsize)*1.6);
+   --size-Huge: calc(var(--size-normalsize)*1.8);
+   --font-families: 'Share Tech', 'JetBrains Mono', 'Segoe UI', Tahoma, Geneva, Verdana;
    /* --color-theme-accent: #ffd966; */
    /* --color-theme-normal: #ffec63; */
    --color-theme-bold: #8b7e67;
@@ -30,8 +39,8 @@
    margin: 0;
    /* box-sizing: border-box; */
    /* "Questrial" */
-   /* font-family: 'Share Tech', 'JetBrains Mono', 'Segoe UI', Tahoma, Geneva, Verdana; */
-   font-family: 'JetBrains Mono', 'Segoe UI', Tahoma, Geneva, Verdana;
+   font-family: var(--font-families);
+   /* font-family: 'JetBrains Mono', 'Segoe UI', Tahoma, Geneva, Verdana; */
 }
 
 html {
@@ -269,31 +278,31 @@ select option {
 }
 
 .font-small {
-   font-size: 0.9rem;
+   font-size: var(--size-small);
 }
 
 .font-normalsize {
-   font-size: 1rem;
+   font-size: var(--size-normalsize);
 }
 
 .font-large {
-   font-size: 1.1rem;
+   font-size: var(--size-large);
 }
 
 .font-Large {
-   font-size: 1.2rem;
+   font-size: var(--size-Large);
 }
 
 .font-LARGE {
-   font-size: 1.4rem;
+   font-size: var(--size-LARGE);
 }
 
 .font-huge {
-   font-size: 1.6rem;
+   font-size: var(--size-huge);
 }
 
 .font-Huge {
-   font-size: 1.8rem;
+   font-size: var(--size-Huge);
 }
 
 .parallax {
@@ -347,6 +356,9 @@ select option {
 
 .demo-controls .labeled {
    background-color: var(--color-theme-normal-alpha);
+}
+
+.demo-controls .labeled span {
    padding-right: 1em;
 }
 
@@ -368,7 +380,7 @@ select option {
    display: unset;
 }
 
-.language-picker, .graphics-picker {
+.language-picker, .graphics-picker, .font-picker{
    justify-content: space-between;
 }
 
@@ -382,7 +394,7 @@ select option {
 
 .fullscreen-button {
    position: absolute;
-   left: calc(100% - 5rem);
+   left: calc(100% - 80px);
    top: 0%;
    display: block;
    width: auto;

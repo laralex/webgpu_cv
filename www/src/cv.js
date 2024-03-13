@@ -150,11 +150,11 @@ function CvCareer(currentCvPage, chapterConnections, chapterId, chapterArgs) {
 
 function CvHuawei(chapterArgs) {
    chapterArgs.insideConstructor = () => {
-      return div({class: "font-small"},
+      return div({class: "font-normalsize"},
          div({class: "flex-row flex-center", style: "margin-bottom: 0.5rem;"},
             YearsBlock(["2023", "2024", "Current"]),
             div({class: "flex-column", style: "align-items:center; gap:0.5rem;"},
-               img({src: "../assets/huawei-small.svg", style: "height:2rem;"}),
+               img({id: "cv-huawei-logo", src: "../assets/huawei-small.svg"}),
                p({class: "font-Large bold"}, "Frame prediction SDK for mobile games"),
                LeftRightAlignedList({
                   leftItems: [ p("Senior engineer"), ],
@@ -179,11 +179,11 @@ function CvHuawei(chapterArgs) {
 
 function CvSamsung(chapterArgs) {
    chapterArgs.insideConstructor = () => {
-      return div({class: "font-small"},
+      return div({class: "font-normalsize"},
          div({class: "flex-row flex-center", style: "margin-bottom: 0.5rem;"},
             YearsBlock(["2021", "2022", "2023"]),
             div({class: "flex-column", style: "align-items:center;gap: 0.5rem;"},
-               img({src: "../assets/samsung.svg", style: "height:1.5rem;"}),
+               img({id: "cv-samsung-logo", src: "../assets/samsung.svg"}),
                p({class: "font-Large bold"}, "Neural Networks R&D"),
                LeftRightAlignedList({
                   leftItems: [p("Middle engineer"), p("Junior engineer"), p("Intern"),],
@@ -299,13 +299,13 @@ function CvEducation(currentCvPage, chapterConnections, chapterId, chapterArgs) 
 
 function CvMaster(chapterArgs) {
    chapterArgs.insideConstructor = () => {
-      return div({class: "font-small"},
+      return div({class: "font-normalsize"},
          div({class: "flex-row flex-center", style: "margin-bottom: 0.5rem;"},
             YearsBlock(["2020", "2021", "2022"]),
             div({class: "flex-column", style: "align-items:center; gap:0.2rem;"},
                p({class: "font-Large"}, "MSc of Information Science"),
                LeftRightAlignedList({leftItems: [ p("with Honors"), ], rightItems: [ p("GPA 5/5"), ], }),
-               img({src: "../assets/Skoltech_Logo.svg", style: "height:1.3rem; filter: invert(0.5) sepia(1) saturate(5) hue-rotate(35deg);"}),
+               img({id: "cv-skoltech-logo", src: "../assets/Skoltech_Logo.svg"}),
                p("Skolkovo Institute of Science & Technology"),
             )
          ),
@@ -327,13 +327,13 @@ function CvMaster(chapterArgs) {
 
 function CvBachelor(chapterArgs) {
    chapterArgs.insideConstructor = () => {
-      return div({class: "font-small"},
+      return div({class: "font-normalsize"},
          div({class: "flex-row flex-center", style: "margin-bottom: 0.5rem;"},
             YearsBlock(["2016", "2017", "2018", "2019", "2020"]),
             div({class: "flex-column", style: "align-items:center; gap:0.2rem;"},
                p({class: "font-Large"}, "BSc of Computer Science"),
                LeftRightAlignedList({leftItems: [ p("with Honors"), ], rightItems: [ p("GPA 5/5"), ], }),
-               img({src: "../assets/polytech_logo_small.svg", style: "height:1.3rem;"}),
+               img({id: "cv-polytech-logo", src: "../assets/polytech_logo_small.svg"}),
                p("Peter The Great St. Petersburg Polytechnic University"),
             )
          ),

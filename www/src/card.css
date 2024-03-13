@@ -194,7 +194,7 @@
   margin: 0px 10px 0px 15px;
   display: flex;
   flex-direction: column;
-  flex: 1 1 13rem;
+  flex: 1 1 var(--card-description-basis);
   /* align-items: stretch; */
   align-content: space-between;
   /* height: 100%;

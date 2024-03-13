@@ -5,6 +5,7 @@ const ADD_PARALLAX = true;
 const CANVAS_ID = "main-canvas";
 
 const CURRENT_GRAPHICS_LEVEL = van.state("medium");
+const CURRENT_FONT_FAMILY = van.state("\"Share Tech\"");
 // const DEFAULT_MAIN_CHAPTER = "chapter_career";
 // const DEFAULT_SUB_CHAPTER = "career_huawei";
 const DEFAULT_MAIN_CHAPTER = "chapter_education";
@@ -63,6 +64,32 @@ function FullscreenButton(fullscreenElement) {
 
 function GeoLocation() {
    return img({src: "../assets/1globe_tss.png", style: "width: 2rem; height: 2rem"}, )
+}
+
+function FontPicker(currentFont) {
+   const FONTS = [
+      "\"Share Tech\"",
+      "\"JetBrains Mono\"",
+      "\"Segoe UI\"",
+   ];
+   van.derive(() => {
+      document.documentElement.style.setProperty('--font-families', currentFont.val);
+      configureFontSize(currentFont.val);
+   });
+	const options = FONTS.map((fontFamily, index) =>
+      option({ value: fontFamily, selected: () => fontFamily == currentFont.val}, fontFamily));
+   const labelBefore = null;
+   const labelAfter = span(localizeUi('font_family'));
+   return () => div(
+      { class: 'font-picker ' + "flex-row" },
+      labelBefore,
+      select({
+         class: 'interactive btn',
+         value: currentFont,
+         oninput: e => currentFont.val = e.target.value,
+      }, options,),
+      labelAfter,
+   );
 }
 
 function LanguagePicker(currentLanguage, isVertical, tooltipLanguage=undefined, tooltipLabelId='ui_language') {
@@ -183,7 +210,7 @@ function ResizeTooltip({timeoutMillisec}) {
 }
 
 function RepositoryLink() {
-   return button({class:"btn-block interactive btn font-large", role:"button", style: "width:100%;"},
+   return button({class:"btn-block interactive btn font-large", role:"button", style: "width:100%; margin: 2px 0 0 0;"},
       a({href: "https://github.com/laralex/my_web_cv", target: "_blank"},
          i({ class: "bx bxl-github", style: "font-size:1.3rem;color: var(--color-github)"}),
          label(" "),
@@ -314,17 +341,26 @@ function getFontFamilies(elements){
    return usedFonts;
  }
 
-function configureFontSize() {
+function configureFontSize(fontFamily = null) {
    let para = document.querySelector('p');
-   let fontFamily = getFontFamilies([para])[0].font;
+   let actualFontFamily = fontFamily || getFontFamilies([para])[0].font;
    const fontMap = new Map();
-   fontMap.set("\"Share Tech\"", {size: '15pt'});
-   fontMap.set("\"JetBrains Mono\"", {size: '13pt'});
-   fontMap.set("\"Segoe UI\"", {size: '15pt'});
-   let fontData = fontMap.get(fontFamily) || {size: '15pt'};
-   let fontSize = fontData.size;
-   console.log("-- FONT " + fontFamily + " : " + fontSize);
-   document.documentElement.style.setProperty('--font-size-main', fontSize);
+   fontMap.set("\"Share Tech\"",
+      {fontSize: '16pt', sidebarWidth: '23rem', cardDescriptionBasis: '11rem', relativeBasis: '0.95rem'}
+   );
+   fontMap.set("\"JetBrains Mono\"",
+      {fontSize: '13pt', sidebarWidth: '28rem', cardDescriptionBasis: '13rem', relativeBasis: '1.0rem'}
+   );
+   fontMap.set("\"Segoe UI\"",
+      {fontSize: '15pt', sidebarWidth: '24rem', cardDescriptionBasis: '11rem', relativeBasis: '1.0rem'}
+   );
+   let fontData = fontMap.get(actualFontFamily) ||
+      {fontSize: '15pt', sidebarWidth: '27rem', cardDescriptionBasis: '13rem', relativeBasis: '1.0rem'};
+   console.log("-- FONT " + actualFontFamily + " : " + fontData.fontSize);
+   document.documentElement.style.setProperty('--font-size-main', fontData.fontSize);
+   document.documentElement.style.setProperty('--sidebar-width', fontData.sidebarWidth);
+   document.documentElement.style.setProperty('--card-description-basis', fontData.cardDescriptionBasis);
+   document.documentElement.style.setProperty('--size-normalsize', fontData.relativeBasis);
 }
 
 function addParallax({element, sensitivityXY, parallaxes, centers}) {
@@ -407,9 +443,12 @@ function getScrollCallback() {
 window.onload = function() {
    van.add(document.getElementById("canvas-wrapper"), FullscreenButton(document.getElementById("canvas-wrapper")));
    van.add(document.getElementById("side-top__1"), LanguagePicker(CURRENT_LANGUAGE, /*vertical*/ false));
-   van.add(document.getElementById("side-top__2"), GraphicsLevelPicker(CURRENT_GRAPHICS_LEVEL, /*vertical*/ false));
+   if (DEBUG || true) {
+      van.add(document.getElementById("side-top__1"), FontPicker(CURRENT_FONT_FAMILY));
+   }
+   van.add(document.getElementById("side-top__1"), GraphicsLevelPicker(CURRENT_GRAPHICS_LEVEL, /*vertical*/ false));
    van.add(document.getElementById("side-links__1"), ResumePdfLink());
-   van.add(document.getElementById("side-links__2"), RepositoryLink());
+   van.add(document.getElementById("side-top__1"), RepositoryLink());
    document.querySelectorAll(".firstinfo").forEach(element => {
       // console.log(element);
       van.add(element, PersonalCard())

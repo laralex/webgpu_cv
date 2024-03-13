@@ -196,6 +196,8 @@
   flex-direction: column;
   flex: 1 1 var(--card-description-basis);
   /* align-items: stretch; */
+  justify-content: space-around;
+  /* height: 100%; */
   align-content: space-between;
   /* height: 100%;
   min-height: 100%; */
@@ -222,17 +224,21 @@
    font-weight: 600; */
 }
 
+.firstinfo .specialization {
+  margin-top: 0.5rem;
+}
+
 .firstinfo .techlist {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  flex: 0 1 50px;
-  justify-content: space-evenly;
-  margin-top:6px;
+  flex: 0 1 auto;
+  justify-content: space-around;
+  /* margin-top: 0.5; */
 }
 
 .firstinfo .profileinfo .badge {
-  padding: 0 0.5em;
+  /* padding: 0 0.5em; */
   /* padding: 10px 0px;
   color: #2A2A2A;
   line-height: 1.2;
@@ -242,6 +248,27 @@
   /* padding: 0px 1em; */
 }
 
+
+.geo-location {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.geo-location span {
+  /* text-align: center; */
+  /* vertical-align: middle; */
+  /* line-height: 1.5rem; */
+}
+
+.geo-location img {
+  /* vertical-align: middle; */
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-right: 1rem;
+}
 
 @keyframes anim-card {
   0% {

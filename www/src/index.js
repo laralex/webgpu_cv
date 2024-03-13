@@ -63,7 +63,10 @@ function FullscreenButton(fullscreenElement) {
 }
 
 function GeoLocation() {
-   return img({src: "../assets/1globe_tss.png", style: "width: 2rem; height: 2rem"}, )
+   return div({class: "geo-location"},
+      img({src: "../assets/1globe_tss.png"}),
+      localizeUi('geo_location')
+   );
 }
 
 function FontPicker(currentFont) {
@@ -232,15 +235,16 @@ function RepositoryLink() {
 function PersonalCard() {
    return div({class: "profileinfo"},
       h1({class: "font-LARGE bold"}, localizeUi("name_surname")),
-      h3(localizeUi("specialty")),
-      div(() => ul(
+      h3(localizeUi("job_title")),
+      div({class: "specialization"}, () => ul(
          li(localizeUi("specialty_computer_graphics")),
          (localizeUi("specialty_deep_learning", /*nullIfMissing*/ true) ? li(localizeUi("specialty_deep_learning")) : null),
       )),
       div({class: "techlist"},
-         (["C++", "Python", "OpenGL", /*"WebGL",*/ "Android"]
-            .map(text => div({class: "badge"}, text))),
+      (["C++", "Python", "OpenGL", /*"WebGL",*/ "Android"]
+         .map(text => div({class: "badge"}, text))),
       ),
+      GeoLocation(),
    );
 }
 function MoreSkillsButton() {

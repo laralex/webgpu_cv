@@ -14,7 +14,7 @@ function getLocalization() {
       ui_language_intro: {en: "Language", ru: "Language / Язык", kr: "Language / 언어"},
       graphics_levels: {en: "Graphics quality", ru: "Качество графики", kr: "그래픽 품질"},
       name_surname: {en: "Alexey Larionov", ru: "Алексей Ларионов", kr: "료샤 라리오노브"},
-      specialty: {en: "Graphics Software Engineer", ru: "Программист графики", kr: "그래픽 프로그래머"},
+      job_title: {en: "Graphics Software Engineer", ru: "Программист графики", kr: "그래픽 프로그래머"},
       specialty_computer_graphics: {en: "Optimization and quality of graphics", ru: "Оптимизация и качество 3D графики", kr: "저는 3D 그래픽 성능와 딥러닝 연구을 일합니다."},
       specialty_deep_learning: {en: "Deep Learning R&D", ru: "R&D нейронных сетей", /*no korean kr: ""*/},
       cv: {en: "CV", ru: "CV", kr: "이력서"},
@@ -48,6 +48,7 @@ function getLocalization() {
       controls_close: { en: "OK", ru: "OK", kr: "OK" },
       resize_tooltip: { en: "Resize by dragging the border", ru: "Потянув за границу, можно настроить ширину", kr: "테두리를 끌으면 크기가 바꿉니다" },
       font_family: { en: "Font family", ru: "Шрифт", kr: "글꼴" },
+      geo_location: { en: "Russia, Remote/Relocation", ru: "Москва / СПб / Релокация", kr: "러시아 / 이주" },
       // xxx: {en: "", ru: "", kr: ""},
    };
 }

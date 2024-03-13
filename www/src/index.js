@@ -236,10 +236,12 @@ function PersonalCard() {
    return div({class: "profileinfo"},
       h1({class: "font-LARGE bold"}, localizeUi("name_surname")),
       h3(localizeUi("job_title")),
-      div({class: "specialization"}, () => ul(
-         li(localizeUi("specialty_computer_graphics")),
-         (localizeUi("specialty_deep_learning", /*nullIfMissing*/ true) ? li(localizeUi("specialty_deep_learning")) : null),
-      )),
+      div({class: "specialization"}, () => {
+         const cg = localizeUi("specialty_computer_graphics")();
+         const deepLearning = localizeUi("specialty_deep_learning", true)();
+         console.log("@@@", deepLearning);
+         return deepLearning != null ? ul(li(cg), li(deepLearning)) : cg;
+      }),
       div({class: "techlist"},
       (["C++", "Python", "OpenGL", /*"WebGL",*/ "Android"]
          .map(text => div({class: "badge"}, text))),

@@ -22,7 +22,11 @@ function localizeString(key, nullIfMissing = false) {
   }
 }
 function localizeUi(key, nullIfMissing = false) {
-  return () => localizeString(key, nullIfMissing)().text;
+  return () => (key in UI_STRINGS
+    ? (CURRENT_LANGUAGE.val in UI_STRINGS[key]
+      ? UI_STRINGS[key][CURRENT_LANGUAGE.val]
+      : null)
+    : null);
 }
 
 // utility functions

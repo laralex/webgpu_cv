@@ -234,7 +234,7 @@
   flex-wrap: wrap;
   flex: 0 1 auto;
   justify-content: space-around;
-  /* margin-top: 0.5; */
+  margin-top: 0.3rem;
 }
 
 .firstinfo .profileinfo .badge {

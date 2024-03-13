@@ -41,6 +41,13 @@
    /* "Questrial" */
    font-family: var(--font-families);
    /* font-family: 'JetBrains Mono', 'Segoe UI', Tahoma, Geneva, Verdana; */
+
+   /* unselectable */
+   user-select: none;
+   -khtml-user-select: none;
+   -o-user-select: none;
+   -moz-user-select: -moz-none;
+   -webkit-user-select: none;
 }
 
 html {
@@ -74,6 +81,10 @@ a:hover {
 
 a:active, a:visited, a:link {
    color: var(--color-font-main);
+}
+
+.zmax {
+   z-index: 100;
 }
 
 .retro-box-old {

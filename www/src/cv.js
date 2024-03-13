@@ -5,14 +5,16 @@ const SMOOTH = true;
 // const CHAPTER_COLORS = ["#7474bf", "#667ac3", "#5680c6", "#4685c7", "#348ac7"];
 // const CHAPTER_COLORS = ["#8f8fc2", "#8796c8", "#7f9ccd", "#77a3d0", "#70a9d2"];
 const CHAPTER_COLORS = ["#a5a5e1", "#9bade8", "#91b4ee", "#87bcf3", "#7dc3f5"];
-const CHAPTER_BORDER_COLORS = ["#a5a5e1", "#9bade8", "#91b4ee", "#87bcf3", "#7dc3f5"];
+const CHAPTER_BORDER_COLORS = ["#9bade8", "#91b4ee", "#87bcf3", "#7dc3f5", "#7dc3f5"];
 // const SUBCHAPTER_COLOR = ["#f2cc8f", "#FFCA93", "#FFC69E", "#FFC1B3"];
 // const SUBCHAPTER_COLOR = ["#e8ac65", "#dc9c63", "#d08c60", "#c38862"];
 // const SUBCHAPTER_COLOR = ["#CFEBE6", "#B2ECD5", "#A3EAB7", "#A6E590"];
 // const SUBCHAPTER_COLOR = ["#87dceb", "#80d0f0", "#85c3f1", "#93b5ec", "#a5a5e1"];
 // const SUBCHAPTER_COLOR = ["#a5a5e1", "#9bade8", "#91b4ee", "#87bcf3", "#7dc3f5"];
-const SUBCHAPTER_COLOR = ["#bec4d0", "#bec5d7", "#bfc5dd", "#c1c5e3", "#c5c5e9"];
-const SUBCHAPTER_BORDER_COLOR = ["#bec4d0", "#bec5d7", "#bfc5dd", "#c1c5e3", "#c5c5e9"];
+// const SUBCHAPTER_COLOR = ["#bec4d0", "#c5d1da", "#cedde2", "#d9e9ea", "#e6f4f1"];
+// const SUBCHAPTER_COLOR = ["#e6f4f1", "#d9e9ea", "#cedde2", "#c5d1da" , "#bec4d0"];
+const SUBCHAPTER_COLOR = ["#b0deff", "#b6d7f4", "#bbd0e8", "#bdcadc", "#bec4d0"];
+const SUBCHAPTER_BORDER_COLOR = ["#b6d7f4", "#bbd0e8", "#bdcadc", "#bec4d0", "#bec4d0"];
 
 function getCssColor(colorString) {
    if (!colorString) {
@@ -24,14 +26,14 @@ function getCssColor(colorString) {
    return colorString;
 }
 
-function getBackgroundColorStyle(rgbString, withBg=false, withBorder=false) {
-   rgbString = getCssColor(rgbString);
-   return (withBorder === true ? `border-color:${rgbString};` : "")
-         + (withBg === true ? `background-color:${rgbString};` : "");
+function getBackgroundColorStyle(bgValue, withBg=false, withBorder=false) {
+   bgValue = getCssColor(bgValue);
+   return (withBorder === true ? `border-color:${bgValue};` : "")
+         + (withBg === true ? `background-color:${bgValue};` : "");
 }
 
-function CvButton(labelId, rgbString, onclick) {
-   let bg = getBackgroundColorStyle(rgbString);
+function CvButton(labelId, bgValue, onclick) {
+   let bg = getBackgroundColorStyle(bgValue);
    return div({class: "cv-button"},
       button({
          class: "interactive btn font-Large expand-button",
@@ -41,61 +43,74 @@ function CvButton(labelId, rgbString, onclick) {
    );
 }
 
-function CvChapter({uniqueId, titleElement, isDefaultActive, rgbString, borderRgbString, onclick, extraClasses = "", extraActiveClasses = "", extraInsideClasses = "", insideConstructor = () => span(localizeUi("placeholder"))}) {
-   const border = `border-color: ${getCssColor(borderRgbString)}`;
+function CvChapter({uniqueId, titleElement, isDefaultActive, bgValue, borderBgValue, onclick, extraClasses = "", extraActiveClasses = "", extraInsideClasses = "", insideConstructor = () => span(localizeUi("placeholder"))}) {
+   const border = `background: ${borderBgValue}`;
    return div({id: uniqueId, class: () => "cv-chapter flex-column " + (DEBUG && !SMOOTH ? "" : " smooth ") + (isDefaultActive.val ? extraActiveClasses + " active " : " inactive ") + extraClasses},
       button({
          class: "cv-chapter-head btn expand-button ",
-         style: () => `${border};`,
-         //style: () => getBackgroundColorStyle(rgbString, false, false),
+         //style: () => getBackgroundColorStyle(bgValue, false, false),
          onclick: e => { onclick(); },
-      }, div({class:"wrappee", style: ()=>`box-shadow: inset ${isDefaultActive.val ? 60 : 3}rem 0 ${getCssColor(rgbString)};`}, titleElement)),
+      }, div({
+         class:"bg",
+         style: () => `background: ${bgValue};`,
+      }),
+      titleElement,
+      div({
+         class:"border",
+         style: () => `background: ${borderBgValue};`
+      })),
       div({
          class: () => extraInsideClasses + " inside flex-column " /* + (isDefaultActive.val ? " active " : " inactive ") */,
-         //style: () => getBackgroundColorStyle(rgbString, false, false) /* + ` box-shadow: inset 1em 0 0 0 rgb(${rgbString});` */,
+         //style: () => getBackgroundColorStyle(bgValue, false, false) /* + ` box-shadow: inset 1em 0 0 0 rgb(${bgValue});` */,
       }, insideConstructor()),
    );
 }
 
+function CvChapterTitle(isActive, text) {
+   return span({class: () => " cv-title zmax " + (isActive.val ? " bold " : "")}, text);
+}
+
 function CvContent(currentCvPage, chaptersConnections) {
-   const chaptersData = [
+   const data = [
       { id: "chapter_career",       color: CHAPTER_COLORS[0], borderColor: CHAPTER_BORDER_COLORS[0], constructor: CvCareer },
       { id: "chapter_publications", color: CHAPTER_COLORS[1], borderColor: CHAPTER_BORDER_COLORS[1], constructor: CvPublications },
       { id: "chapter_projects",     color: CHAPTER_COLORS[2], borderColor: CHAPTER_BORDER_COLORS[2], constructor: CvProjects },
       { id: "chapter_education",    color: CHAPTER_COLORS[3], borderColor: CHAPTER_BORDER_COLORS[3], constructor: CvEducation },
    ];
    Object.keys(chaptersConnections).forEach(key => { delete chaptersConnections[key]; })
-   for (let i = 0; i < chaptersData.length; i++) {
-      if (!chaptersConnections[chaptersData[i].id]) {
-         chaptersConnections[chaptersData[i].id] = {};
+   for (let i = 0; i < data.length; i++) {
+      if (!chaptersConnections[data[i].id]) {
+         chaptersConnections[data[i].id] = {};
       }
-      let curChapterCon = chaptersConnections[chaptersData[i].id];
+      let curChapterCon = chaptersConnections[data[i].id];
       if (i > 0) {
-         curChapterCon["__begin__"] = {prev: [chaptersData[i - 1].id, "__end__"]};
+         curChapterCon["__begin__"] = {prev: [data[i - 1].id, "__end__"]};
       } else {
-         curChapterCon["__begin__"] = {prev: [chaptersData[i].id, "__begin__"]};
+         curChapterCon["__begin__"] = {prev: [data[i].id, "__begin__"]};
       }
-      if (i < chaptersData.length - 1) {
-         curChapterCon["__end__"] = {next: [chaptersData[i + 1].id, "__begin__"]};
+      if (i < data.length - 1) {
+         curChapterCon["__end__"] = {next: [data[i + 1].id, "__begin__"]};
       } else {
-         curChapterCon["__end__"] = {next: [chaptersData[i].id, "__end__"]};
+         curChapterCon["__end__"] = {next: [data[i].id, "__end__"]};
       }
    }
    return div({class: "cv-content flex-column"},
-      Array.from(chaptersData, (x) => {
+      Array.from(data, (x, i) => {
          const isActive = van.derive(() => x.id == currentCvPage[0].val);
          const onChapterActiveChange = () => {
             currentCvPage[0].val = x.id;
             currentCvPage[1].val = chaptersConnections[x.id]["__begin__"].next[1];
          };
+         const borderBgValue = `getCssColor(x.borderColor)}`;
+         const bgValue = `linear-gradient(${getCssColor(x.color)}, ${getCssColor((data[i+1] || data[i]).color)})`;
          const chapterArgs = {
             uniqueId: x.id,
-            titleElement: span({class: () => isActive.val ? " bold " : ""}, localizeUi(x.id)),
+            titleElement: CvChapterTitle(isActive, localizeUi(x.id)),
             extraActiveClasses: "vert-margin",
             extraClasses: "toplevel",
             isDefaultActive: isActive,
-            rgbString: x.color,
-            borderRgbString: x.borderColor,
+            bgValue: bgValue,
+            borderBgValue: borderBgValue,
             onclick: onChapterActiveChange,
          }
          const chapter = x.constructor(currentCvPage[1], chaptersConnections[x.id], x.id, chapterArgs);
@@ -131,14 +146,17 @@ function CvCareer(currentCvPage, chapterConnections, chapterId, chapterArgs) {
          // if (!currentCvPage.val) {
          //    currentCvPage.val = data[0].id;
          // }
-         return Array.from(data, (x) => {
+         return Array.from(data, (x, i) => {
             const isActive = van.derive(() => x.id == currentCvPage.val);
             const onChange = () => { currentCvPage.val = x.id; };
-            const titleElement = span({class: () => isActive.val ? " bold " : ""}, localizeUi(x.id));
+            const bgValue = `linear-gradient(${getCssColor(x.color)}, ${getCssColor((data[i+1] || data[i]).color)})`;
             const args = {
-               uniqueId: x.id, extraInsideClasses: "cv-text", extraClasses: "toplevel",
-               titleElement: titleElement, isDefaultActive: isActive,
-               rgbString: x.color, borderRgbString: x.borderColor, onclick: onChange};
+               uniqueId: x.id,
+               extraInsideClasses: "cv-text", extraClasses: "toplevel",
+               titleElement: CvChapterTitle(isActive, localizeUi(x.id)),
+               isDefaultActive: isActive,
+               bgValue: bgValue, borderBgValue: x.borderColor,
+               onclick: onChange};
             const chapter = x.constructor(args);
             return chapter;
          });
@@ -146,6 +164,89 @@ function CvCareer(currentCvPage, chapterConnections, chapterId, chapterArgs) {
          //    activeCareer.val = ids[ids.length - 1];
          // })
       }});
+}
+
+function CvPublications(currentCvPage, chapterConnections, chapterId, chapterArgs) {
+   const data = [
+      { id: "publications_wacv_2024", color: SUBCHAPTER_COLOR[0], borderColor: SUBCHAPTER_BORDER_COLOR[0], constructor: CvSamsung },
+      { id: "russian"               , color: SUBCHAPTER_COLOR[1], borderColor: SUBCHAPTER_BORDER_COLOR[1], constructor: CvChapter },
+      { id: "english"               , color: SUBCHAPTER_COLOR[2], borderColor: SUBCHAPTER_BORDER_COLOR[2], constructor: CvChapter },
+      // #71BC8E #428D61 #428D61
+   ];
+   populateConnections(chapterConnections, chapterId, data.map(x => x.id));
+   return CvChapter({...chapterArgs,
+      insideConstructor: () => {
+         // if (!currentCvPage.val) {
+         //    currentCvPage.val = data[0].id;
+         // }
+         return Array.from(data, (x, i) => {
+            const isActive = van.derive(() => x.id == currentCvPage.val);
+            const onChange = () => { currentCvPage.val = x.id; };
+            const bgValue = `linear-gradient(${getCssColor(x.color)}, ${getCssColor((data[i+1] || data[i]).color)})`;
+            const args = {
+               uniqueId: x.id, extraInsideClasses: "cv-text", extraClasses: "toplevel",
+               titleElement: CvChapterTitle(isActive, localizeUi(x.id)),
+               isDefaultActive: isActive, bgValue: bgValue,
+               borderBgValue: x.borderColor, onclick: onChange};
+            return x.constructor(args);
+         });
+      }
+   });
+}
+
+function CvProjects(currentCvPage, chapterConnections, chapterId, chapterArgs) {
+   const data = [
+      { id: "this_cv"                     , color: SUBCHAPTER_COLOR[0], borderColor: SUBCHAPTER_BORDER_COLOR[0], constructor: CvSamsung },
+      { id: "unity_4X_strategy_volunteer" , color: SUBCHAPTER_COLOR[1], borderColor: SUBCHAPTER_BORDER_COLOR[1], constructor: CvChapter },
+      { id: "image_processing_tool"       , color: SUBCHAPTER_COLOR[2], borderColor: SUBCHAPTER_BORDER_COLOR[2], constructor: CvChapter },
+      // #FFB993
+   ];
+   populateConnections(chapterConnections, chapterId, data.map(x => x.id));
+   return CvChapter({...chapterArgs,
+      insideConstructor: () => {
+         // if (!currentCvPage.val) {
+         //    currentCvPage.val = data[0].id;
+         // }
+         return Array.from(data, (x, i) => {
+            const isActive = van.derive(() => x.id == currentCvPage.val);
+            const onChange = () => { currentCvPage.val = x.id; };
+            const bgValue = `linear-gradient(${getCssColor(x.color)}, ${getCssColor((data[i+1] || data[i]).color)})`;
+            const args = {
+               uniqueId: x.id, extraInsideClasses: "cv-text", extraClasses: "toplevel",
+               titleElement: CvChapterTitle(isActive, localizeUi(x.id)),
+               isDefaultActive: isActive, bgValue: bgValue,
+               borderBgValue: x.borderColor, onclick: onChange};
+            return x.constructor(args);
+         });
+      }
+   });
+}
+
+function CvEducation(currentCvPage, chapterConnections, chapterId, chapterArgs) {
+   const data = [
+      { id: "education_master"   , color: SUBCHAPTER_COLOR[0], borderColor: SUBCHAPTER_BORDER_COLOR[0], constructor: CvMaster },
+      { id: "education_bachelor" , color: SUBCHAPTER_COLOR[1], borderColor: SUBCHAPTER_BORDER_COLOR[1], constructor: CvBachelor },
+      // #FFC8F2
+   ];
+   populateConnections(chapterConnections, chapterId, data.map(x => x.id));
+   return CvChapter({...chapterArgs,
+      insideConstructor: () => {
+         // if (!currentCvPage.val) {
+         //    currentCvPage.val = data[0].id;
+         // }
+         return Array.from(data, (x, i) => {
+            const isActive = van.derive(() => x.id == currentCvPage.val);
+            const onChange = () => { currentCvPage.val = x.id; };
+            const bgValue = `linear-gradient(${getCssColor(x.color)}, ${getCssColor((data[i+1] || data[i]).color)})`;
+            const args = {
+               uniqueId: x.id, extraInsideClasses: "cv-text",
+               titleElement: CvChapterTitle(isActive, localizeUi(x.id)),
+               isDefaultActive: isActive, bgValue: bgValue,
+               borderBgValue: x.borderColor, onclick: onChange};
+            return x.constructor(args);
+         });
+      }
+   });
 }
 
 function CvHuawei(chapterArgs) {
@@ -215,86 +316,6 @@ function CvSamsung(chapterArgs) {
        )
    }
    return CvChapter(chapterArgs);
-}
-
-function CvPublications(currentCvPage, chapterConnections, chapterId, chapterArgs) {
-   const data = [
-      { id: "publications_wacv_2024", color: SUBCHAPTER_COLOR[0], borderColor: SUBCHAPTER_BORDER_COLOR[0], constructor: CvSamsung },
-      { id: "russian"               , color: SUBCHAPTER_COLOR[1], borderColor: SUBCHAPTER_BORDER_COLOR[1], constructor: CvChapter },
-      { id: "english"               , color: SUBCHAPTER_COLOR[2], borderColor: SUBCHAPTER_BORDER_COLOR[2], constructor: CvChapter },
-      // #71BC8E #428D61 #428D61
-   ];
-   populateConnections(chapterConnections, chapterId, data.map(x => x.id));
-   return CvChapter({...chapterArgs,
-      insideConstructor: () => {
-         // if (!currentCvPage.val) {
-         //    currentCvPage.val = data[0].id;
-         // }
-         return Array.from(data, (x) => {
-            const isActive = van.derive(() => x.id == currentCvPage.val);
-            const onChange = () => { currentCvPage.val = x.id; };
-            const args = {
-               uniqueId: x.id, extraInsideClasses: "cv-text", extraClasses: "toplevel",
-               titleElement: span({class: () => isActive.val ? " bold " : ""}, localizeUi(x.id)),
-               isDefaultActive: isActive, rgbString: x.color,
-               borderRgbString: x.borderColor, onclick: onChange};
-            return x.constructor(args);
-         });
-      }
-   });
-}
-
-function CvProjects(currentCvPage, chapterConnections, chapterId, chapterArgs) {
-   const data = [
-      { id: "this_cv"                     , color: SUBCHAPTER_COLOR[0], borderColor: SUBCHAPTER_BORDER_COLOR[0], constructor: CvSamsung },
-      { id: "unity_4X_strategy_volunteer" , color: SUBCHAPTER_COLOR[1], borderColor: SUBCHAPTER_BORDER_COLOR[1], constructor: CvChapter },
-      { id: "image_processing_tool"       , color: SUBCHAPTER_COLOR[2], borderColor: SUBCHAPTER_BORDER_COLOR[2], constructor: CvChapter },
-      // #FFB993
-   ];
-   populateConnections(chapterConnections, chapterId, data.map(x => x.id));
-   return CvChapter({...chapterArgs,
-      insideConstructor: () => {
-         // if (!currentCvPage.val) {
-         //    currentCvPage.val = data[0].id;
-         // }
-         return Array.from(data, (x) => {
-            const isActive = van.derive(() => x.id == currentCvPage.val);
-            const onChange = () => { currentCvPage.val = x.id; };
-            const args = {
-               uniqueId: x.id, extraInsideClasses: "cv-text", extraClasses: "toplevel",
-               titleElement: span({class: () => isActive.val ? " bold " : ""}, localizeUi(x.id)),
-               isDefaultActive: isActive, rgbString: x.color,
-               borderRgbString: x.borderColor, onclick: onChange};
-            return x.constructor(args);
-         });
-      }
-   });
-}
-
-function CvEducation(currentCvPage, chapterConnections, chapterId, chapterArgs) {
-   const data = [
-      { id: "education_master"   , color: SUBCHAPTER_COLOR[0], borderColor: SUBCHAPTER_BORDER_COLOR[0], constructor: CvMaster },
-      { id: "education_bachelor" , color: SUBCHAPTER_COLOR[1], borderColor: SUBCHAPTER_BORDER_COLOR[1], constructor: CvBachelor },
-      // #FFC8F2
-   ];
-   populateConnections(chapterConnections, chapterId, data.map(x => x.id));
-   return CvChapter({...chapterArgs,
-      insideConstructor: () => {
-         // if (!currentCvPage.val) {
-         //    currentCvPage.val = data[0].id;
-         // }
-         return Array.from(data, (x) => {
-            const isActive = van.derive(() => x.id == currentCvPage.val);
-            const onChange = () => { currentCvPage.val = x.id; };
-            const args = {
-               uniqueId: x.id, extraInsideClasses: "cv-text",
-               titleElement: span({class: () => isActive.val ? " bold " : ""}, localizeUi(x.id)),
-               isDefaultActive: isActive, rgbString: x.color,
-               borderRgbString: x.borderColor, onclick: onChange};
-            return x.constructor(args);
-         });
-      }
-   });
 }
 
 function CvMaster(chapterArgs) {

@@ -1,4 +1,4 @@
-const DEBUG = false;
+const DEBUG = true;
 // const DEBUG = false;
 
 const CURRENT_LANGUAGE = van.state("en");

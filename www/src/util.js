@@ -22,10 +22,7 @@ function localizeString(key, nullIfMissing = false) {
   }
 }
 function localizeUi(key, nullIfMissing = false) {
-  return () => {
-    let localized = localizeString(key, nullIfMissing);
-    return span({lang: localized().lang}, localized().text);
-  }
+  return () => localizeString(key, nullIfMissing)().text;
 }
 
 // utility functions

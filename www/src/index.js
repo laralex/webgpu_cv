@@ -90,7 +90,7 @@ function FontPicker(currentFont) {
 	const options = FONTS.map((fontFamily, index) =>
       option({ value: fontFamily, selected: () => fontFamily == currentFont.val}, fontFamily));
    const labelBefore = null;
-   const labelAfter = localizeUi('font_family');
+   const labelAfter = span(localizeUi('font_family'));
    return () => div(
       { class: 'font-picker ' + "flex-row" },
       labelBefore,
@@ -160,8 +160,8 @@ function GraphicsLevelPicker(currentGraphicsLevel, isVertical) {
       option({ value: level, selected: () => level == currentGraphicsLevel.val},
          () => localizeString(meta.labelId)().text + " " +  meta.emoji));
    van.derive(() => console.log("Set graphics_level="+currentGraphicsLevel.val));
-   const labelBefore = isVertical ? localizeUi('graphics_levels') : null;
-   const labelAfter = !isVertical ? localizeUi('graphics_levels') : null;
+   const labelBefore = isVertical ? span(localizeUi('graphics_levels')) : null;
+   const labelAfter = !isVertical ? span(localizeUi('graphics_levels')) : null;
    return div(
       { class: 'graphics-picker ' + (isVertical ? "flex-column" : "flex-row") },
       labelBefore,

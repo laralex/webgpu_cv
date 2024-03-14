@@ -12,8 +12,13 @@ const DEFAULT_MAIN_CHAPTER = "chapter_education";
 const DEFAULT_SUB_CHAPTER = "education_master";
 const CURRENT_CV_PAGE = [van.state(DEFAULT_MAIN_CHAPTER), van.state(DEFAULT_SUB_CHAPTER)];
 const CV_PAGE_ORDER = {}
+const IS_TUTORIAL_SHOWN = van.state(false);
 
-function FullscreenButton(fullscreenElement) {
+function FullscreenButton({extraClasses = "", isInteractive = true}) {
+   return FullscreenButtonImpl(document.getElementById("canvas-wrapper"), extraClasses, isInteractive)
+}
+
+function FullscreenButtonImpl(fullscreenElement, extraClasses, isInteractive) {
    const IS_FULLSCREEN = van.state(false);
    // van.derive(() => console.log('full', IS_FULLSCREEN.val));
    function setFullScreen(elem, enableFullscreen) {
@@ -42,12 +47,13 @@ function FullscreenButton(fullscreenElement) {
           IS_FULLSCREEN.val = false;
       }
   }
-   document.body.onfullscreenchange = (e) => {
-      setFullScreen(fullscreenElement, !IS_FULLSCREEN.val)
-   };
+
    const checkFullscreen = function(event) {
       const enable = (window.outerWidth-screen.width) ==0 && (window.outerHeight-screen.height) ==0;
       setFullScreen(fullscreenElement, enable);
+   };
+   document.body.onfullscreenchange = (e) => {
+      setFullScreen(fullscreenElement, !IS_FULLSCREEN.val)
    };
    window.addEventListener("keyup", function(event){
       var code = event.keyCode || event.which;
@@ -55,11 +61,20 @@ function FullscreenButton(fullscreenElement) {
           setTimeout(function(){checkFullscreen();},250);
       }
    });
-   return div({class: "fullscreen-button", onclick: () => setFullScreen(fullscreenElement, !IS_FULLSCREEN.val)},
+   return div({class: extraClasses + " canvas-button", onclick: () => {
+         if (isInteractive) setFullScreen(fullscreenElement, !IS_FULLSCREEN.val)
+      }},
       img({
          src: () => IS_FULLSCREEN.val ? "../assets/collapse-regular-240.png" : "../assets/expand-regular-240.png",
       })
    );
+}
+
+function HelpButton() {
+   return div({class: "help-button canvas-button", onclick: () => IS_TUTORIAL_SHOWN.val = true },
+      img({ src:"../assets/help-circle-regular-240.png", })
+   );
+   // return null;
 }
 
 function GeoLocation() {
@@ -85,7 +100,7 @@ function FontPicker(currentFont) {
       // });
       const overrideFamilies = customFamilies + baseFamilies;
       document.documentElement.style.setProperty('--font-families', overrideFamilies);
-      configureFontSize(currentFont.val);
+      configureFromFont(currentFont.val);
    });
 	const options = FONTS.map((fontFamily, index) =>
       option({ value: fontFamily, selected: () => fontFamily == currentFont.val}, fontFamily));
@@ -185,11 +200,14 @@ function ResumePdfLink() {
       ));
 }
 
-function ResizeTooltip({timeoutMillisec}) {
+function ResizeTooltip({timeoutMillisec, onclose = () => {}}) {
    const resizeElement = document.getElementById("resize-border");
    const sidebar = document.getElementById("sidebar");
    const shouldHide = van.state(false);
-   setTimeout(() => shouldHide.val = true, timeoutMillisec);
+   setTimeout(() => {
+      shouldHide.val = true;
+      onclose();
+   }, timeoutMillisec);
    let m_pos;
 
    function pauseEvent(e){
@@ -220,7 +238,9 @@ function ResizeTooltip({timeoutMillisec}) {
       document.removeEventListener("mousemove", resize, false);
    }, false);
    
-   return () => DEBUG || shouldHide.val ? null : div({class: "bubble shadow left", onclick: (e) => shouldHide.val = true}, localizeUi("resize_tooltip"));
+   return () => DEBUG || shouldHide.val ? null : div({class: "bubble shadow left", 
+      onclick: (e) => shouldHide.val = true, onclose: onclose
+   }, localizeUi("resize_tooltip"));
 }
 
 function RepositoryLink() {
@@ -280,8 +300,12 @@ function MoreSkillsButton() {
 function IntroPopup({onclose}) {
    const closed = van.state(false);
    const needAnimation = van.state(true);
-   van.derive(() => { if (closed.val && onclose) onclose(); });
-   return () => closed.val ? null :div({class: "popup font-large retro-box checkerboard-background"},
+   let needOnClose = true;
+   van.derive(() => {if (closed.val && onclose && needOnClose) {
+      onclose();
+      needOnClose = false;
+   }});
+   return () => closed.val ? null : div({class: "popup font-large retro-box checkerboard-background"},
       div({class: "message font-Large"}, LanguagePicker(CURRENT_LANGUAGE, CURRENT_FONT_FAMILY, /* vertical */ false, undefined, 'ui_language_intro')),
       div({
          class: () => (needAnimation.val ? " animated-appear " : "") + " flex-column",
@@ -320,29 +344,44 @@ function IntroPopup({onclose}) {
 
 function ControlsPopup({onclose}) {
    const closed = van.state(false);
-   van.derive(() => { if (closed.val && onclose !== undefined) onclose(); });
    return () => closed.val ? null :div({class: "popup font-large retro-box checkerboard-background"},
-      div({class: "flex-row"},
-         div({class: "message flex-column flex-center ", style: "margin: 1em;"},
-            img({src: "../assets/mouse-wheel-up-down.svg", height:"200"}),
-            span({class: "message", style: "width: 10rem;"}, localizeUi("controls_mouse_wheel")),
-            ),
-         div({class: "message flex-column flex-center", style: "margin: 1em;"},
-            img({src: "../assets/mouse-drag.svg", height:"200"}),
-            span({class: "message", style: "width: 10rem;"}, localizeUi("controls_mouse_move")),
-         )
+      div({class: "flex-column"},
+         div({class: "flex-row"},
+            div({class: "message flex-column flex-center ", style: "margin: 1em;"},
+               img({src: "../assets/mouse-wheel-up-down.svg", height:"200"}),
+               span({class: "message", style: "width: 10rem;"}, localizeUi("controls_mouse_wheel")),
+               ),
+            div({class: "message flex-column flex-center", style: "margin: 1em;"},
+               img({src: "../assets/mouse-drag.svg", height:"200"}),
+               span({class: "message", style: "width: 10rem;"}, localizeUi("controls_mouse_move")),
+            )
+         ),
+         div({class: "flex-row"},
+            div({class: "message flex-column flex-center ", style: "margin: 1em;"},
+               img({src: "../assets/f11.png", height:"70"}),
+               span({class: "message", style: "width: 10rem;"}, localizeUi("controls_fullscreen_key")),
+               ),
+            div({class: "message flex-column flex-center", style: "margin: 1em;"},
+               FullscreenButton({isInteractive: false}),
+               span({class: "message", style: "width: 10rem;"}, localizeUi("controls_fullscreen_button")),
+            )
+         ),
       ),
       div({class: "controls"},
-         button({class: "btn popup-btn font-large", onclick: (e) => closed.val = true }, localizeUi("controls_close")))
+         button({class: "btn popup-btn font-large", onclick: (e) => { 
+            closed.val = true;
+            if (onclose !== undefined) { onclose(); }
+         }}, localizeUi("controls_close")))
    );
 }
 
 function getFontFamilies(elements){
    let usedFonts = [];
    elements.forEach(function(el,i){
-     let nodeType = el.nodeName.toLowerCase();
-     let fontFamily = getComputedStyle(el).fontFamily;
-     let familyArr = fontFamily.split(',');
+      let nodeType = el.nodeName.toLowerCase();
+      let fontFamily = getComputedStyle(el).fontFamily;
+      let familyArr = fontFamily.split(',');
+      console.log('FONT EL', fontFamily);
      let fontApplied = false;
      let renderedFont = '';
      for(let i=0; i<familyArr.length && !fontApplied; i++){
@@ -358,9 +397,35 @@ function getFontFamilies(elements){
    return usedFonts;
  }
 
-function configureFontSize(fontFamily = null) {
-   let para = document.querySelector('p');
-   let actualFontFamily = fontFamily || getFontFamilies([para])[0].font;
+ function getDefaultFonts() {
+   var iframe = document.createElement('iframe');
+   var html = '<html><body>';
+   var fonts;
+   document.body.appendChild(iframe);
+   iframe.contentWindow.document.open();
+   iframe.contentWindow.document.write(html);
+   var subele = iframe.contentWindow.document.createElement(ele.tagName);
+   iframe.contentWindow.document.body.appendChild(subele);
+   fonts = getComputedStyle(subele)['font-family'];
+   document.body.removeChild(iframe);
+   return fonts;
+}
+
+function configureFromFont(fontFamily = null) {
+   let actualFontFamily = fontFamily;
+   // if (actualFontFamily == null) {
+   //    //actualFontFamily = getFontFamilies([para])[0].font;
+   //    let familyArr = getDefaultFonts().split(',');
+   //    for(let i=0; i<familyArr.length && !fontApplied; i++){
+   //       let currentFamily = familyArr[i];
+   //       fontApplied = document.fonts.check(`12px ${currentFamily}`);
+   //       if(fontApplied){
+   //         //font is loaded - return family name
+   //         actualFontFamily = currentFamily;
+   //         break;
+   //       }
+   //     }
+   // }
    const fontMap = new Map();
    fontMap.set("\"Share Tech\"",
       {fontSize: '16pt', sidebarWidth: '26rem', cardDescriptionBasis: '11rem', relativeBasis: '0.95rem'}
@@ -415,50 +480,65 @@ function configureCanvas() {
    resizeCanvas();
 }
 
-function getScrollCallback() {
-   const MAX_SCROLL_BORDER_HITS = DEBUG ? 3 : 6;
-   let borderHitsLeft = MAX_SCROLL_BORDER_HITS;
+function getScrollCallback({chapterBorderStickiness, chaterAfterBorderStickiness}) {
+   let borderStickinessLeft = chapterBorderStickiness;
+   let afterBorderStickinessLeft = chaterAfterBorderStickiness;
    function impl(scrollSpeed) {
+      if (afterBorderStickinessLeft > 0) {
+         console.log("AFTER STICKINESS");
+         --afterBorderStickinessLeft;
+         return;
+      }
       const nextOrPrev = scrollSpeed > 0 ? "next" : "prev";
       console.assert(["next", "prev"].includes(nextOrPrev));
       const curL1 = CURRENT_CV_PAGE[0].val;
       const curL2 = CURRENT_CV_PAGE[1].val;
       const curTextDiv = document.getElementById(curL2).getElementsByClassName("inside")[0];
-      if (borderHitsLeft > 0) {
+
+      if (borderStickinessLeft > 0) {
          if (curTextDiv.scrollTop + scrollSpeed <= 0) {
-            --borderHitsLeft;
+            // hitting top border
+            --borderStickinessLeft;
             curTextDiv.scrollTop = 0;
          } else if (curTextDiv.scrollTop + scrollSpeed >= curTextDiv.scrollHeight - curTextDiv.offsetHeight) {
-            --borderHitsLeft;
+            // hitting bottom border
+            --borderStickinessLeft;
             curTextDiv.scrollTop = curTextDiv.scrollHeight;
          } else {
-            // TODO: change scroll
+            // scroll direction changed, reset hitting border
             curTextDiv.scrollTop += scrollSpeed;
-            borderHitsLeft = MAX_SCROLL_BORDER_HITS;
+            borderStickinessLeft = chapterBorderStickiness;
          }
       }
-      if (borderHitsLeft > 0) {
+      if (borderStickinessLeft > 0) {
          return;
       }
+      // hit the border through the limit, change chapter
       let [nextL1, nextL2] = CV_PAGE_ORDER[curL1][curL2][nextOrPrev];
-      let maxJumps = 64;
-      while (maxJumps-- >= 0 && ["__begin__", "__end__"].includes(nextL2)) {
+      let infiniteLoopLimit = 64;
+      while (infiniteLoopLimit-- >= 0 && ["__begin__", "__end__"].includes(nextL2)) {
          [nextL1, nextL2] = CV_PAGE_ORDER[nextL1][nextL2][nextOrPrev];
       }
-      if (maxJumps <= 0) {
+      if (infiniteLoopLimit <= 0) {
+         console.log('@@@ Weird chapter graph (too many jumps)');
          return;
       }
       // console.log(curL2, "@@@", CURRENT_CV_PAGE.val.level2[curL1]);
       // CURRENT_CV_PAGE.val.level2[curL1].val = {};
       CURRENT_CV_PAGE[0].val = nextL1;
       CURRENT_CV_PAGE[1].val = nextL2;
-      borderHitsLeft = MAX_SCROLL_BORDER_HITS;
+      curTextDiv.scrollTop = 0;
+      borderStickinessLeft = chapterBorderStickiness;
+      afterBorderStickinessLeft = chaterAfterBorderStickiness;
+      console.log('@@', afterBorderStickinessLeft);
    };
    return impl;
 }
 
 window.onload = function() {
-   van.add(document.getElementById("canvas-wrapper"), FullscreenButton(document.getElementById("canvas-wrapper")));
+   configureFromFont(CURRENT_FONT_FAMILY.val); // other elements' relative sizes depend on this configuration
+   van.add(document.getElementById("canvas-wrapper"), FullscreenButton({extraClasses: "fullscreen-button"}));
+   van.add(document.getElementById("canvas-wrapper"), HelpButton());
    van.add(document.getElementById("side-top__1"), LanguagePicker(CURRENT_LANGUAGE, CURRENT_FONT_FAMILY, /*vertical*/ false));
    if (DEBUG || true) {
       van.add(document.getElementById("side-top__1"), FontPicker(CURRENT_FONT_FAMILY));
@@ -467,23 +547,24 @@ window.onload = function() {
    van.add(document.getElementById("side-links__1"), ResumePdfLink());
    van.add(document.getElementById("side-top__1"), RepositoryLink());
    document.querySelectorAll(".firstinfo").forEach(element => {
-      // console.log(element);
       van.add(element, PersonalCard())
    });
    van.add(document.getElementById("side-card-info"), MoreSkillsButton());
-   // van.add(document.getElementById("side-content"), CvChapter("chapter_career", "#7BD3EA"));
-   // van.add(document.getElementById("side-content"), CvChapter("chapter_publications", "#A1EEBD"));
-   // van.add(document.getElementById("side-content"), CvChapter("chapter_projects", "#F6F7C4"));
-   // van.add(document.getElementById("side-content"), CvChapter("chapter_education", "#F6D6D6"));
    van.add(document.getElementById("sidebar"), CvContent(CURRENT_CV_PAGE, CV_PAGE_ORDER));
-   // CURRENT_CV_PAGE[0].val = DEFAULT_MAIN_CHAPTER;
-   // CURRENT_CV_PAGE[1].val = DEFAULT_SUB_CHAPTER;
-   if (!DEBUG) {
-      van.add(document.body, IntroPopup({onclose: () => {
-         van.add(document.body, ControlsPopup({onclose: () => {
-            van.add(document.getElementById("resize-tooltip"), ResizeTooltip({timeoutMillisec: 7000}));
-         }}));
+   van.derive(() => {
+      if (IS_TUTORIAL_SHOWN.val == false) {
+         return;
+      }
+      van.add(document.body, ControlsPopup({onclose: () => {
+         van.add(document.getElementById("resize-tooltip"), ResizeTooltip({
+            timeoutMillisec: 7000,
+            onclose: () => {}
+         }));
+         IS_TUTORIAL_SHOWN.val = false;
       }}));
+   });
+   if (!DEBUG) {
+      van.add(document.body, IntroPopup({onclose: () => IS_TUTORIAL_SHOWN.val = true}));
       const addAppearAnimation = (el) => Util.addClass(el, 'animated-appear');
       document.querySelectorAll(".card-container")
          .forEach(addAppearAnimation);
@@ -507,14 +588,16 @@ window.onload = function() {
 
    // listen to "scroll" event
    const callbackScrollSpeed = Util.computeScrollSpeed();
-   const scrollCallback = getScrollCallback();
+   const scrollCallback = getScrollCallback({
+      chapterBorderStickiness: DEBUG ? 3 : 5,
+      chapterAfterBorderStickiness: DEBUG ? 0 : 2,
+   });
    window.addEventListener('wheel', event => {
       let wheelSpeed = callbackScrollSpeed(event);
       const ELEMENT_SCROLL_SPEED = DEBUG ? 0.3 : 0.15;
       scrollCallback(wheelSpeed * ELEMENT_SCROLL_SPEED);
    }, { capture: true });
 
-   configureFontSize();
    configureCanvas();
    wasm_startup();
    wasm_loop(CANVAS_ID);

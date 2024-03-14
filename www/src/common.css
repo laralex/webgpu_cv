@@ -1,7 +1,7 @@
 :root {
    --canvas-min-width: 300px;
    --canvas-min-aspect: 1.0;
-   --sidebar-width: 27rem;
+   /* --sidebar-width: 27rem; configured with font selection */
    --card-description-basis: 13rem;
    /* --font-size-main: 15pt; configured in index.js */ 
    --font-size-h2: 1.2rem;
@@ -405,21 +405,30 @@ select option {
    margin-left: 1rem;
 }
 
-.fullscreen-button {
-   position: absolute;
-   left: calc(100% - 80px);
-   top: 0%;
+.canvas-button {
    display: block;
    width: auto;
    height: auto;
    transition: scale 0.3s ease-in-out;
 }
 
-.fullscreen-button img:hover {
+.fullscreen-button {
+   position: absolute;
+   left: calc(100% - 80px);
+   top: 0%;
+}
+
+.help-button {
+   position: absolute;
+   left: calc(100% - 80px);
+   top: 100px;
+}
+
+.canvas-button img:hover {
    scale: 0.9;
 }
 
-.fullscreen-button img {
+.canvas-button img {
    width: 80px;
    height: 80px;
    mix-blend-mode: difference;

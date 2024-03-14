@@ -366,7 +366,7 @@ select option {
 }
 
 .demo-controls select, .demo-controls option {
-   width: 9rem;
+   width: 11rem;
    align-items: center;
    text-align: center;
 }

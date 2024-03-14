@@ -42,13 +42,13 @@ function getLocalization() {
       intro_using: {en: "I made everything from scratch, using", ru: "Все здесь разработано мной с нуля, используя", kr: "여기에 모두 것을 저 스스로 만들었습니다."},
       intro_3d: {en: "for 3D graphics", ru: "для 3D графики", kr: "(3D 그래픽)"},
       intro_frontend: {en: "for reactive front-end", ru: "для реактивного фронтенда", kr: "(웹사이트)"},
-      intro_close: {en: "Let's go 🚀", ru: "Поехали 🚀", kr: "ㄱㄱ 🚀"},
+      intro_close: {en: "Wow!", ru: "Вау!", kr: "와!"},
       controls_mouse_wheel: {en: "Mouse wheel changes CV chapters", ru: "Колесо мыши - перемещение по резюме", /* kr: "" */},
       controls_mouse_move: {en: "Mouse movement rotates 3D scene", ru: "Движение мыши - поворот в 3D сцене", /* kr: "" */},
-      controls_close: { en: "OK", ru: "OK", kr: "OK" },
+      controls_close: { en: "Let's go 🚀", ru: "Поехали 🚀", kr: "ㄱㄱ 🚀" },
       resize_tooltip: { en: "Resize by dragging the border", ru: "Потянув за границу, можно настроить ширину", kr: "테두리를 끌으면 크기가 바꿉니다" },
       font_family: { en: "Font family", ru: "Шрифт", kr: "글꼴" },
-      geo_location: { en: "Russia, Remote/Relocation", ru: "Москва / СПб / Релокация", kr: "러시아 / 이주" },
+      geo_location: { en: "in Russia, or Remote/Relocation", ru: "Москва / СПб / Релокация", kr: "러시아 / 이주" },
       // xxx: {en: "", ru: "", kr: ""},
    };
 }

@@ -410,6 +410,7 @@ select option {
    width: auto;
    height: auto;
    transition: scale 0.3s ease-in-out;
+   mous
 }
 
 .fullscreen-button {

@@ -46,11 +46,12 @@ function getLocalization() {
       controls_mouse_wheel: {en: "Mouse wheel changes CV chapters", ru: "Колесо мыши - перемещение по резюме", /* kr: "" */},
       controls_mouse_move: {en: "Mouse movement rotates 3D scene", ru: "Движение мыши - поворот в 3D сцене", /* kr: "" */},
       controls_close: { en: "Let's go 🚀", ru: "Поехали 🚀", kr: "ㄱㄱ 🚀" },
+      controls_fullscreen_key: { en: "Keyboard button F11 opens the full screen", ru: "На весь экран - клавиша F11", /* kr: "" */ },
+      controls_fullscreen_button: { en: "Or click such button to the right", ru: "Или нажав на такую кнопку справа", /* kr: "" */},
       resize_tooltip: { en: "Resize by dragging the border", ru: "Потянув за границу, можно настроить ширину", kr: "테두리를 끌으면 크기가 바꿉니다" },
       font_family: { en: "Font family", ru: "Шрифт", kr: "글꼴" },
       geo_location: { en: "in Russia, or Remote/Relocation", ru: "Москва / СПб / Релокация", kr: "러시아 / 이주" },
-      controls_fullscreen_key: { en: "View in fullscreen via F11 on keyboard", ru: "На весь экран - клавиша F11" },
-      controls_fullscreen_button: { en: "Or by clicking such button to the right", ru: "Или нажав на такую кнопку справа" },
+      
       // xxx: {en: "", ru: "", kr: ""},
    };
 }

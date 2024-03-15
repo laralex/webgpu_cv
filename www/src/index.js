@@ -20,10 +20,42 @@ function FullscreenButton({extraClasses = "", isInteractive = true}) {
 
 function FullscreenButtonImpl(fullscreenElement, extraClasses, isInteractive) {
    const IS_FULLSCREEN = van.state(false);
+   const checkFullscreen = function(event) {
+      const dw = (window.outerWidth-screen.width);
+      const dh = (window.outerHeight-screen.height);
+      const enable = dw == 0 && dh == 0;
+      console.log('checkFullscreen', dw, dh);
+      setFullScreen(fullscreenElement, enable);
+   };
+   document.body.onfullscreenchange = (e) => {
+      setFullScreen(fullscreenElement, !IS_FULLSCREEN.val)
+   };
+   window.addEventListener("keyup", function(event){
+      var code = event.keyCode || event.which || event.code;
+      if(code == 122){
+         console.log('F11 keyup');
+         setTimeout(function(){checkFullscreen();},250);
+         event.preventDefault();
+      }
+      else if (code == 27) {
+         console.log('ESC keyup');
+         if (IS_FULLSCREEN.val) {
+            event.preventDefault();
+         }
+      }
+   });
+   window.addEventListener("resize", function(){
+      if (IS_FULLSCREEN.val) {
+         console.log('RESIZE checkFullscreen');
+         setTimeout(function(){checkFullscreen();},250);
+      }
+   })
    // van.derive(() => console.log('full', IS_FULLSCREEN.val));
    function setFullScreen(elem, enableFullscreen) {
       // ## The below if statement seems to work better ## if ((document.fullScreenElement && document.fullScreenElement !== null) || (document.msfullscreenElement && document.msfullscreenElement !== null) || (!document.mozFullScreen && !document.webkitIsFullScreen)) {
-      if (enableFullscreen && (document.fullScreenElement !== undefined && document.fullScreenElement === null) || (document.msFullscreenElement !== undefined && document.msFullscreenElement === null) || (document.mozFullScreen !== undefined && !document.mozFullScreen) || (document.webkitIsFullScreen !== undefined && !document.webkitIsFullScreen)) {
+      let enableFullscreen_ = enableFullscreen === undefined || enableFullscreen === true;
+      let disableFullscreen_ = enableFullscreen === undefined || enableFullscreen === false;
+      if (enableFullscreen_ && ((document.fullScreenElement !== undefined && document.fullScreenElement === null) || (document.msFullscreenElement !== undefined && document.msFullscreenElement === null) || (document.mozFullScreen !== undefined && !document.mozFullScreen) || (document.webkitIsFullScreen !== undefined && !document.webkitIsFullScreen))) {
           if (elem.requestFullScreen) {
               elem.requestFullScreen();
           } else if (elem.mozRequestFullScreen) {
@@ -34,7 +66,7 @@ function FullscreenButtonImpl(fullscreenElement, extraClasses, isInteractive) {
               elem.msRequestFullscreen();
           }
           IS_FULLSCREEN.val = true;
-      } else if (!enableFullscreen) {
+      } else if (disableFullscreen_) {
           if (document.cancelFullScreen) {
               document.cancelFullScreen();
           } else if (document.mozCancelFullScreen) {
@@ -46,24 +78,17 @@ function FullscreenButtonImpl(fullscreenElement, extraClasses, isInteractive) {
           }
           IS_FULLSCREEN.val = false;
       }
+      console.log('setFullScreen', IS_FULLSCREEN.val, enableFullscreen_, disableFullscreen_);
   }
 
-   const checkFullscreen = function(event) {
-      const enable = (window.outerWidth-screen.width) ==0 && (window.outerHeight-screen.height) ==0;
-      setFullScreen(fullscreenElement, enable);
-   };
-   document.body.onfullscreenchange = (e) => {
-      setFullScreen(fullscreenElement, !IS_FULLSCREEN.val)
-   };
-   window.addEventListener("keyup", function(event){
-      var code = event.keyCode || event.which;
-      if(code == 122){
-          setTimeout(function(){checkFullscreen();},250);
-      }
-   });
-   return div({class: extraClasses + " canvas-button", onclick: () => {
-         if (isInteractive) setFullScreen(fullscreenElement, !IS_FULLSCREEN.val)
-      }},
+
+   return () => 
+      div({
+         class: () => extraClasses + (isInteractive ? " btn " : "") + " canvas-button",
+         onclick: () => {
+            if (isInteractive) setFullScreen(fullscreenElement, !IS_FULLSCREEN.val)
+         }
+      },
       img({
          src: () => IS_FULLSCREEN.val ? "../assets/collapse-regular-240.png" : "../assets/expand-regular-240.png",
       })
@@ -71,7 +96,7 @@ function FullscreenButtonImpl(fullscreenElement, extraClasses, isInteractive) {
 }
 
 function HelpButton() {
-   return div({class: "help-button canvas-button", onclick: () => IS_TUTORIAL_SHOWN.val = true },
+   return div({class: "help-button btn canvas-button", onclick: () => IS_TUTORIAL_SHOWN.val = true },
       img({ src:"../assets/help-circle-regular-240.png", })
    );
    // return null;

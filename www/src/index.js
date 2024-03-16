@@ -6,19 +6,65 @@ const CANVAS_ID = "main-canvas";
 
 const CURRENT_GRAPHICS_LEVEL = van.state("medium");
 const CURRENT_FONT_FAMILY = van.state("\"Share Tech\"");
-// const DEFAULT_MAIN_CHAPTER = "chapter_career";
-// const DEFAULT_SUB_CHAPTER = "career_huawei";
-const DEFAULT_MAIN_CHAPTER = "chapter_education";
-const DEFAULT_SUB_CHAPTER = "education_master";
+const DEFAULT_MAIN_CHAPTER = "chapter_career";
+const DEFAULT_SUB_CHAPTER = "career_huawei";
 const CURRENT_CV_PAGE = [van.state(DEFAULT_MAIN_CHAPTER), van.state(DEFAULT_SUB_CHAPTER)];
 const CV_PAGE_ORDER = {}
 const IS_TUTORIAL_SHOWN = van.state(false);
+const IS_INTRO_SHOWN = van.state(true);
 
-function FullscreenButton({extraClasses = "", isInteractive = true}) {
-   return FullscreenButtonImpl(document.getElementById("canvas-wrapper"), extraClasses, isInteractive)
+function dumpCvCookies() {
+   Util.setCookie('mainChapter', CURRENT_CV_PAGE[0].val);
+   Util.setCookie('subChapter', CURRENT_CV_PAGE[1].val);
 }
 
-function FullscreenButtonImpl(fullscreenElement, extraClasses, isInteractive) {
+function dumpUiCookies() {
+   Util.setCookie('language', CURRENT_LANGUAGE.val);
+   Util.setCookie('fontFamily', CURRENT_FONT_FAMILY.val);
+   Util.setCookie('showIntro', IS_INTRO_SHOWN.val);
+}
+
+function dumpDemoCookies() {
+   Util.setCookie('graphicsLevel', CURRENT_GRAPHICS_LEVEL.val);
+}
+
+function dumpCookies() {
+   dumpCvCookies();
+   dumpUiCookies()
+   dumpDemoCookies();
+}
+
+function loadCookies() {
+   const setState = function(key, state){
+      const c = Util.getCookie(key);
+      if (c !== undefined) {
+         state.val = c;
+      }
+   }
+   setState('language', CURRENT_LANGUAGE);
+   setState('fontFamily', CURRENT_FONT_FAMILY);
+   setState('graphicsLevel', CURRENT_GRAPHICS_LEVEL);
+   setState('mainChapter', CURRENT_CV_PAGE[0]);
+   setState('subChapter', CURRENT_CV_PAGE[1]);
+   setState('showIntro', IS_INTRO_SHOWN);
+}
+
+function clearCookies() {
+   Util.deleteCookie('language');
+   Util.deleteCookie('fontFamily');
+   Util.deleteCookie('graphicsLevel');
+   Util.deleteCookie('mainChapter');
+   Util.deleteCookie('subChapter');
+   Util.deleteCookie('showIntro');
+}
+
+
+function FullscreenButton({extraClasses = "", isInteractive = true, height = "80"}) {
+   return FullscreenButtonImpl(document.getElementById("canvas-wrapper"),
+      extraClasses, isInteractive, height)
+}
+
+function FullscreenButtonImpl(fullscreenElement, extraClasses, isInteractive, height) {
    const IS_FULLSCREEN = van.state(false);
    const checkFullscreen = function(event) {
       const dw = (window.outerWidth-screen.width);
@@ -91,13 +137,14 @@ function FullscreenButtonImpl(fullscreenElement, extraClasses, isInteractive) {
       },
       img({
          src: () => IS_FULLSCREEN.val ? "../assets/collapse-regular-240.png" : "../assets/expand-regular-240.png",
+         height: height,
       })
    );
 }
 
-function HelpButton() {
+function HelpButton({height = "80"}) {
    return div({class: "help-button btn canvas-button", onclick: () => IS_TUTORIAL_SHOWN.val = true },
-      img({ src:"../assets/help-circle-regular-240.png", })
+      img({ src:"../assets/help-circle-regular-240.png", height: height })
    );
    // return null;
 }
@@ -268,13 +315,29 @@ function ResizeTooltip({timeoutMillisec, onclose = () => {}}) {
    }, localizeUi("resize_tooltip"));
 }
 
-function RepositoryLink() {
-   return button({class:"btn-block interactive btn font-large", role:"button", style: "width:100%; margin: 2px 0 0 0;"},
+function RepositoryLink({width}) {
+   return button({class:"btn-block interactive btn font-large", role:"button", style: () => `width:${width}; margin: 2px 0 0 0;`},
       a({href: "https://github.com/laralex/my_web_cv", target: "_blank"},
          i({ class: "bx bxl-github", style: "font-size:1.3rem;color: var(--color-github)"}),
          label(" "),
          label(localizeUi("web_cv_github")),
       ));
+}
+
+function ClearCookiesButton({width}) {
+   return button({
+         class:"btn-block interactive btn font-large",
+         role:"button",
+         style: () => `width:${width}; margin: 2px 0 0 0;`,
+         onclick: () => {
+            clearCookies();
+            location.reload();
+         },
+      },
+      i({ class: "bx bx-refresh", style: "font-size:1.3rem;color: var(--color-github)"}),
+      label(" "),
+      label(localizeUi("clear_cookies_button")),
+   );
 }
 
 function PersonalCard() {
@@ -284,7 +347,6 @@ function PersonalCard() {
       div({class: "specialization"}, () => {
          const cg = localizeUi("specialty_computer_graphics")();
          const deepLearning = localizeUi("specialty_deep_learning", true)();
-         console.log("@@@", deepLearning);
          return deepLearning != null ? ul(li(cg), li(deepLearning)) : cg;
       }),
       div({class: "techlist"},
@@ -369,7 +431,7 @@ function IntroPopup({onclose}) {
 
 function ControlsPopup({onclose}) {
    const closed = van.state(false);
-   return () => closed.val ? null :div({class: "popup font-large retro-box checkerboard-background"},
+   return () => closed.val ? null :div({class: "popup font-large retro-box checkerboard-background zmax"},
       div({class: "flex-column"},
          div({class: "flex-row"},
             div({class: "message flex-column flex-center ", style: "margin: 1em;"},
@@ -383,13 +445,12 @@ function ControlsPopup({onclose}) {
          ),
          div({class: "flex-row"},
             div({class: "message flex-column flex-center ", style: "margin: 1em;"},
-               img({src: "../assets/f11.png", height:"70"}),
-               span({class: "message", style: "width: 10rem;"}, localizeUi("controls_fullscreen_key")),
+               div({class: "flex-row", style: "gap: 1rem;"},
+                  img({src: "../assets/f11.png", height:"70"}),
+                  FullscreenButton({isInteractive: false, height: "70"}),
                ),
-            div({class: "message flex-column flex-center", style: "margin: 1em;"},
-               FullscreenButton({isInteractive: false}),
-               span({class: "message", style: "width: 10rem;"}, localizeUi("controls_fullscreen_button")),
-            )
+               span({class: "message"}, localizeUi("controls_fullscreen_key")),
+            ),
          ),
       ),
       div({class: "controls"},
@@ -545,11 +606,9 @@ function getScrollCallback({chapterBorderStickiness, chaterAfterBorderStickiness
          [nextL1, nextL2] = CV_PAGE_ORDER[nextL1][nextL2][nextOrPrev];
       }
       if (infiniteLoopLimit <= 0) {
-         console.log('@@@ Weird chapter graph (too many jumps)');
+         console.log('Weird chapter graph (too many jumps)');
          return;
       }
-      // console.log(curL2, "@@@", CURRENT_CV_PAGE.val.level2[curL1]);
-      // CURRENT_CV_PAGE.val.level2[curL1].val = {};
       CURRENT_CV_PAGE[0].val = nextL1;
       CURRENT_CV_PAGE[1].val = nextL2;
       curTextDiv.scrollTop = 0;
@@ -561,20 +620,25 @@ function getScrollCallback({chapterBorderStickiness, chaterAfterBorderStickiness
 }
 
 window.onload = function() {
+   loadCookies();
+   van.derive(() => {
+      dumpCookies();
+   })
    configureFromFont(CURRENT_FONT_FAMILY.val); // other elements' relative sizes depend on this configuration
-   van.add(document.getElementById("canvas-wrapper"), FullscreenButton({extraClasses: "fullscreen-button"}));
-   van.add(document.getElementById("canvas-wrapper"), HelpButton());
-   van.add(document.getElementById("side-top__1"), LanguagePicker(CURRENT_LANGUAGE, CURRENT_FONT_FAMILY, /*vertical*/ false));
+   van.add(document.getElementById("canvas-wrapper"), FullscreenButton({extraClasses: "fullscreen-button", height: "80"}));
+   van.add(document.getElementById("canvas-wrapper"), HelpButton({height: "80"}));
+   van.add(document.getElementById("controls_column"), LanguagePicker(CURRENT_LANGUAGE, CURRENT_FONT_FAMILY, /*vertical*/ false));
    if (DEBUG || true) {
-      van.add(document.getElementById("side-top__1"), FontPicker(CURRENT_FONT_FAMILY));
+      van.add(document.getElementById("controls_column"), FontPicker(CURRENT_FONT_FAMILY));
    }
-   van.add(document.getElementById("side-top__1"), GraphicsLevelPicker(CURRENT_GRAPHICS_LEVEL, /*vertical*/ false));
-   van.add(document.getElementById("side-links__1"), ResumePdfLink());
-   van.add(document.getElementById("side-top__1"), RepositoryLink());
+   van.add(document.getElementById("controls_column"), GraphicsLevelPicker(CURRENT_GRAPHICS_LEVEL, /*vertical*/ false));
+   van.add(document.getElementById("controls_row"), RepositoryLink({width: "49%"}));
+   van.add(document.getElementById("controls_row"), ClearCookiesButton({width: "49%"}));
    document.querySelectorAll(".firstinfo").forEach(element => {
       van.add(element, PersonalCard())
    });
    van.add(document.getElementById("side-card-info"), MoreSkillsButton());
+   van.add(document.getElementById("side-links__1"), ResumePdfLink());
    van.add(document.getElementById("sidebar"), CvContent(CURRENT_CV_PAGE, CV_PAGE_ORDER));
    van.derive(() => {
       if (IS_TUTORIAL_SHOWN.val == false) {
@@ -588,8 +652,12 @@ window.onload = function() {
          IS_TUTORIAL_SHOWN.val = false;
       }}));
    });
-   if (!DEBUG) {
-      van.add(document.body, IntroPopup({onclose: () => IS_TUTORIAL_SHOWN.val = true}));
+   if (IS_INTRO_SHOWN.val == true) {
+      console.log('@@@', IS_INTRO_SHOWN.val);
+      van.add(document.body, IntroPopup({onclose: () => {
+         IS_TUTORIAL_SHOWN.val = true;
+         IS_INTRO_SHOWN.val = false;
+      }}));
       const addAppearAnimation = (el) => Util.addClass(el, 'animated-appear');
       document.querySelectorAll(".card-container")
          .forEach(addAppearAnimation);

@@ -67,7 +67,7 @@ function CvChapter({uniqueId, titleElement, isDefaultActive, bgValue, borderBgVa
 }
 
 function CvChapterTitle(isActive, text) {
-   return span({class: () => " cv-title zmax " + (isActive.val ? " bold " : "")}, text);
+   return span({class: () => " cv-title " + (isActive.val ? " bold " : "")}, text);
 }
 
 function CvContent(currentCvPage, chaptersConnections) {

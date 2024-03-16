@@ -2,8 +2,7 @@
 WebGL2 + Rust + JS (VanJS)
 
 Known issues:
-- No help button
 - After chapter switch, content is already scrolled
-- No cookies to remember VanJS state
+- On border resize - extra skills is still wrapped
 - No CI
 - No chapters content

@@ -371,12 +371,16 @@ select option {
    text-align: center;
 }
 
-.demo-controls .labeled {
-   background-color: var(--color-theme-normal-alpha);
-}
-
 .demo-controls .labeled span {
    padding-right: 1em;
+}
+
+.demo-controls .flex-row {
+   justify-content: space-between;
+}
+
+.demo-controls > div {
+   background-color: var(--color-theme-normal-alpha);
 }
 
 #main-canvas, #canvas-wrapper {
@@ -430,8 +434,6 @@ select option {
 }
 
 .canvas-button img {
-   width: 80px;
-   height: 80px;
    mix-blend-mode: difference;
    /* -webkit-filter: grayscale(1) invert(1); */
    filter: invert(0.5);

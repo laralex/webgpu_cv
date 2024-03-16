@@ -1,6 +1,5 @@
 const DEBUG = false;
 // const DEBUG = false;
-
 const CURRENT_LANGUAGE = van.state("en");
 const UI_STRINGS = getLocalization();
 
@@ -77,3 +76,19 @@ Util.computeScrollSpeed = function(event, settings){
     return delta;
   };
 };
+
+Util.setCookie = function(key, value) {
+  let updatedCookie = encodeURIComponent(key) + "=" + encodeURIComponent(value);
+  document.cookie = updatedCookie + ";max-age=3600;samesite=lax";
+}
+
+Util.getCookie = function(key) {
+  let matches = document.cookie.match(new RegExp(
+    "(?:^|; )" + key.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
+  ));
+  return matches ? decodeURIComponent(matches[1]) : undefined;
+}
+
+Util.deleteCookie = function(key) {
+  document.cookie = encodeURIComponent(key)+"=;max-age=-1";
+}

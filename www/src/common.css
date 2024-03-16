@@ -1,6 +1,8 @@
 :root {
    --canvas-min-width: 300px;
    --canvas-min-aspect: 1.0;
+   --cv-inactive-bg-width: 5rem;
+   --cv-inner-offset: 2.5rem;
    /* --sidebar-width: 27rem; configured with font selection */
    --card-description-basis: 13rem;
    /* --font-size-main: 15pt; configured in index.js */ 
@@ -17,6 +19,7 @@
    /* --color-theme-accent: #ffd966; */
    /* --color-theme-normal: #ffec63; */
    --color-theme-bold: #8b7e67;
+   --color-theme-bold-shadow: #8b7e67FF;
    --color-theme-accent: #EBE3D5;
    --color-theme-normal: #F3EEEA;
    --color-theme-normal-alpha: #F3EEEA99;
@@ -220,7 +223,7 @@ a:active, a:visited, a:link {
 }
 
 .interactive {
-   display: inline-flex;
+   /* display: inline-flex; */
    align-items: center;
    appearance: none;
    background-color: #FCFCFD;
@@ -230,10 +233,10 @@ a:active, a:visited, a:link {
    box-sizing: border-box;
    justify-content: center;
    /* line-height: 1; */
-   list-style: none;
-   overflow: hidden;
+   /* list-style: none; */
+   /* overflow: hidden; */
    /* padding: 0 5px 0 5px; */
-   position: relative;
+   /* position: relative; */
    text-align: left;
    text-decoration: none;
    transition: box-shadow .15s,transform .15s;
@@ -363,6 +366,8 @@ select option {
 .demo-controls div {
    margin-top: 3px;
    padding-bottom: 2px;
+   border-radius: 5px;
+   /* overflow: hidden; */
 }
 
 .demo-controls select, .demo-controls option {

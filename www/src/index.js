@@ -272,14 +272,9 @@ function ResumePdfLink() {
       ));
 }
 
-function ResizeTooltip({timeoutMillisec, onclose = () => {}}) {
+function configureResizingBorder() {
    const resizeElement = document.getElementById("resize-border");
    const sidebar = document.getElementById("sidebar");
-   const shouldHide = van.state(false);
-   setTimeout(() => {
-      shouldHide.val = true;
-      onclose();
-   }, timeoutMillisec);
    let m_pos;
 
    function pauseEvent(e){
@@ -294,11 +289,13 @@ function ResizeTooltip({timeoutMillisec, onclose = () => {}}) {
       const dx = e.x - m_pos;
       m_pos = e.x;
       sidebar.style.flexBasis = (parseInt(getComputedStyle(sidebar, '').flexBasis) + dx) + "px";
-      shouldHide.val = true;
+      // shouldHide.val = true;
+      console.log("resize")
       return pauseEvent(e);
    }
 
    resizeElement.addEventListener("mousedown", function(e){
+      console.log("resize_mousedown")
       if (e.offsetX >= 0) {
          m_pos = e.x;
          document.addEventListener("mousemove", resize, false);
@@ -306,10 +303,17 @@ function ResizeTooltip({timeoutMillisec, onclose = () => {}}) {
    }, false);
 
    document.addEventListener("mouseup", function(){
-      console.log("mouseup")
       document.removeEventListener("mousemove", resize, false);
    }, false);
-   
+}
+
+function ResizeTooltip({timeoutMillisec, onclose = () => {}}) {
+   const shouldHide = van.state(false);
+   setTimeout(() => {
+      shouldHide.val = true;
+      onclose();
+   }, timeoutMillisec);
+
    return () => DEBUG || shouldHide.val ? null : div({class: "bubble shadow left", 
       onclick: (e) => shouldHide.val = true, onclose: onclose
    }, localizeUi("resize_tooltip"));
@@ -363,25 +367,17 @@ function MoreSkillsButton() {
          class: "interactive btn font-Large expand-button",
          onclick: e => isExpanded.val = !isExpanded.val,
       }, i({class: () => isExpanded.val ? "bx bxs-up-arrow" : "bx bxs-down-arrow"}), i(" "), localizeUi("skills_title")),
-      div({class: "inside", style: () => isExpanded.val ? "" : "display: none;" },
-         // div({class: "icons"},
-         //    // img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/opengl/opengl-original.svg" }),
-         //    // img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-line.svg" }),
-         //    img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/rust/rust-plain.svg" }),
-         //    // img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original-wordmark.svg"}),
-         //    img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg" }),
-         //    img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original-wordmark.svg" }),
-         //    img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/unity/unity-original-wordmark.svg" }),
-         //    img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/pytorch/pytorch-original-wordmark.svg"}),
-         //    img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original-wordmark.svg"}),
-         //    ),
-         ul(
+      div({
+         class: "inside font-large",
+         style: () => isExpanded.val ? "" : "display: none;",
+         onclick: e => isExpanded.val = !isExpanded.val
+       }, ul(
             li(span("Rust, C#, Java, JavaScript")),
             li(span("PyTorch, Docker, Qualcomm\xa0SNPE, Unity, ARCore, Linux, LaTeX")),
             li(span(localizeUi("skills_languages_1"))),
-            ),
+         ),
       ),
-   )
+   );
 }
 
 function IntroPopup({onclose}) {
@@ -625,6 +621,8 @@ window.onload = function() {
       dumpCookies();
    })
    configureFromFont(CURRENT_FONT_FAMILY.val); // other elements' relative sizes depend on this configuration
+   configureResizingBorder();
+   configureCanvas();
    van.add(document.getElementById("canvas-wrapper"), FullscreenButton({extraClasses: "fullscreen-button", height: "80"}));
    van.add(document.getElementById("canvas-wrapper"), HelpButton({height: "80"}));
    van.add(document.getElementById("controls_column"), LanguagePicker(CURRENT_LANGUAGE, CURRENT_FONT_FAMILY, /*vertical*/ false));
@@ -659,10 +657,10 @@ window.onload = function() {
          IS_INTRO_SHOWN.val = false;
       }}));
       const addAppearAnimation = (el) => Util.addClass(el, 'animated-appear');
-      document.querySelectorAll(".card-container")
-         .forEach(addAppearAnimation);
-      document.querySelectorAll(".badgescard")
-         .forEach(addAppearAnimation);
+      // document.querySelectorAll(".card-container")
+      //    .forEach(addAppearAnimation);
+      // document.querySelectorAll(".badgescard")
+      //    .forEach(addAppearAnimation);
    }
    const myPhoto = document.getElementById('my-photo');
    if (ADD_PARALLAX) {
@@ -691,7 +689,6 @@ window.onload = function() {
       scrollCallback(wheelSpeed * ELEMENT_SCROLL_SPEED);
    }, { capture: true });
 
-   configureCanvas();
    wasm_startup();
    wasm_loop(CANVAS_ID);
 }

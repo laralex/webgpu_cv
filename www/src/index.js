@@ -4,6 +4,7 @@ const {div, button, i, label, img, svg, path, input, details, summary, p, li, a,
 const ADD_PARALLAX = true;
 const CANVAS_ID = "main-canvas";
 
+const SIDEBAR_WIDTH_OVERRIDE = van.state(undefined);
 const CURRENT_GRAPHICS_LEVEL = van.state("medium");
 const CURRENT_FONT_FAMILY = van.state("\"Share Tech\"");
 const DEFAULT_MAIN_CHAPTER = "chapter_career";
@@ -22,6 +23,7 @@ function dumpUiCookies() {
    Util.setCookie('language', CURRENT_LANGUAGE.val);
    Util.setCookie('fontFamily', CURRENT_FONT_FAMILY.val);
    Util.setCookie('showIntro', IS_INTRO_SHOWN.val);
+   Util.setCookie('sidebarWidth', SIDEBAR_WIDTH_OVERRIDE.val);
 }
 
 function dumpDemoCookies() {
@@ -47,6 +49,7 @@ function loadCookies() {
    setState('mainChapter', CURRENT_CV_PAGE[0]);
    setState('subChapter', CURRENT_CV_PAGE[1]);
    setState('showIntro', IS_INTRO_SHOWN);
+   setState('sidebarWidth', SIDEBAR_WIDTH_OVERRIDE);
 }
 
 function clearCookies() {
@@ -56,6 +59,7 @@ function clearCookies() {
    Util.deleteCookie('mainChapter');
    Util.deleteCookie('subChapter');
    Util.deleteCookie('showIntro');
+   Util.deleteCookie('sidebarWidth');
 }
 
 
@@ -285,10 +289,13 @@ function configureResizingBorder() {
       return false;
    }
 
+   van.derive(() => {
+      if (SIDEBAR_WIDTH_OVERRIDE.val) sidebar.style.flexBasis = SIDEBAR_WIDTH_OVERRIDE.val;
+   });
    function resize(e){
       const dx = e.x - m_pos;
       m_pos = e.x;
-      sidebar.style.flexBasis = (parseInt(getComputedStyle(sidebar, '').flexBasis) + dx) + "px";
+      SIDEBAR_WIDTH_OVERRIDE.val = (parseInt(getComputedStyle(sidebar, '').flexBasis) + dx) + "px"; 
       // shouldHide.val = true;
       console.log("resize")
       return pauseEvent(e);
@@ -523,6 +530,7 @@ function configureFromFont(fontFamily = null) {
    console.log("-- FONT " + actualFontFamily + " : " + fontData.fontSize);
    document.documentElement.style.setProperty('--font-size-main', fontData.fontSize);
    document.documentElement.style.setProperty('--sidebar-width', fontData.sidebarWidth);
+   // SIDEBAR_WIDTH_OVERRIDE.val = fontData.sidebarWidth;
    document.documentElement.style.setProperty('--card-description-basis', fontData.cardDescriptionBasis);
    document.documentElement.style.setProperty('--size-normalsize', fontData.relativeBasis);
 }

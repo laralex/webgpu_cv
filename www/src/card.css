@@ -58,7 +58,7 @@
 
 .badgescard {
   flex-direction: column;
-  flex: 1 1 10rem;
+  flex: 5 1 0;
   border-radius: 3px;
   /* color: var(--color-font-title-light); */
   /* width: 100%; */
@@ -114,7 +114,7 @@
 
 .firstinfo {
   flex-direction: row;
-  position: relative;
+  /* position: relative; */
   display: flex;
   justify-content: left;
   align-items: center;
@@ -186,7 +186,7 @@
   margin: 0px 10px 0px 15px;
   display: flex;
   flex-direction: column;
-  flex: 1 0 var(--card-description-basis);
+  flex: 5 1 var(--card-description-basis);
   min-width: 0;
   /* align-items: stretch; */
   justify-content: space-around;

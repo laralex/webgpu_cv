@@ -155,7 +155,7 @@ function HelpButton({height = "80"}) {
 
 function GeoLocation() {
    return div({class: "geo-location"},
-      img({src: "../assets/1globe_tss.png"}),
+      img({src: "../assets/map-icon.svg"}),
       localizeUi('geo_location')
    );
 }

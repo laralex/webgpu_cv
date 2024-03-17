@@ -58,7 +58,7 @@
 
 .badgescard {
   flex-direction: column;
-  flex: 5 1 0;
+  flex: 2 50 0;
   border-radius: 3px;
   /* color: var(--color-font-title-light); */
   /* width: 100%; */
@@ -186,7 +186,7 @@
   margin: 0px 10px 0px 15px;
   display: flex;
   flex-direction: column;
-  flex: 1 1 var(--card-description-basis);
+  flex: 0 0 auto;
   min-width: 0;
   /* align-items: stretch; */
   justify-content: space-around;

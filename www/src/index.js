@@ -586,15 +586,6 @@ function getScrollCallback({chapterBorderStickiness, chapterAfterBorderStickines
       const nextOrPrev = scrollSpeed > 0 ? "next" : "prev";
       console.assert(["next", "prev"].includes(nextOrPrev));
 
-      if (isScrollable && afterBorderStickinessLeft > 0) {
-         --afterBorderStickinessLeft;
-         if (borderStickinessLeft > 0) {
-            --borderStickinessLeft;
-         }
-         event.preventDefault();
-         return;
-      }
-
       if (borderStickinessLeft > 0) {
          if (curTextDiv.scrollTop + scrollSpeed <= 0) {
             // hitting top border
@@ -606,11 +597,18 @@ function getScrollCallback({chapterBorderStickiness, chapterAfterBorderStickines
             curTextDiv.scrollTop = curTextDiv.scrollHeight;
          } else {
             // scroll direction changed, reset hitting border
-            curTextDiv.scrollTop += scrollSpeed;
             borderStickinessLeft = chapterBorderStickiness;
+            if (isScrollable && afterBorderStickinessLeft > 0) {
+               --afterBorderStickinessLeft;
+               console.log("afterStickiness", afterBorderStickinessLeft);
+               event.preventDefault();
+            } else {
+               curTextDiv.scrollTop += scrollSpeed;
+            }
          }
       }
 
+      console.log("borderStickiness", borderStickinessLeft);
       if (borderStickinessLeft > 0) {
          return;
       }

@@ -574,20 +574,26 @@ function configureCanvas() {
    resizeCanvas();
 }
 
-function getScrollCallback({chapterBorderStickiness, chaterAfterBorderStickiness}) {
+function getScrollCallback({chapterBorderStickiness, chapterAfterBorderStickiness}) {
    let borderStickinessLeft = chapterBorderStickiness;
-   let afterBorderStickinessLeft = chaterAfterBorderStickiness;
-   function impl(scrollSpeed) {
-      if (afterBorderStickinessLeft > 0) {
-         console.log("AFTER STICKINESS");
-         --afterBorderStickinessLeft;
-         return;
-      }
-      const nextOrPrev = scrollSpeed > 0 ? "next" : "prev";
-      console.assert(["next", "prev"].includes(nextOrPrev));
+   let afterBorderStickinessLeft = chapterAfterBorderStickiness;
+   function impl(event, scrollSpeed) {
       const curL1 = CURRENT_CV_PAGE[0].val;
       const curL2 = CURRENT_CV_PAGE[1].val;
       const curTextDiv = document.getElementById(curL2).getElementsByClassName("inside")[0];
+      const isScrollable = curTextDiv.scrollHeight > curTextDiv.clientHeight || curTextDiv.scrollWidth > curTextDiv.clientWidth;
+
+      const nextOrPrev = scrollSpeed > 0 ? "next" : "prev";
+      console.assert(["next", "prev"].includes(nextOrPrev));
+
+      if (isScrollable && afterBorderStickinessLeft > 0) {
+         --afterBorderStickinessLeft;
+         if (borderStickinessLeft > 0) {
+            --borderStickinessLeft;
+         }
+         event.preventDefault();
+         return;
+      }
 
       if (borderStickinessLeft > 0) {
          if (curTextDiv.scrollTop + scrollSpeed <= 0) {
@@ -604,9 +610,11 @@ function getScrollCallback({chapterBorderStickiness, chaterAfterBorderStickiness
             borderStickinessLeft = chapterBorderStickiness;
          }
       }
+
       if (borderStickinessLeft > 0) {
          return;
       }
+
       // hit the border through the limit, change chapter
       let [nextL1, nextL2] = CV_PAGE_ORDER[curL1][curL2][nextOrPrev];
       let infiniteLoopLimit = 64;
@@ -621,8 +629,7 @@ function getScrollCallback({chapterBorderStickiness, chaterAfterBorderStickiness
       CURRENT_CV_PAGE[1].val = nextL2;
       curTextDiv.scrollTop = 0;
       borderStickinessLeft = chapterBorderStickiness;
-      afterBorderStickinessLeft = chaterAfterBorderStickiness;
-      console.log('@@', afterBorderStickinessLeft);
+      afterBorderStickinessLeft = chapterAfterBorderStickiness;
    };
    return impl;
 }
@@ -693,13 +700,13 @@ window.onload = function() {
    const callbackScrollSpeed = Util.computeScrollSpeed();
    const scrollCallback = getScrollCallback({
       chapterBorderStickiness: DEBUG ? 3 : 5,
-      chapterAfterBorderStickiness: DEBUG ? 0 : 2,
+      chapterAfterBorderStickiness: DEBUG ? 0 : 3,
    });
    window.addEventListener('wheel', event => {
       let wheelSpeed = callbackScrollSpeed(event);
       const ELEMENT_SCROLL_SPEED = DEBUG ? 0.3 : 0.15;
-      scrollCallback(wheelSpeed * ELEMENT_SCROLL_SPEED);
-   }, { capture: true });
+      scrollCallback(event, wheelSpeed * ELEMENT_SCROLL_SPEED);
+   }, { capture: true, passive: false });
 
    wasm_startup();
    wasm_loop(CANVAS_ID);

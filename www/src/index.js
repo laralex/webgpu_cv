@@ -266,11 +266,11 @@ function GraphicsLevelPicker(currentGraphicsLevel, isVertical) {
 }
 
 function ResumePdfLink() {
-   return button({class:"btn-block interactive btn", role:"button", style:"width:100%"},
+   return button({class:"grid-item contact interactive btn", role:"button"},
       // bxs-download
-      i({ class: "bx bxs-file-pdf bx-tada font-Huge", style: "color: var(--color-gmail);"}),
       a({ class: "font-normalsize", href: localizeString("pdf_cv_href")().text, target: "_blank"},
-         () => localizeString("cv")().text + " " + localizeString("pdf")().text,
+      i({ class: "bx bxs-file-pdf bx-tada font-Huge", style: "color: var(--color-gmail);"}),
+         // () => localizeString("cv")().text + " " + localizeString("pdf")().text,
          // label({style: "display:block;"}, ),
          // label({style: "display:block;"}, ),
       ));
@@ -327,7 +327,11 @@ function ResizeTooltip({timeoutMillisec, onclose = () => {}}) {
 }
 
 function RepositoryLink({width}) {
-   return button({class:"btn-block interactive btn font-large", role:"button", style: () => `width:${width}; margin: 2px 0 0 0;`},
+   return button({
+         class:"btn-block interactive btn font-large",
+         role:"button",
+         style: () => `width:${width}; margin: 2px 0 0 0; text-align: center;`
+      },
       a({href: "https://github.com/laralex/my_web_cv", target: "_blank"},
          i({ class: "bx bxl-github", style: "font-size:1.3rem;color: var(--color-github)"}),
          label(" "),
@@ -339,7 +343,7 @@ function ClearCookiesButton({width}) {
    return button({
          class:"btn-block interactive btn font-large",
          role:"button",
-         style: () => `width:${width}; margin: 2px 0 0 0;`,
+         style: () => `width:${width}; margin: 2px 0 0 0; text-align: center;`,
          onclick: () => {
             clearCookies();
             location.reload();
@@ -644,7 +648,7 @@ window.onload = function() {
       van.add(element, PersonalCard())
    });
    van.add(document.getElementById("side-card-info"), MoreSkillsButton());
-   van.add(document.getElementById("side-links__1"), ResumePdfLink());
+   van.add(document.getElementById("card-links"), ResumePdfLink());
    van.add(document.getElementById("sidebar"), CvContent(CURRENT_CV_PAGE, CV_PAGE_ORDER));
    van.derive(() => {
       if (IS_TUTORIAL_SHOWN.val == false) {

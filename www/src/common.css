@@ -1,7 +1,7 @@
 :root {
    --canvas-min-width: 300px;
    --canvas-min-aspect: 1.0;
-   --cv-inactive-bg-width: 5rem;
+   --cv-inactive-bg-width: 10rem;
    --cv-inner-offset: 2.5rem;
    /* --sidebar-width: 27rem; configured with font selection */
    --card-description-basis: 13rem;
@@ -220,6 +220,14 @@ a:active, a:visited, a:link {
 
 .round-border {
    border-radius: 30px;
+}
+
+.text-center {
+   text-align: center;
+}
+
+.text-left {
+   text-align: left;
 }
 
 .interactive {

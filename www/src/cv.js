@@ -48,6 +48,7 @@ function CvChapter({uniqueId, titleElement, isDefaultActive, bgValue, borderBgVa
    return div({id: uniqueId, class: () => "cv-chapter flex-column " + (DEBUG && !SMOOTH ? "" : " smooth ") + (isDefaultActive.val ? extraActiveClasses + " active " : " inactive ") + extraClasses},
       button({
          class: "cv-chapter-head btn expand-button ",
+         style: "text-align: left; padding-left: 1rem;",
          //style: () => getBackgroundColorStyle(bgValue, false, false),
          onclick: e => { onclick(); },
       }, div({
@@ -66,8 +67,8 @@ function CvChapter({uniqueId, titleElement, isDefaultActive, bgValue, borderBgVa
    );
 }
 
-function CvChapterTitle(isActive, text) {
-   return span({class: () => " cv-title " + (isActive.val ? " bold " : "")}, text);
+function CvChapterTitle(isActive, text, isCentered = true) {
+   return span({class: () => " cv-title " + (isCentered ? " text-center " : " text-left ") + (isActive.val ? " bold " : "")}, text);
 }
 
 function CvContent(currentCvPage, chaptersConnections) {
@@ -105,7 +106,7 @@ function CvContent(currentCvPage, chaptersConnections) {
          const bgValue = `linear-gradient(${getCssColor(x.color)}, ${getCssColor((data[i+1] || data[i]).color)})`;
          const chapterArgs = {
             uniqueId: x.id,
-            titleElement: CvChapterTitle(isActive, localizeUi(x.id)),
+            titleElement: CvChapterTitle(isActive, localizeUi(x.id), /*center*/ false),
             extraActiveClasses: "vert-margin",
             extraClasses: "toplevel",
             isDefaultActive: isActive,

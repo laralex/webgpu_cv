@@ -186,7 +186,7 @@
   margin: 0px 10px 0px 15px;
   display: flex;
   flex-direction: column;
-  flex: 5 1 var(--card-description-basis);
+  flex: 1 1 var(--card-description-basis);
   min-width: 0;
   /* align-items: stretch; */
   justify-content: space-around;

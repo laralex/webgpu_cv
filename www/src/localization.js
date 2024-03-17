@@ -50,7 +50,7 @@ function getLocalization() {
       controls_fullscreen_key: { en: "For fullscreen press F11 or click such pictogram", ru: "Нажатие на клавишу F11 или такую пиктограмму - полноэкранный режим", /* kr: "" */ },
       resize_tooltip: { en: "Resize by dragging the border", ru: "Потянув за границу, можно настроить ширину", kr: "테두리를 끌으면 크기가 바꿉니다" },
       font_family: { en: "Font family", ru: "Шрифт", kr: "글꼴" },
-      geo_location: { en: "in Russia, or Remote/Relocation", ru: "Москва / СПб / Релокация", kr: "러시아 / 이주" },
+      geo_location: { en: "in Russia / Relocation / Remote", ru: "Москва / СПб / Релокация", kr: "러시아 / 이주" },
       
       // xxx: {en: "", ru: "", kr: ""},
    };

@@ -294,9 +294,12 @@
 }
 
 .cv-chapter ul {
-   padding-left: 1rem;
+   padding-left: 20px;
    list-style-type: disc;
    list-style-position: outside;
+}
+
+.cv-chapter li::before {
 }
 
 .cv-chapter li::marker {

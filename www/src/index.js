@@ -521,7 +521,7 @@ function configureFromFont(fontFamily = null, currentLanguage = null) {
    // }
    const fontMap = new Map();
    fontMap.set("\"Share Tech\"",
-      {fontSize: '16pt', sidebarWidthRem: 26, cardDescriptionBasis: '11rem', relativeBasis: '1.0rem'}
+      {fontSize: '16pt', sidebarWidthRem: 27, cardDescriptionBasis: '11rem', relativeBasis: '1.0rem'}
    );
    fontMap.set("\"JetBrains Mono\"",
       {fontSize: '13pt', sidebarWidthRem: 31, cardDescriptionBasis: '13rem', relativeBasis: '1.0rem'}

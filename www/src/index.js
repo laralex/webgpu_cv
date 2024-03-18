@@ -149,7 +149,8 @@ function FullscreenButtonImpl(fullscreenElement, extraClasses, isInteractive, he
 
 function HelpButton({height = "80"}) {
    return div({class: "help-button btn canvas-button", onclick: () => IS_TUTORIAL_SHOWN.val = true },
-      img({ src:"../assets/help-circle-regular-240.png", height: height })
+      img({ src:"../assets/help-circle-regular-240.png", height: height,
+         title: getBuildDataString(), })
    );
    // return null;
 }
@@ -428,11 +429,12 @@ function IntroPopup({onclose}) {
                a({href: "https://vanjs.org/", target: "_blank"},
                   img({src: "../assets/vanjs.svg", height:"80", style: "padding:3px;"}, "VanJS")),
             ),
+            ),
          ),
       ),
-      ),
       div({class: "controls"},
-         button({class: "btn popup-btn font-large", onclick: (e) => closed.val = true }, localizeUi("intro_close")))
+         button({class: "btn popup-btn font-large", onclick: (e) => closed.val = true }, localizeUi("intro_close")),
+      ),
    )
 }
 
@@ -633,6 +635,12 @@ function getScrollCallback({chapterBorderStickiness, chapterAfterBorderStickines
    return impl;
 }
 
+function getBuildDataString() {
+   return `Commit: ${BUILD_DATA["git-commit"]}\n\
+Committed: ${BUILD_DATA["git-commit-date"]}\n\
+Deployed: ${BUILD_DATA["deploy-date"]}`;
+}
+
 window.onload = function() {
    van.derive(() => {
       sidebar.style.flexBasis = Math.max(SIDEBAR_WIDTH_OVERRIDE_PX.val || 0, SIDEBAR_WIDTH_FONT_PX.val || 0) + "px";
@@ -684,6 +692,7 @@ window.onload = function() {
       //    .forEach(addAppearAnimation);
    }
    const myPhoto = document.getElementById('my-photo');
+   myPhoto.title = getBuildDataString();
    if (ADD_PARALLAX) {
       // myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png), url(../assets/bg6-min.png)";
       myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png), url(../assets/clouds.png), url(../assets/cloud2.png), url(../assets/moon.png), url(../assets/bg10-min.png)";

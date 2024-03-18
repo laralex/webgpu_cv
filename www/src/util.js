@@ -159,3 +159,13 @@ Util.getYearsSpan = function(d1, d2) {
   }
   return yearsSpan;
 }
+
+Util.remToPx = function(rem) {
+  const remToPx = parseFloat(getComputedStyle(document.documentElement).fontSize);
+  return rem * remToPx;
+}
+
+Util.pxToRem = function(px) {
+  const pxToRem = 1.0 / parseFloat(getComputedStyle(document.documentElement).fontSize);
+  return px * pxToRem;
+}

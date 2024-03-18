@@ -14,7 +14,7 @@
    --size-LARGE: calc(var(--size-normalsize)*1.4);
    --size-huge: calc(var(--size-normalsize)*1.6);
    --size-Huge: calc(var(--size-normalsize)*1.8);
-   --font-families-const: Tahoma, Geneva, Verdana;
+   --font-families-const: /*Do Hyeon,*/ Tahoma, Geneva, Verdana;
    --font-families: var(--font-families-const);
    /* --color-theme-accent: #ffd966; */
    /* --color-theme-normal: #ffec63; */
@@ -452,4 +452,8 @@ select option {
    filter: invert(0.5);
    
    /* backdrop-filter: hue-rotate(30deg); */
+}
+
+.left-right-aligned > div {
+   justify-content: space-evenly;
 }

@@ -276,7 +276,7 @@ function CvEducation(currentCvPage, chapterConnections, chapterId, chapterArgs) 
 }
 
 function CvHuawei(chapterArgs) {
-   const seniorStr = Util.formatDateDiff(huaweiSeniorEmploymentDate, currentDate);
+   
    chapterArgs.insideConstructor = () => {
       return div({class: "font-normalsize"},
          div({class: "flex-row flex-center", style: "margin-bottom: 0.5rem;"},
@@ -285,8 +285,11 @@ function CvHuawei(chapterArgs) {
                img({id: "cv-huawei-logo", src: "../assets/huawei-small.svg"}),
                p({class: "font-Large bold"}, "Frame prediction SDK for mobile games"),
                LeftRightAlignedList({
-                  leftItems: [ p("Senior engineer"), ],
-                  rightItems: [ p(seniorStr.yearStr + " " + seniorStr.monthStr), ],
+                  leftItems: [ () => p("Senior engineer"), ],
+                  rightItems: [ () => {
+                     const seniorStr = Util.formatDateDiff(huaweiSeniorEmploymentDate, currentDate);
+                     return p(seniorStr.yearStr + " " + seniorStr.monthStr);
+                  }],
                }),
             )
          ),
@@ -306,9 +309,6 @@ function CvHuawei(chapterArgs) {
 }
 
 function CvSamsung(chapterArgs) {
-   const internStr = Util.formatDateDiff(samsungInternEmploymentDate, samsungInternResignationDate, {yearsFullWord: false, monthsFullWord: false});
-   const juniorStr = Util.formatDateDiff(samsungJuniorEmploymentDate, samsungMiddleEmploymentDate);
-   const middleStr = Util.formatDateDiff(samsungMiddleEmploymentDate, samsungResignationDate);
    chapterArgs.insideConstructor = () => {
       return div({class: "font-normalsize"},
          div({class: "flex-row flex-center", style: "margin-bottom: 0.5rem;"},
@@ -317,11 +317,23 @@ function CvSamsung(chapterArgs) {
                img({id: "cv-samsung-logo", src: "../assets/samsung.svg"}),
                p({class: "font-Large bold"}, "Neural Networks R&D"),
                LeftRightAlignedList({
-                  leftItems: [p("Middle engineer"), p("Junior engineer"), p("Intern"),],
+                  leftItems: [
+                     () => p("Middle engineer"),
+                     () => p("Junior engineer"),
+                     () => p("Intern"),],
                   rightItems: [
-                     p(middleStr.yearStr + " " + middleStr.monthStr), // p("1 yr 8 mos"),
-                     p(juniorStr.yearStr + " " + juniorStr.monthStr), // p("7 months"),
-                     p(internStr.yearStr + " " + internStr.monthStr), // p("2 months"),
+                     () => {
+                        const middleStr = Util.formatDateDiff(samsungMiddleEmploymentDate, samsungResignationDate);
+                        return p(middleStr.yearStr + " " + middleStr.monthStr); // p("1 yr 8 mos"),
+                     },
+                     () => {
+                        const juniorStr = Util.formatDateDiff(samsungJuniorEmploymentDate, samsungMiddleEmploymentDate);
+                        return p(juniorStr.yearStr + " " + juniorStr.monthStr); // p("7 months"),
+                     },
+                     () => {
+                        const internStr = Util.formatDateDiff(samsungInternEmploymentDate, samsungInternResignationDate, {yearsFullWord: false, monthsFullWord: false});
+                        return p(internStr.yearStr + " " + internStr.monthStr); // p("2 months"),
+                     }
                   ],
                }),
             )
@@ -359,7 +371,7 @@ function CvMaster(chapterArgs) {
             YearsBlock(Util.getYearsSpan(new Date(2020, 0), new Date(2022, 0))),
             div({class: "flex-column", style: "align-items:center; gap:0.2rem;"},
                p({class: "font-Large"}, "MSc of Information Science"),
-               LeftRightAlignedList({leftItems: [ p("with Honors"), ], rightItems: [ p("GPA 5/5"), ], }),
+               LeftRightAlignedList({leftItems: [ () => p("with Honors"), ], rightItems: [ () => p("GPA 5/5"), ], }),
                img({id: "cv-skoltech-logo", src: "../assets/Skoltech_Logo.svg"}),
                p("Skolkovo Institute of Science & Technology"),
             )
@@ -387,7 +399,7 @@ function CvBachelor(chapterArgs) {
             YearsBlock(Util.getYearsSpan(new Date(2016, 0), new Date(2020, 0))),
             div({class: "flex-column", style: "align-items:center; gap:0.2rem;"},
                p({class: "font-Large"}, "BSc of Computer Science"),
-               LeftRightAlignedList({leftItems: [ p("with Honors"), ], rightItems: [ p("GPA 5/5"), ], }),
+               LeftRightAlignedList({leftItems: [ () => p("with Honors"), ], rightItems: [ () => p("GPA 5/5"), ], }),
                img({id: "cv-polytech-logo", src: "../assets/polytech_logo_small.svg"}),
                p("Peter The Great St. Petersburg Polytechnic University"),
             )
@@ -423,7 +435,7 @@ function YearsBlock(years, totalDuration1, totalDuration2) {
 
 function LeftRightAlignedList({leftItems, rightItems, separator=() => span("·")}) {
    console.assert(leftItems.length === rightItems.length);
-   return div({class: "flex-row"},
+   return div({class: "flex-row left-right-aligned"},
       div({class: "flex-column", style: "align-items:end;"}, leftItems, ),
       div({class: "flex-column", style: "margin: 0 0.5rem 0 0.5rem; align-items:center;"}, 
          Array(leftItems.length).fill(separator)),

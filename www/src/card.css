@@ -58,12 +58,13 @@
 
 .badgescard {
   flex-direction: column;
-  flex: 2 50 0;
+  flex: 2 30 0;
   border-radius: 3px;
   /* color: var(--color-font-title-light); */
   /* width: 100%; */
   position: relative;
   margin-top: 0.3em;
+  /* min-width: 40%; */
 }
 
 .badgescard.animated-appear {
@@ -74,8 +75,8 @@
 
 .badgescard .expand-button {
   display: block;
-  width: 100%;
-  padding: 2px 0px;
+  /* width: 100%; */
+  padding: 2px 1rem;
   /* border: none; */
   margin-top: 0;
   text-align: center;
@@ -89,9 +90,11 @@
   flex-direction: column;
   background-color: var(--color-theme-accent);
   /* box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2); */
-  width: 100%;
+  /* width: 100%; */
+  /* max-width: 50%; */
   align-content: center;
   flex-wrap: wrap;
+  overflow-wrap: break-word;
   /* justify-content: center; */
 }
 
@@ -124,7 +127,8 @@
 .firstinfo .photo-block {
    display: flex;
    flex-direction: column;
-   max-width: 200px;
+   /* max-width: 200px; */
+   width: 150px;
    flex-grow: 0;
    /* flex: 0 0 110px; */
    /* flex-wrap: wrap; */
@@ -183,18 +187,19 @@
 }
 
 .firstinfo .profileinfo {
-  margin: 0px 10px 0px 15px;
+  margin: 0px 0.5rem 0px 1rem;
   display: flex;
   flex-direction: column;
-  flex: 0 0 auto;
-  min-width: 0;
+  flex: 0 1 auto;
+  /* min-width: 0; */
+  word-wrap: break-word;
   /* align-items: stretch; */
   justify-content: space-around;
   /* height: 100%; */
   align-content: space-between;
   /* height: 100%;
   min-height: 100%; */
-  /* max-width: 15rem; */
+  max-width: 60%;
 }
 
 .firstinfo .profileinfo h1 {

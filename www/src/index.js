@@ -4,7 +4,8 @@ const {div, button, i, label, img, svg, path, input, details, summary, p, li, a,
 const ADD_PARALLAX = true;
 const CANVAS_ID = "main-canvas";
 
-const SIDEBAR_WIDTH_OVERRIDE = van.state(undefined);
+const SIDEBAR_WIDTH_OVERRIDE_PX = van.state(0);
+const SIDEBAR_WIDTH_FONT_PX = van.state(0);
 const CURRENT_GRAPHICS_LEVEL = van.state("medium");
 const CURRENT_FONT_FAMILY = van.state("\"Share Tech\"");
 const DEFAULT_MAIN_CHAPTER = "chapter_career";
@@ -23,7 +24,7 @@ function dumpUiCookies() {
    Util.setCookie('language', CURRENT_LANGUAGE.val);
    Util.setCookie('fontFamily', CURRENT_FONT_FAMILY.val);
    Util.setCookie('showIntro', IS_INTRO_SHOWN.val);
-   Util.setCookie('sidebarWidth', SIDEBAR_WIDTH_OVERRIDE.val);
+   Util.setCookie('sidebarWidth', SIDEBAR_WIDTH_OVERRIDE_PX.val);
 }
 
 function dumpDemoCookies() {
@@ -49,7 +50,7 @@ function loadCookies() {
    setState('mainChapter', CURRENT_CV_PAGE[0]);
    setState('subChapter', CURRENT_CV_PAGE[1]);
    setState('showIntro', IS_INTRO_SHOWN);
-   setState('sidebarWidth', SIDEBAR_WIDTH_OVERRIDE);
+   setState('sidebarWidth', SIDEBAR_WIDTH_OVERRIDE_PX);
 }
 
 function clearCookies() {
@@ -289,15 +290,14 @@ function configureResizingBorder() {
       return false;
    }
 
-   van.derive(() => {
-      if (SIDEBAR_WIDTH_OVERRIDE.val) sidebar.style.flexBasis = SIDEBAR_WIDTH_OVERRIDE.val;
-   });
    function resize(e){
       const dx = e.x - m_pos;
       m_pos = e.x;
-      SIDEBAR_WIDTH_OVERRIDE.val = (parseInt(getComputedStyle(sidebar, '').flexBasis) + dx) + "px"; 
+      const newSidebarPx = parseInt(getComputedStyle(sidebar, '').flexBasis) + dx;
+      // const newSidebarRem = Util.pxToRem(newSidebarPx);
+      SIDEBAR_WIDTH_OVERRIDE_PX.val = newSidebarPx;
       // shouldHide.val = true;
-      console.log("resize")
+      console.log("resize", newSidebarRem, getComputedStyle(document.documentElement).fontSize);
       return pauseEvent(e);
    }
 
@@ -504,7 +504,7 @@ function getFontFamilies(elements){
    return fonts;
 }
 
-function configureFromFont(fontFamily = null) {
+function configureFromFont(fontFamily = null, currentLanguage = null) {
    let actualFontFamily = fontFamily;
    // if (actualFontFamily == null) {
    //    //actualFontFamily = getFontFamilies([para])[0].font;
@@ -521,20 +521,21 @@ function configureFromFont(fontFamily = null) {
    // }
    const fontMap = new Map();
    fontMap.set("\"Share Tech\"",
-      {fontSize: '16pt', sidebarWidth: '26rem', cardDescriptionBasis: '11rem', relativeBasis: '0.95rem'}
+      {fontSize: '16pt', sidebarWidthRem: 26, cardDescriptionBasis: '11rem', relativeBasis: '1.0rem'}
    );
    fontMap.set("\"JetBrains Mono\"",
-      {fontSize: '13pt', sidebarWidth: '31rem', cardDescriptionBasis: '13rem', relativeBasis: '1.0rem'}
+      {fontSize: '13pt', sidebarWidthRem: 31, cardDescriptionBasis: '13rem', relativeBasis: '1.0rem'}
    );
    fontMap.set("\"Segoe UI\"",
-      {fontSize: '13pt', sidebarWidth: '31rem', cardDescriptionBasis: '11rem', relativeBasis: '1.0rem'}
+      {fontSize: '13pt', sidebarWidthRem: 31, cardDescriptionBasis: '11rem', relativeBasis: '1.0rem'}
    );
    let fontData = fontMap.get(actualFontFamily) ||
-      {fontSize: '15pt', sidebarWidth: '30rem', cardDescriptionBasis: '13rem', relativeBasis: '1.0rem'};
+      {fontSize: '15pt', sidebarWidthRem: 30, cardDescriptionBasis: '13rem', relativeBasis: '1.0rem'};
    console.log("-- FONT " + actualFontFamily + " : " + fontData.fontSize);
    document.documentElement.style.setProperty('--font-size-main', fontData.fontSize);
-   document.documentElement.style.setProperty('--sidebar-width', fontData.sidebarWidth);
+   document.documentElement.style.setProperty('--sidebar-width', fontData.sidebarWidth + "rem");
    // SIDEBAR_WIDTH_OVERRIDE.val = fontData.sidebarWidth;
+   SIDEBAR_WIDTH_FONT_PX.val = Util.remToPx(fontData.sidebarWidthRem);
    document.documentElement.style.setProperty('--card-description-basis', fontData.cardDescriptionBasis);
    document.documentElement.style.setProperty('--size-normalsize', fontData.relativeBasis);
 }
@@ -633,11 +634,14 @@ function getScrollCallback({chapterBorderStickiness, chapterAfterBorderStickines
 }
 
 window.onload = function() {
+   van.derive(() => {
+      sidebar.style.flexBasis = Math.max(SIDEBAR_WIDTH_OVERRIDE_PX.val || 0, SIDEBAR_WIDTH_FONT_PX.val || 0) + "px";
+   });
    loadCookies();
    van.derive(() => {
       dumpCookies();
    })
-   configureFromFont(CURRENT_FONT_FAMILY.val); // other elements' relative sizes depend on this configuration
+   configureFromFont(CURRENT_FONT_FAMILY.val, CURRENT_LANGUAGE.val); // other elements' relative sizes depend on this configuration
    configureResizingBorder();
    configureCanvas();
    van.add(document.getElementById("canvas-wrapper"), FullscreenButton({extraClasses: "fullscreen-button", height: "80"}));

@@ -2,5 +2,5 @@
 WebGL2 + Rust + JS (VanJS)
 
 Known issues:
-- No CI
+- No CI (commit hash put onto web-site)
 - No chapters content

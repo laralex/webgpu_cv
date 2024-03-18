@@ -92,3 +92,70 @@ Util.getCookie = function(key) {
 Util.deleteCookie = function(key) {
   document.cookie = encodeURIComponent(key)+"=;max-age=-1";
 }
+
+Util.monthDiff = function(d1, d2){
+  var months;
+  months = (d2.getFullYear() - d1.getFullYear()) * 12;
+  months -= d1.getMonth();
+  months += d2.getMonth();
+  const monthDiff = months <= 0 ? 0 : months;
+  console.log("%%%%", d1, d2);
+  return monthDiff;
+}
+
+Util.yearMonthDiff = function(monthDiff) {
+  const yearDiff = Math.floor(monthDiff / 12);
+  return {
+    monthDiff: monthDiff,
+    yearDiff: yearDiff,
+    monthRemainder: monthDiff - yearDiff * 12,
+  }
+}
+
+Util.formatYearsMonths = function({years, months, yearsFullWord = true, monthsFullWord = true}) {
+  const getLocalized = (key) => localizeString(key)().text
+  let monthStr = "";
+  if (months > 0) {
+    if (!monthsFullWord) {
+      monthStr = months + " " + getLocalized("month_short")
+    } else if (months == 1) {
+      monthStr = months + " " + getLocalized("month_full")
+    } else if (months < 5) {
+      monthStr = months + " " + getLocalized("months_full")
+    } else {
+      monthStr = months + " " + getLocalized("months_many_full")
+    }
+  }
+  
+  let yearStr = "";
+  if (years > 0) {
+    if (!yearsFullWord) {
+      yearStr = years + " " + getLocalized("year_short")
+    } else if (years == 1) {
+      yearStr = years + " " + getLocalized("year_full")
+    } else if (years < 5) {
+      yearStr = years + " " + getLocalized("years_full")
+    } else {
+      yearStr = years + " " + getLocalized("years_many_full")
+    }
+  }
+  return {yearStr: yearStr, monthStr: monthStr}
+}
+
+Util.formatDateDiff = function(d1, d2, {yearsFullWord, monthsFullWord} = { yearsFullWord: true, monthsFullWord: true }) {
+  const diff = Util.yearMonthDiff(Util.monthDiff(d1, d2));
+  return Util.formatYearsMonths({
+    years: diff.yearDiff,
+    months: diff.monthRemainder,
+    yearsFullWord: yearsFullWord,
+    monthsFullWord: monthsFullWord,
+  });
+}
+
+Util.getYearsSpan = function(d1, d2) {
+  const yearsSpan = []
+  for (var i = d1.getFullYear(); i <= d2.getFullYear(); ++i) {
+    yearsSpan.push(i.toString());
+  }
+  return yearsSpan;
+}

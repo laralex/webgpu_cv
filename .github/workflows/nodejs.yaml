@@ -40,6 +40,9 @@ jobs:
         cache: 'npm' # optional
         # Used to specify the path to a dependency file: package-lock.json, yarn.lock, etc. Supports wildcards or a list of file names for caching multiple dependencies.
         cache-dependency-path: www/package-lock.json # optional
+    - name: wasm-pack-action
+      uses: jetli/wasm-pack-action@v0.4.0
+    - run: wasm-pack build -d build/wasm
     - run: npm ci
       working-directory: www
     - run: npm run build --if-present

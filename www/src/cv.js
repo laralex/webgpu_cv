@@ -40,6 +40,10 @@ function getBackgroundColorStyle(bgValue, withBg=false, withBorder=false) {
          + (withBg === true ? `background-color:${bgValue};` : "");
 }
 
+function Highlight(text) {
+   return span({class: "bold"}, text)
+}
+
 function CvButton(labelId, bgValue, onclick) {
    let bg = getBackgroundColorStyle(bgValue);
    return div({class: "cv-button"},
@@ -312,10 +316,12 @@ function CvSamsung(chapterArgs) {
    chapterArgs.insideConstructor = () => {
       return div({class: "font-normalsize"},
          div({class: "flex-row flex-center", style: "margin-bottom: 0.5rem;"},
-            YearsBlock(Util.getYearsSpan(samsungInternEmploymentDate, samsungResignationDate)),
-            div({class: "flex-column", style: "align-items:center;gap: 0.5rem;"},
+         YearsBlock(Util.getYearsSpan(samsungInternEmploymentDate, samsungResignationDate)),
+         div({class: "flex-column", style: "align-items:center;gap: 0.5rem;"},
+            div({class: "flex-row", style: "gap:1rem;"},
                img({id: "cv-samsung-logo", src: "../assets/samsung.svg"}),
                p({class: "font-Large bold"}, "Neural Networks R&D"),
+            ),
                LeftRightAlignedList({
                   leftItems: [
                      () => p("Middle engineer"),
@@ -323,7 +329,7 @@ function CvSamsung(chapterArgs) {
                      () => p("Intern"),],
                   rightItems: [
                      () => {
-                        const middleStr = Util.formatDateDiff(samsungMiddleEmploymentDate, samsungResignationDate);
+                        const middleStr = Util.formatDateDiff(samsungMiddleEmploymentDate, samsungResignationDate, {yearsFullWord: false, monthsFullWord: false});
                         return p(middleStr.yearStr + " " + middleStr.monthStr); // p("1 yr 8 mos"),
                      },
                      () => {
@@ -331,36 +337,37 @@ function CvSamsung(chapterArgs) {
                         return p(juniorStr.yearStr + " " + juniorStr.monthStr); // p("7 months"),
                      },
                      () => {
-                        const internStr = Util.formatDateDiff(samsungInternEmploymentDate, samsungInternResignationDate, {yearsFullWord: false, monthsFullWord: false});
+                        const internStr = Util.formatDateDiff(samsungInternEmploymentDate, samsungInternResignationDate);
                         return p(internStr.yearStr + " " + internStr.monthStr); // p("2 months"),
                      }
                   ],
                }),
             )
          ),
-         div({class: "icons"},
-            img({class: "large", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/opengl/opengl-original.svg" }),
-            // img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-line.svg" }),
-            // img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/rust/rust-plain.svg" }),
-            img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original-wordmark.svg"}),
-            img({class: "large", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/pytorch/pytorch-original-wordmark.svg"}),
-            img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original-wordmark.svg" }),
-            img({class: "large", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/unity/unity-original-wordmark.svg" }),
-            // img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original-wordmark.svg"}),
-         ),
+         // div({class: "icons"},
+         //    span("OpenGL"),
+         //    span("Python"),
+         //    span("PyTorch"),
+         //    span("Java"),
+         //    span("Unity"),
+         //    // img({class: "large", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/opengl/opengl-original.svg" }),
+         //    // img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original-wordmark.svg"}),
+         //    // img({class: "large", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/pytorch/pytorch-original-wordmark.svg"}),
+         //    // img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original-wordmark.svg" }),
+         //    // img({class: "large", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/unity/unity-original-wordmark.svg" }),
+         // ),
          ul(
-            li("Solely created an Android techdemo to render realistic human avatars, with:", ul(
-                li("implementation with plain Java/OpenGL"),
-                li("rendering via neural networks, running 60 FPS in 512x512px on Qualcomm NPU"),
+            li(Highlight("OpenGL Java Android: "), "Solely created a techdemo to render realistic human avatars, with:", ul(
+                li("rendering by neural networks, running 60 FPS in resolution 512x512px on Qualcomm NPU"),
+                li("my animation system and mesh skinning"),
                 li("augmented reality via ARCore"),
-                li("my animation system and skinning"),
-                li("also ported into Unity application"),
-            )),
-            li("Completed a crucial KPI, being a solo developer on a research project"),
-            li("Published a paper on neural networks, at WACV 2024 conference: ", a({"href": "https://openaccess.thecvf.com/content/WACV2024/html/Bashirov_MoRF_Mobile_Realistic_Fullbody_Avatars_From_a_Monocular_Video_WACV_2024_paper.html"}, "Link")),
-         ),
-       )
-   }
+                )),
+            li(Highlight("Unity: "), "Ported the techdemo as a Unity AR application"),
+            li(Highlight("Python PyTorch: "), "Researched and published a paper on neural networks, at WACV 2024 conference: ", a({"href": "https://openaccess.thecvf.com/content/WACV2024/html/Bashirov_MoRF_Mobile_Realistic_Fullbody_Avatars_From_a_Monocular_Video_WACV_2024_paper.html"}, "Link")),
+            li("Completed a crucial yearly KPI as a solo developer among research scientists"),
+         )
+      );
+   };
    return CvChapter(chapterArgs);
 }
 

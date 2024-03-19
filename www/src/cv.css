@@ -273,16 +273,20 @@
    justify-content: space-evenly;
    /* gap: 0.2rem; */
    margin-bottom: 0.5rem;
+   font-weight: 600;
 }
 
-.icons img {
+.icons img, .icons span {
    object-fit: cover;
-   height: calc(var(--size-normalsize) * 3.5);
    transition: scale 100ms ease-in-out;
 }
 
-.icons img:hover {
+.icons img:hover, .icons span:hover {
    scale: 1.2;
+}
+
+.icons img {
+   height: calc(var(--size-normalsize) * 3.5);
 }
 
 .icons img.large {
@@ -312,7 +316,7 @@
 }
 
 #cv-samsung-logo {
-   height: calc(var(--size-normalsize) * 1.5);
+   height: calc(var(--size-normalsize) * 1.1);
 }
 
 #cv-huawei-logo {

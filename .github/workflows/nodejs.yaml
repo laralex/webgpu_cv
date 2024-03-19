@@ -41,7 +41,12 @@ jobs:
         # Used to specify the path to a dependency file: package-lock.json, yarn.lock, etc. Supports wildcards or a list of file names for caching multiple dependencies.
         cache-dependency-path: www/package-lock.json # optional
     - run: npm ci
+      working-directory: www
     - run: npm run build --if-present
+      working-directory: www
     - run: npm test
-    - run: cd src/minimal_http_server && node server.js ${PORT}
-    - run: cd www && npm run start
+      working-directory: www
+    - run: node server.js 8181
+      working-directory: src/minimal_http_server
+    - run: npm run start
+      working-directory: www

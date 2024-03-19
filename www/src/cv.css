@@ -18,6 +18,8 @@
    /* background-color: var(--color-theme-accent); */
    background-color: white;
    /* transition: max-height 0.5s ease; */
+   align-items: center;
+   justify-content: safe center;
 }
 
 .cv-chapter {
@@ -25,7 +27,7 @@
    will-change: height,max-height;
 }
 
-.cv-chapter-head {
+.cv-chapter-button {
    /* border-color: var( --color-theme-bold); */
    /* border-width: 0px; */
    /* border-style: solid inset; */
@@ -37,7 +39,7 @@
    /* height: auto; */
 }
 
-.active .cv-chapter-head {
+.active .cv-chapter-button {
    /* border-bottom-width: 2px; */
 }
 
@@ -47,7 +49,7 @@
    /* filter: revert; */
 }
 
-.cv-chapter-head .bg {
+.cv-chapter-button .bg {
   /* height: 100%; */
   /* width: 100%; */
   z-index: -100;
@@ -60,11 +62,11 @@
   /* height: 100%; */
 }
 
-.inside .cv-chapter-head .bg {
+.inside .cv-chapter-button .bg {
    width: calc(var(--cv-inactive-bg-width) - var(--cv-inner-offset));
 }
 
-.cv-chapter-head .cv-title {
+.cv-chapter-button .cv-title {
    position: relative;
    /* left: 0;
    top: 0; */
@@ -72,40 +74,40 @@
    z-index: 100;
 }
 
-.cv-chapter-head .border {
+.cv-chapter-button .border {
    width: 100%;
    /* height: 3px; */
    height: 0px;
 }
 
-.toplevel > .cv-chapter-head {
+.toplevel > .cv-chapter-button {
    font-size: var(--size-Large);
 }
 
-.inside .cv-chapter-head {
+.inside .cv-chapter-button {
    font-size: var(--size-large);
 }
 
-.active .inside .active .cv-chapter-head {
+.active .inside .active .cv-chapter-button {
    font-size: var(--size-Large);
    transition: font-size 0.2s ease-in;
 }
 
-.active > .cv-chapter-head .bg {
+.active > .cv-chapter-button .bg {
    transition: width 0.3s ease-out;
    width: 100%;
 }
 
-.inactive > .cv-chapter-head .bg {
+.inactive > .cv-chapter-button .bg {
    transition: width 0.0s ease;
 }
 
-.cv-chapter-head:hover {
+.cv-chapter-button:hover {
   transform: translate(-2px, 0px);
   filter: brightness(105%);
 }
 
-.cv-chapter-head {
+.cv-chapter-button {
    /* hack so that background (.bg) behind is visible without hover */
    filter:brightness(100%);
 }
@@ -315,12 +317,17 @@
    list-style-type: circle;
 }
 
+.cv-chapter .header {
+   align-items: center; 
+   gap:0.0rem
+}
+
 #cv-samsung-logo {
    height: calc(var(--size-normalsize) * 1.1);
 }
 
 #cv-huawei-logo {
-   height: calc(var(--size-normalsize) * 2);
+   height: calc(var(--size-normalsize) * 2.0);
 }
 
 #cv-polytech-logo {

@@ -298,7 +298,7 @@ function configureResizingBorder() {
       // const newSidebarRem = Util.pxToRem(newSidebarPx);
       SIDEBAR_WIDTH_OVERRIDE_PX.val = newSidebarPx;
       // shouldHide.val = true;
-      console.log("resize", newSidebarRem, getComputedStyle(document.documentElement).fontSize);
+      // console.log("resize", getComputedStyle(document.documentElement).fontSize);
       return pauseEvent(e);
    }
 

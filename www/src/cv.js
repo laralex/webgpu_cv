@@ -59,7 +59,7 @@ function CvChapter({uniqueId, titleElement, isDefaultActive, bgValue, borderBgVa
    const border = `background: ${borderBgValue}`;
    return div({id: uniqueId, class: () => "cv-chapter flex-column " + (DEBUG && !SMOOTH ? "" : " smooth ") + (isDefaultActive.val ? extraActiveClasses + " active " : " inactive ") + extraClasses},
       button({
-         class: "cv-chapter-head btn expand-button ",
+         class: "cv-chapter-button btn expand-button ",
          style: "text-align: left; padding-left: 1rem;",
          //style: () => getBackgroundColorStyle(bgValue, false, false),
          onclick: e => { onclick(); },
@@ -285,9 +285,11 @@ function CvHuawei(chapterArgs) {
       return div({class: "font-normalsize"},
          div({class: "flex-row flex-center", style: "margin-bottom: 0.5rem;"},
             YearsBlock(Util.getYearsSpan(huaweiSeniorEmploymentDate, currentDate).concat(["Current"])),
-            div({class: "flex-column", style: "align-items:center; gap:0.5rem;"},
-               img({id: "cv-huawei-logo", src: "../assets/huawei-small.svg"}),
-               p({class: "font-Large bold"}, "Frame prediction SDK for mobile games"),
+            div({class: "flex-column header"},
+               div({class: "flex-row", style: "gap:1rem;"},
+                  img({id: "cv-samsung-logo", src: "../assets/huawei-small.svg"}),
+                  p({class: "font-Large bold"}, "Frame prediction SDK for mobile games"),
+               ),
                LeftRightAlignedList({
                   leftItems: [ () => p("Senior engineer"), ],
                   rightItems: [ () => {
@@ -317,7 +319,7 @@ function CvSamsung(chapterArgs) {
       return div({class: "font-normalsize"},
          div({class: "flex-row flex-center", style: "margin-bottom: 0.5rem;"},
          YearsBlock(Util.getYearsSpan(samsungInternEmploymentDate, samsungResignationDate)),
-         div({class: "flex-column", style: "align-items:center;gap: 0.5rem;"},
+         div({class: "flex-column header"},
             div({class: "flex-row", style: "gap:1rem;"},
                img({id: "cv-samsung-logo", src: "../assets/samsung.svg"}),
                p({class: "font-Large bold"}, "Neural Networks R&D"),

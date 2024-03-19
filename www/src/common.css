@@ -456,4 +456,5 @@ select option {
 
 .left-right-aligned > div {
    justify-content: space-evenly;
+   align-items: center;
 }

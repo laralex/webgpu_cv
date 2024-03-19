@@ -50,5 +50,5 @@ jobs:
     - run: npm test
       working-directory: www
       continue-on-error: true
-    - run: npm run start
+    - run: npm run start & npx wait-on http://127.0.0.1:3000
       working-directory: www

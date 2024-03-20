@@ -43,6 +43,7 @@ jobs:
     - name: build-npm
       run: |
         npm ci
+        npm install
         npm run build --if-present
       working-directory: www
 

@@ -6,9 +6,13 @@
   "bin": {
     "create-wasm-app": ".bin/create-wasm-app.js"
   },
+  "config": {
+    "devport": "5000"
+  },
   "scripts": {
     "build": "export SET NODE_OPTIONS=--openssl-legacy-provider && webpack --config webpack.config.js",
-    "start": "export SET NODE_OPTIONS=--openssl-legacy-provider && webpack-dev-server"
+    "start-dev": "export SET NODE_OPTIONS=--openssl-legacy-provider && webpack-dev-server --port $DEVPORT",
+    "start-release": ""
   },
   "repository": {
     "type": "git",
@@ -27,7 +31,7 @@
   },
   "homepage": "https://github.com/rustwasm/create-wasm-app#readme",
   "dependencies": {
-    "my-wasm": "file:../build/wasm"
+    "my-wasm": "file:/wasm"
   },
   "devDependencies": {
     "webpack": "^4.29.3",

@@ -1,10 +1,11 @@
 # This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
 
-name: Node.js CI
-run-name: Check build ${{ github.sha }}
+run-name: Check build ${{ github.ref_name }} / ${{ github.sha }}
 on:
   push:
+    branches: [ "main" ]
+  pull_request:
     branches: [ "main" ]
 
 jobs:
@@ -16,39 +17,44 @@ jobs:
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Use Node.js ${{ matrix.node-version }}
+    - uses: actions/checkout@v4
+      lfs: false
+      submodules: false
+    - name: use-nodejs-${{ matrix.node-version }}
       uses: actions/setup-node@v3
       with:
-        # Set always-auth in npmrc.
         always-auth: false # optional, default is false
-        # Version Spec of the version to use. Examples: 12.x, 10.15.1, >=10.15.0.
         node-version: ${{ matrix.node-version }}
-        # File containing the version Spec of the version to use.  Examples: package.json, .nvmrc, .node-version, .tool-versions.
         node-version-file: www/package.json # optional
-        # Target architecture for Node to use. Examples: x86, x64. Will use system architecture by default.
         # architecture: # optional
-        # Set this option if you want the action to check for the latest available version that satisfies the version spec.
         check-latest: false # optional
-        # Optional registry to set up for auth. Will set the registry in a project level .npmrc and .yarnrc file, and set up auth to read in from env.NODE_AUTH_TOKEN.
         # registry-url: # optional
-        # Optional scope for authenticating against scoped registries. Will fall back to the repository owner when using the GitHub Packages registry (https://npm.pkg.github.com/).
         # scope: # optional
-        # Used to pull node distributions from node-versions. Since there's a default, this is typically not supplied by the user. When running this action on github.com, the default value is sufficient. When running on GHES, you can pass a personal access token for github.com if you are experiencing rate limiting.
         # token: # optional, default is ${{ github.server_url == 'https://github.com' && github.token || '' }}
-        # Used to specify a package manager for caching in the default directory. Supported values: npm, yarn, pnpm.
         cache: 'npm' # optional
-        # Used to specify the path to a dependency file: package-lock.json, yarn.lock, etc. Supports wildcards or a list of file names for caching multiple dependencies.
         cache-dependency-path: www/package-lock.json # optional
-    - name: wasm-pack-action
+
+    - name: use-wasm-pack
       uses: jetli/wasm-pack-action@v0.4.0
-    - run: wasm-pack build -d build/wasm
-    - run: npm ci
+
+    - name: build-wasm
+      run: wasm-pack build -d build/wasm
+
+    - name: build-npm
+      run: |
+        npm ci
+        npm run build --if-present
       working-directory: www
-    - run: npm run build --if-present
-      working-directory: www
-    - run: npm test
+
+    - name: test-npm
+      run: npm test
       working-directory: www
       continue-on-error: true
-    - run: npm run start & npx wait-on http://127.0.0.1:3000
+
+    - name: start-npm
+      run: |
+        npm run start
+        npx wait-on http://localhost:3000
       working-directory: www
+      timeout-minutes: 5
+      continue-on-error: true

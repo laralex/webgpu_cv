@@ -1,33 +1,3 @@
-const DEBUG = false;
-// const DEBUG = false;
-const CURRENT_LANGUAGE = van.state("en");
-const UI_STRINGS = getLocalization();
-
-function localizeString(key, nullIfMissing = false) {
-  return function() {
-    let localized = null;
-    let lang = 'en';
-    if (!(key in UI_STRINGS)) {
-       console.log("Missing UI string=" + key);
-       localized = nullIfMissing ? null : key;
-    } else if (!(CURRENT_LANGUAGE.val in UI_STRINGS[key])) {
-       console.log("Missing UI string=" + key + " for language=" + CURRENT_LANGUAGE.val);
-       localized = nullIfMissing ? null : UI_STRINGS[key]['en']
-    } else {
-       localized = UI_STRINGS[key][CURRENT_LANGUAGE.val]
-       lang = CURRENT_LANGUAGE.val;
-    }
-    return {text: localized, lang: lang};
-  }
-}
-function localizeUi(key, nullIfMissing = false) {
-  return () => (key in UI_STRINGS
-    ? (CURRENT_LANGUAGE.val in UI_STRINGS[key]
-      ? UI_STRINGS[key][CURRENT_LANGUAGE.val]
-      : nullIfMissing ? null : key)
-    : key);
-}
-
 // utility functions
 function Util () {};
 

@@ -10,13 +10,13 @@
     "devport": "5000"
   },
   "scripts": {
-    "build": "export SET NODE_OPTIONS=--openssl-legacy-provider && webpack --config webpack.config.js",
-    "start-dev": "export SET NODE_OPTIONS=--openssl-legacy-provider && webpack-dev-server --port $DEVPORT",
-    "start-release": ""
+    "build": "export SET NODE_OPTIONS=--openssl-legacy-provider && webpack --config webpack.prod.cjs",
+    "start-dev": "export SET NODE_OPTIONS=--openssl-legacy-provider && webpack-dev-server --port ${DEVPORT:=8080}",
+    "start": "export SET NODE_OPTIONS=--openssl-legacy-provider && webpack serve --open --config webpack.dev.cjs"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rustwasm/create-wasm-app.git"
+    "url": "git+https://github.com/laralex/my_web_cv.git"
   },
   "keywords": [
     "webassembly",
@@ -24,19 +24,17 @@
     "rust",
     "webpack"
   ],
-  "author": "Ashley Williams <ashley666ashley@gmail.com>",
-  "license": "(MIT OR Apache-2.0)",
-  "bugs": {
-    "url": "https://github.com/rustwasm/create-wasm-app/issues"
-  },
-  "homepage": "https://github.com/rustwasm/create-wasm-app#readme",
+  "author": "Alexey Larionov <alxs.larionov@gmail.com>",
+  "license": "CC0-1.0",
+  "homepage": "https://github.com/laralex/my_web_cv",
   "dependencies": {
-    "my-wasm": "file:/wasm"
+    "my-wasm": "file:./wasm"
   },
   "devDependencies": {
-    "webpack": "^4.29.3",
-    "webpack-cli": "^3.1.0",
-    "webpack-dev-server": "^3.1.5",
-    "copy-webpack-plugin": "^5.0.0"
+    "copy-webpack-plugin": "^5.0.0",
+    "webpack": "^5.91.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.0.4",
+    "webpack-merge": "^5.10.0"
   }
 }

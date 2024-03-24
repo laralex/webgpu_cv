@@ -1,9 +1,16 @@
 PORT?=8081
 HTTP_SERVER_ROOT?=src/minimal_http_server
 
+
+.PHONY: install
+install:
+	cargo install -f wasm-bindgen-cli
+
 .PHONY: wasm
 wasm:
-	wasm-pack build -d www/wasm
+	wasm-pack build --target web -d www/wasm --mode no-install
+	# cargo build --target=wasm32-unknown-unknown
+	# wasm-bindgen --out-dir=www/wasm --target=web --omit-default-module-path my-wasm.wasm
 
 .PHONY: kill_server
 kill_server:
@@ -12,6 +19,7 @@ kill_server:
 .PHONY: server_webpack
 server_webpack: kill_server
 	cd www && \
+		npm install && \
 		npm run build && \
 		DEVPORT=${PORT} npm run start-dev
 

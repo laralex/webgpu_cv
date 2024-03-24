@@ -1,4 +1,5 @@
-function getLocalization() {
+export const CURRENT_LANGUAGE = van.state("en");
+export const UI_STRINGS = (function getLocalization() {
    return {
       placeholder: {en: "<TODO>", ru: "<TODO>", kr: "<TODO>"},
       english_en: {en: "English", ru: "English", kr: "English"},
@@ -59,7 +60,32 @@ function getLocalization() {
       resize_tooltip: { en: "Resize by dragging the border", ru: "Потянув за границу, можно настроить ширину", kr: "테두리를 끌으면 크기가 바꿉니다" },
       font_family: { en: "Font family", ru: "Шрифт", kr: "글꼴" },
       geo_location: { en: "in Russia / Relocation / Remote", ru: "Москва / СПб / Релокация", kr: "러시아 / 이주" },
-      
       // xxx: {en: "", ru: "", kr: ""},
    };
+})()
+
+export function localizeString(key, nullIfMissing = false) {
+  return function() {
+    let localized = null;
+    let lang = 'en';
+    if (!(key in UI_STRINGS)) {
+       console.log("Missing UI string=" + key);
+       localized = nullIfMissing ? null : key;
+    } else if (!(CURRENT_LANGUAGE.val in UI_STRINGS[key])) {
+       console.log("Missing UI string=" + key + " for language=" + CURRENT_LANGUAGE.val);
+       localized = nullIfMissing ? null : UI_STRINGS[key]['en']
+    } else {
+       localized = UI_STRINGS[key][CURRENT_LANGUAGE.val]
+       lang = CURRENT_LANGUAGE.val;
+    }
+    return {text: localized, lang: lang};
+  }
+}
+
+export function localizeUi(key, nullIfMissing = false) {
+  return () => (key in UI_STRINGS
+    ? (CURRENT_LANGUAGE.val in UI_STRINGS[key]
+      ? UI_STRINGS[key][CURRENT_LANGUAGE.val]
+      : nullIfMissing ? null : key)
+    : key);
 }

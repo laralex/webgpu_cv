@@ -1,3 +1,6 @@
+import { localizeString, localizeUi } from '/modules/localization.js';
+import { Util } from '/modules/util.js';
+
 const {div, button, i, label, img, svg, path, input, details, summary, p, br, li, a, option, select, span, ul, h1, h2, h3} = van.tags
 const SMOOTH = true;
 // const CHAPTER_COLORS = ["#7BD3EA", "#A1EEBD", "#F6F7C4", "#F6D6D6", "#D57E7E"];
@@ -40,6 +43,47 @@ function getBackgroundColorStyle(bgValue, withBg=false, withBorder=false) {
          + (withBg === true ? `background-color:${bgValue};` : "");
 }
 
+function formatYearsMonths({years, months, yearsFullWord = true, monthsFullWord = true}) {
+   const getLocalized = (key) => localizeString(key)().text
+   let monthStr = "";
+   if (months > 0) {
+     if (!monthsFullWord) {
+       monthStr = months + " " + getLocalized("month_short")
+     } else if (months == 1) {
+       monthStr = months + " " + getLocalized("month_full")
+     } else if (months < 5) {
+       monthStr = months + " " + getLocalized("months_full")
+     } else {
+       monthStr = months + " " + getLocalized("months_many_full")
+     }
+   }
+   
+   let yearStr = "";
+   if (years > 0) {
+     if (!yearsFullWord) {
+       yearStr = years + " " + getLocalized("year_short")
+     } else if (years == 1) {
+       yearStr = years + " " + getLocalized("year_full")
+     } else if (years < 5) {
+       yearStr = years + " " + getLocalized("years_full")
+     } else {
+       yearStr = years + " " + getLocalized("years_many_full")
+     }
+   }
+   return {yearStr: yearStr, monthStr: monthStr}
+}
+
+
+function formatDateDiff(d1, d2, {yearsFullWord, monthsFullWord} = { yearsFullWord: true, monthsFullWord: true }) {
+   const diff = Util.yearMonthDiff(Util.monthDiff(d1, d2));
+   return formatYearsMonths({
+     years: diff.yearDiff,
+     months: diff.monthRemainder,
+     yearsFullWord: yearsFullWord,
+     monthsFullWord: monthsFullWord,
+   });
+}
+
 function Highlight(text) {
    return span({class: "bold"}, text)
 }
@@ -57,7 +101,7 @@ function CvButton(labelId, bgValue, onclick) {
 
 function CvChapter({uniqueId, titleElement, isDefaultActive, bgValue, borderBgValue, onclick, extraClasses = "", extraActiveClasses = "", extraInsideClasses = "", insideConstructor = () => span(localizeUi("placeholder"))}) {
    const border = `background: ${borderBgValue}`;
-   return div({id: uniqueId, class: () => "cv-chapter flex-column " + (DEBUG && !SMOOTH ? "" : " smooth ") + (isDefaultActive.val ? extraActiveClasses + " active " : " inactive ") + extraClasses},
+   return div({id: uniqueId, class: () => "cv-chapter flex-column " + (BUILD_DATA.debug && !SMOOTH ? "" : " smooth ") + (isDefaultActive.val ? extraActiveClasses + " active " : " inactive ") + extraClasses},
       button({
          class: "cv-chapter-button btn expand-button ",
          style: "text-align: left; padding-left: 1rem;",
@@ -83,7 +127,7 @@ function CvChapterTitle(isActive, text, isCentered = true) {
    return span({class: () => " cv-title " + (isCentered ? " text-center " : " text-left ") + (isActive.val ? " bold " : "")}, text);
 }
 
-function CvContent(currentCvPage, chaptersConnections) {
+export function CvContent(currentCvPage, chaptersConnections) {
    const data = [
       { id: "chapter_career",       color: CHAPTER_COLORS[0], borderColor: CHAPTER_BORDER_COLORS[0], constructor: CvCareer },
       { id: "chapter_publications", color: CHAPTER_COLORS[1], borderColor: CHAPTER_BORDER_COLORS[1], constructor: CvPublications },
@@ -176,7 +220,7 @@ function CvCareer(currentCvPage, chapterConnections, chapterId, chapterArgs) {
                uniqueId: x.id,
                extraInsideClasses: "cv-text", extraClasses: "toplevel",
                titleElement: () => {
-                  const employmentSpan = Util.formatYearsMonths({
+                  const employmentSpan = formatYearsMonths({
                      years: x.employmentSpan.yearDiff,
                      months: x.employmentSpan.monthRemainder,
                      yearsFullWord: false,
@@ -293,7 +337,7 @@ function CvHuawei(chapterArgs) {
                LeftRightAlignedList({
                   leftItems: [ () => p("Senior engineer"), ],
                   rightItems: [ () => {
-                     const seniorStr = Util.formatDateDiff(huaweiSeniorEmploymentDate, currentDate);
+                     const seniorStr = formatDateDiff(huaweiSeniorEmploymentDate, currentDate);
                      return p(seniorStr.yearStr + " " + seniorStr.monthStr);
                   }],
                }),
@@ -331,15 +375,15 @@ function CvSamsung(chapterArgs) {
                      () => p("Intern"),],
                   rightItems: [
                      () => {
-                        const middleStr = Util.formatDateDiff(samsungMiddleEmploymentDate, samsungResignationDate, {yearsFullWord: false, monthsFullWord: false});
+                        const middleStr = formatDateDiff(samsungMiddleEmploymentDate, samsungResignationDate, {yearsFullWord: false, monthsFullWord: false});
                         return p(middleStr.yearStr + " " + middleStr.monthStr); // p("1 yr 8 mos"),
                      },
                      () => {
-                        const juniorStr = Util.formatDateDiff(samsungJuniorEmploymentDate, samsungMiddleEmploymentDate);
+                        const juniorStr = formatDateDiff(samsungJuniorEmploymentDate, samsungMiddleEmploymentDate);
                         return p(juniorStr.yearStr + " " + juniorStr.monthStr); // p("7 months"),
                      },
                      () => {
-                        const internStr = Util.formatDateDiff(samsungInternEmploymentDate, samsungInternResignationDate);
+                        const internStr = formatDateDiff(samsungInternEmploymentDate, samsungInternResignationDate);
                         return p(internStr.yearStr + " " + internStr.monthStr); // p("2 months"),
                      }
                   ],

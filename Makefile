@@ -19,9 +19,9 @@ kill_server:
 .PHONY: server_webpack
 server_webpack: kill_server
 	cd www && \
-		npm install && \
 		npm run build && \
 		DEVPORT=${PORT} npm run start-dev
+#		npm install && \
 
 .PHONY: server_js
 server_js: kill_server
@@ -29,8 +29,8 @@ server_js: kill_server
 
 .PHONY: server_py
 server_py: kill_server
-	cd ${HTTP_SERVER_ROOT} && python3 -m http.server ${PORT} &
+	cd www && python3 -m http.server ${PORT}
 
 .PHONY: app
-dev_app: wasm server_webpack
+dev_app: wasm server_py
 	

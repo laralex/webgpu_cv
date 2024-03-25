@@ -27,17 +27,21 @@ wasm:
 wasm_opt:
 	wasm-opt ${SERVE_WASM_DIR}/index_bg.wasm -O2 --dce --output ${SERVE_WASM_DIR}/index_bg.wasm
 
-.PHONY: build_data
-build_data:
+.PHONY: codegen
+codegen:
 	echo "\
 	/* NOTE: BUILD_DATA is automatically generated in Makefile */ \n\
-	const BUILD_DATA = \
+	let BUILD_DATA = \
 	{ \n\
    	'git-commit': \"$(shell git rev-parse HEAD)\", \n\
    	'git-commit-date': \"$(shell git show -s --format=%cD)\", \n\
    	'debug': $(if $(filter ${BUILD_TYPE},debug),true,false), \n\
    	'deploy-date': \"$(shell LANG=en_us_88591 date +'%a, %d %b %Y %H:%M:%S %z %Z')\" \n\
 	}" > ${SERVE_DIR}/build-data.js
+
+.PHONY: codegen_debug
+codegen_debug:
+	BUILD_TYPE=debug $(MAKE) codegen
 
 .PHONY: kill_server
 kill_server:
@@ -58,9 +62,14 @@ server_js: kill_server
 server_py: kill_server
 	cd www && python3 -m http.server ${PORT}
 
-.PHONY: dev_app
-dev_app: wasm_debug
-	BUILD_TYPE=debug $(MAKE) build_data && $(MAKE) server_py
+.PHONY: build_debug
+build_debug: wasm_debug codegen_debug
+
+.PHONY: app_debug
+app_debug: build_debug server_py
+
+.PHONY: build
+build: wasm wasm_opt codegen
 
 .PHONY: app
-app: wasm wasm_opt build_data server_py
+app: build server_py

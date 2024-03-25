@@ -17,7 +17,7 @@ const IS_INTRO_SHOWN = van.state(true);
 let IS_WASM_LOADED = false;
 
 // import mywasm from 'my-wasm';
-import init, { wasm_loop, wasm_resize, wasm_startup } from './wasm/my_wasm.js';
+import init, { wasm_loop, wasm_resize, wasm_startup } from '/wasm/index.js';
 import { UI_STRINGS, CURRENT_LANGUAGE, localizeString, localizeUi } from '/modules/localization.js';
 import { Util } from '/modules/util.js';
 import { CvContent } from '/modules/cv.js';
@@ -739,7 +739,7 @@ window.onload = function() {
       // default export to inform it where the wasm file is located on the
       // server, and then we wait on the returned promise to wait for the
       // wasm to be loaded.
-      await init();
+      await init('./wasm/index_bg.wasm');
       IS_WASM_LOADED = true;
 
       // And afterwards we can use all the functionality defined in wasm.

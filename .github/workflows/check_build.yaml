@@ -22,7 +22,7 @@ jobs:
     - name: use-wasm-opt
       uses: NiklasEi/wasm-opt-action@v2
       with:
-        optimize_all: true
+        file: www/wasm/index_bg.wasm
 
     - name: build
       run: make build

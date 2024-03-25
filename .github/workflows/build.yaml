@@ -53,8 +53,3 @@ jobs:
         if-no-files-found: error
         overwrite: false
       # retention-days:
-
-    # - name: Zip artifacts
-    #   id: zip-artifacts
-    #   working-directory: ./www
-    #   run: zip -r my_web_cv.zip . && echo "build-zip=$(realpath my_web_cv.zip)" >> "$GITHUB_OUTPUT"

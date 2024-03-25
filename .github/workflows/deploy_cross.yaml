@@ -20,14 +20,22 @@ jobs:
         install -m 600 -D /dev/null ~/.ssh/id_rsa
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         ssh-keyscan -H ${{ secrets.SSH_HOST }} > ~/.ssh/known_hosts
+
     - name: Download artifacts
       uses: actions/download-artifact@master
       with:
         name: my_web_cv.zip
         path: tmp
-    - name: Send build
+
+    - name: Zip artifacts
+      id: zip-artifacts
+      working-directory: ./tmp
+      run: zip -r my_web_cv.zip .
+
+    - name: Deploy artifacts
       run: |
         scp tmp/my_web_cv.zip ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ vars.WORK_DIR }}
     # ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ vars.WORK_DIR }} && unzip && exit"
+
     - name: Cleanup
       run: rm -rf ~/.ssh

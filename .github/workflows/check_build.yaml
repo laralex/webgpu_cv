@@ -18,18 +18,18 @@ jobs:
         submodules: false
     
     - name: configure-rust
-      run: rustup target add wasm32-unknown-unknown
+      run: rustup target add wasm32-unknown-unknown && make install
       
     - name: use-wasm-bindgen
       uses: jetli/wasm-bindgen-action@v0.2.0
 
-    - name: run-wasm-opt
-      uses: NiklasEi/wasm-opt-action@v2
-      with:
-        file: www/wasm/index_bg.wasm
-
-    - name: build
+    - name: make-build
       run: make build
+
+    # - name: run-wasm-opt
+    #   uses: NiklasEi/wasm-opt-action@v2
+    #   with:
+    #     file: www/wasm/index_bg.wasm
 
     - name: try-serve
       run: make server_py

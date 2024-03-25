@@ -7,14 +7,14 @@ on:
     outputs:
       build-url:
         value: ${{ jobs.build.outputs.build-url }}
-      build-zip:
-        value: ${{ jobs.build.outputs.build-zip }}
+      #build-zip:
+      #  value: ${{ jobs.build.outputs.build-zip }}
 
 jobs:
   build:
     outputs:
       build-url: ${{ steps.upload-artifacts.outputs.artifact-url }}
-      build-zip: ${{ steps.zip-artifacts.outputs.build-zip }}
+      #build-zip: ${{ steps.zip-artifacts.outputs.build-zip }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -48,13 +48,12 @@ jobs:
       id: upload-artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: my_web_cv
-        path: www
+        name: my_web_cv.zip
         if-no-files-found: error
         overwrite: false
       # retention-days:
 
-    - name: Zip artifacts
-      id: zip-artifacts
-      working-directory: ./www
-      run: zip -r my_web_cv.zip . && echo "build-zip=$(realpath my_web_cv.zip)" >> "$GITHUB_OUTPUT"
+    # - name: Zip artifacts
+    #   id: zip-artifacts
+    #   working-directory: ./www
+    #   run: zip -r my_web_cv.zip . && echo "build-zip=$(realpath my_web_cv.zip)" >> "$GITHUB_OUTPUT"

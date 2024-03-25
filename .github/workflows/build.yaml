@@ -1,25 +1,31 @@
 # This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
 
-run-name: "check: ${{ github.ref_name }} # ${{ github.sha }}"
+run-name: "build: ${{ github.ref_name }} # ${{ github.sha }}"
 on:
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_call:
+    inputs:
+    secrets:
 
 jobs:
-  check_build:
+  build:
+    outputs:
+      build-url: ${{ steps.step7.outputs.artifact-url }}
+      build-zip: ${{ steps.step8.outputs.output1 }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
       with:
         lfs: false
         submodules: false
-    
+
     - name: Configure Rust
       run: rustup target add wasm32-unknown-unknown
-      
+
     - name: Use wasm-bindgen
       uses: jetli/wasm-bindgen-action@v0.2.0
 
@@ -39,7 +45,7 @@ jobs:
     #   timeout-minutes: 1
     #   continue-on-error: true
 
-    - name: Store artifacts
+    - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
         name: my_web_cv
@@ -47,3 +53,7 @@ jobs:
         if-no-files-found: error
         overwrite: false
       # retention-days:
+
+    - name: Zip artifacts
+      working-directory: ./www
+      run: zip -r my_web_cv.zip . && echo realpath "my_web_cv.zip" >> "$GITHUB_OUTPUT"

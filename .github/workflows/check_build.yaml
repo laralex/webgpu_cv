@@ -17,24 +17,33 @@ jobs:
         lfs: false
         submodules: false
     
-    - name: configure-rust
+    - name: Configure Rust
       run: rustup target add wasm32-unknown-unknown
       
-    - name: use-wasm-bindgen
+    - name: Use wasm-bindgen
       uses: jetli/wasm-bindgen-action@v0.2.0
 
-    - name: make-wasm
+    - name: Make wasm
       run: make wasm
 
-    - name: run-wasm-opt
+    - name: Run wasm-opt
       uses: NiklasEi/wasm-opt-action@v2
       with:
         file: www/wasm/index_bg.wasm
 
-    - name: make-codegen
+    - name: Run codegen
       run: make codegen
 
-    - name: try-serve
-      run: make server_py
-      timeout-minutes: 1
-      continue-on-error: true
+    # - name: 
+    #   run: make server_py
+    #   timeout-minutes: 1
+    #   continue-on-error: true
+
+    - name: Store artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: my_web_cv
+        path: www
+        if-no-files-found: error
+        overwrite: false
+      # retention-days:

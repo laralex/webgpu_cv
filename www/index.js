@@ -647,7 +647,8 @@ function getScrollCallback({chapterBorderStickiness, chapterAfterBorderStickines
 function getBuildDataString() {
    return `Commit: ${BUILD_DATA["git-commit"]}\n\
 Committed: ${BUILD_DATA["git-commit-date"]}\n\
-Deployed: ${BUILD_DATA["deploy-date"]}`;
+Deployed: ${BUILD_DATA["deploy-date"]}\n\
+DEBUG: ${BUILD_DATA["debug"]}`;
 }
 
 window.onload = function() {

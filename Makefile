@@ -9,13 +9,35 @@ install:
 	cargo install -f wasm-bindgen-cli
 	cargo install wasm-opt --locked
 
+.PHONY: wasm_debug
+wasm_debug:
+	cargo build --target=${RUST_TARGET} --config package.name=\"${WASM_NAME}\"
+	wasm-bindgen --target=web --omit-default-module-path \
+		target/${RUST_TARGET}/debug/${WASM_NAME}.wasm \
+		--out-dir ${SERVE_WASM_DIR} --out-name index
+
 .PHONY: wasm
 wasm:
-	cargo build --profile release --target=${RUST_TARGET} --config package.name=\"${WASM_NAME}\"
+	cargo build --release --target=${RUST_TARGET} --config package.name=\"${WASM_NAME}\"
 	wasm-bindgen --target=web --omit-default-module-path \
 		target/${RUST_TARGET}/release/${WASM_NAME}.wasm \
 		--out-dir ${SERVE_WASM_DIR} --out-name index
+
+.PHONY: wasm_opt
+wasm_opt:
 	wasm-opt ${SERVE_WASM_DIR}/index_bg.wasm -O2 --dce --output ${SERVE_WASM_DIR}/index_bg.wasm
+
+.PHONY: build_data
+build_data:
+	echo "\
+	/* NOTE: BUILD_DATA is automatically generated in Makefile */ \n\
+	const BUILD_DATA = \
+	{ \n\
+   	'git-commit': \"$(shell git rev-parse HEAD)\", \n\
+   	'git-commit-date': \"$(shell git show -s --format=%cD)\", \n\
+   	'debug': $(if $(filter ${BUILD_TYPE},debug),true,false), \n\
+   	'deploy-date': \"$(shell LANG=en_us_88591 date +'%a, %d %b %Y %H:%M:%S %z %Z')\" \n\
+	}" > ${SERVE_DIR}/build-data.js
 
 .PHONY: kill_server
 kill_server:
@@ -36,5 +58,9 @@ server_js: kill_server
 server_py: kill_server
 	cd www && python3 -m http.server ${PORT}
 
+.PHONY: dev_app
+dev_app: wasm_debug
+	BUILD_TYPE=debug $(MAKE) build_data && $(MAKE) server_py
+
 .PHONY: app
-dev_app: wasm server_py
+app: wasm wasm_opt build_data server_py

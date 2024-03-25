@@ -1,6 +1,7 @@
-const BUILD_DATA = {
-   "git-commit": "82d4beb82d621fdb246d56f789ba224360a32367",
-   "git-commit-date": "Mon Mar 18 22:46:24 2024 +0300",
-   "debug": true,
-   "deploy-date": "Mon Mar 18 22:46:24 2024 +0300"
+/* NOTE: BUILD_DATA is automatically generated in Makefile */ 
+const BUILD_DATA = { 
+   	'git-commit': "86f5a8052d1ff2e5d056f877b273ca18ec07fb22", 
+   	'git-commit-date': "Mon, 25 Mar 2024 07:40:41 +0300", 
+   	'debug': false, 
+   	'deploy-date': "Mon, 25 Mar 2024 08:22:07 +0300 MSK" 
 }

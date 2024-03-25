@@ -1,5 +1,9 @@
 run-name: "deploy: ${{ github.ref_name }} # ${{ github.sha }}"
-on: workflow_dispatch
+on:
+  push:
+    branches: [ "main" ]
+  # pull_request:
+  #   branches: [ "main" ]
 jobs:
   build:
     uses: ./.github/workflows/build

@@ -1,7 +1,7 @@
 # This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
 
-run-name: "build: ${{ github.ref_name }} # ${{ github.sha }}"
+run-name: "check: ${{ github.ref_name }} # ${{ github.sha }}"
 on:
   push:
     branches: [ "main" ]
@@ -9,17 +9,21 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-and-run:
+  check_build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
       with:
         lfs: false
         submodules: false
+    
+    - name: configure-rust
+      run: rustup target add wasm32-unknown-unknown
+      
     - name: use-wasm-bindgen
       uses: jetli/wasm-bindgen-action@v0.2.0
 
-    - name: use-wasm-opt
+    - name: run-wasm-opt
       uses: NiklasEi/wasm-opt-action@v2
       with:
         file: www/wasm/index_bg.wasm

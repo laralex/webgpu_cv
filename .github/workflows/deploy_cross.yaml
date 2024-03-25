@@ -6,7 +6,7 @@ on:
   #   branches: [ "main" ]
 jobs:
   build:
-    uses: ./.github/workflows/build
+    uses: ./.github/workflows/build.yaml
   deploy_cross:
     runs-on: ubuntu-latest 
     # [self-hosted]

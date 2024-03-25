@@ -56,4 +56,4 @@ jobs:
 
     - name: Zip artifacts
       working-directory: ./www
-      run: zip -r my_web_cv.zip . && echo realpath "my_web_cv.zip" >> "$GITHUB_OUTPUT"
+      run: zip -r my_web_cv.zip . && realpath "my_web_cv.zip" >> "$GITHUB_OUTPUT"

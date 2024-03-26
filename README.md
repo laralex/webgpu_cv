@@ -3,7 +3,8 @@ WebGL2 + Rust + JS (VanJS)
 
 Known issues:
 - No CI
-   + one lighttpd configs ( two served projects )
-   - CI to pull latest commit in main at /var/www/my_web_cv
-   - CI to build wasm module
+   - build & deploy script right on ruweb
+   - lighttpd fix serving deployed app
+   - pdf links
+   - revive self-hosted runner
 - No chapters content

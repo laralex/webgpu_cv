@@ -35,7 +35,10 @@ jobs:
     - name: Deploy artifacts
       run: |
         scp tmp/my_web_cv.zip ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ vars.WORK_DIR }}
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ vars.WORK_DIR }} && unzip -o my_web_cv.zip -d /var/www/my_web_cv && exit"
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ vars.WORK_DIR }} && \
+          mkdir -p /var/backup \
+          mv -rf /var/www/my_web_cv /var/backup \
+          unzip -o my_web_cv.zip -d /var/www/my_web_cv && exit"
 
     - name: Cleanup
       run: rm -rf ~/.ssh

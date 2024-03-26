@@ -20,7 +20,7 @@ export const UI_STRINGS = (function getLocalization() {
       specialty_deep_learning: {en: "Deep Learning R&D", ru: "R&D нейронных сетей", /*no korean kr: ""*/},
       cv: {en: "CV", ru: "CV", kr: "이력서"},
       pdf: {en: "in PDF", ru: "в PDF", kr: "PDF"},
-      pdf_cv_href: {en: "./assets/larionov_rendering_cv_eng_112023.pdf", ru: "./assets/larionov_rendering_cv_rus_112023.pdf", kr: "./assets/larionov_rendering_cv_eng_112023.pdf"},
+      pdf_cv_href: {en: "./assets/larionov_rendering_cv_eng.pdf", ru: "./assets/larionov_rendering_cv_rus.pdf", kr: "./assets/larionov_rendering_cv_eng.pdf"},
       web_cv_github: {en: "Source code", ru: "Исходный код", kr: "데모 소스 코드"},
       clear_cookies_button: {en: "Reload CV", ru: "Сбросить сайт", kr: "설정을 초기화"},
       skills_title: {en: "Extra skills", ru: "Прочие компетенции", kr: "다른 기술들"},

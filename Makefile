@@ -27,6 +27,11 @@ wasm:
 wasm_opt:
 	wasm-opt ${SERVE_WASM_DIR}/index_bg.wasm -O2 --dce --output ${SERVE_WASM_DIR}/index_bg.wasm
 
+.PHONY: pdf_link
+pdf_link:
+	ln $(shell find ${SERVE_DIR}/assets -type f -iname "*eng*.pdf" ! -iname "*softlink*") ${SERVE_DIR}/assets/__softlink_cv_eng.pdf
+	ln $(shell find ${SERVE_DIR}/assets -type f -iname "*rus*.pdf" ! -iname "*softlink*") ${SERVE_DIR}/assets/__softlink_cv_rus.pdf
+
 .PHONY: codegen
 codegen:
 	echo "\
@@ -63,13 +68,13 @@ server_py: kill_server
 	cd www && python3 -m http.server ${PORT}
 
 .PHONY: build_debug
-build_debug: wasm_debug codegen_debug
+build_debug: wasm_debug codegen_debug pdf_link
 
 .PHONY: app_debug
 app_debug: build_debug server_py
 
 .PHONY: build
-build: wasm wasm_opt codegen
+build: wasm wasm_opt codegen pdf_link
 
 .PHONY: app
 app: build server_py

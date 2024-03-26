@@ -277,7 +277,7 @@ function GraphicsLevelPicker(currentGraphicsLevel, isVertical) {
 function ResumePdfLink() {
    return button({class:"grid-item contact interactive btn", role:"button"},
       // bxs-download
-      a({ class: "font-normalsize", href: localizeString("pdf_cv_href")().text, target: "_blank"},
+      a({ class: "font-normalsize", href: localizeUi("pdf_cv_href"), target: "_blank"},
       i({ class: "bx bxs-file-pdf bx-tada font-Huge", style: "color: var(--color-gmail);"}),
          // () => localizeString("cv")().text + " " + localizeString("pdf")().text,
          // label({style: "display:block;"}, ),

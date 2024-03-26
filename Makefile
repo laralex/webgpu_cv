@@ -73,8 +73,11 @@ build_debug: wasm_debug codegen_debug pdf_link
 .PHONY: app_debug
 app_debug: build_debug server_py
 
+.PHONY: build_ci
+build_ci: wasm codegen pdf_link
+
 .PHONY: build
-build: wasm wasm_opt codegen pdf_link
+build: build_ci wasm_opt
 
 .PHONY: app
 app: build server_py

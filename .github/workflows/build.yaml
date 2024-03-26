@@ -28,16 +28,13 @@ jobs:
     - name: Use wasm-bindgen
       uses: jetli/wasm-bindgen-action@v0.2.0
 
-    - name: Make wasm
-      run: make wasm
+    - name: Make build_ci
+      run: make build_ci
 
     - name: Run wasm-opt
       uses: NiklasEi/wasm-opt-action@v2
       with:
         file: www/wasm/index_bg.wasm
-
-    - name: Run codegen
-      run: make codegen
 
     # - name: 
     #   run: make server_py

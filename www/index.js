@@ -29,7 +29,12 @@ async function loadBuildData() {
    return buildData;
 }
 
-export const BUILD_DATA = await loadBuildData();
+export const BUILD_DATA = {
+   'git-commit': "stub",
+   'git-commit-date': "stub",
+   'debug': false,
+   'deploy-date': "stub"
+};
 console.log('LOADED JSON', BUILD_DATA);
 
 // import mywasm from 'my-wasm';

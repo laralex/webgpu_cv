@@ -35,14 +35,12 @@ pdf_link:
 .PHONY: codegen
 codegen:
 	echo "\
-	/* NOTE: BUILD_DATA is automatically generated in Makefile */ \n\
-	let BUILD_DATA = \
-	{ \n\
-   	'git-commit': \"$(shell git rev-parse HEAD)\", \n\
-   	'git-commit-date': \"$(shell git show -s --format=%cD)\", \n\
-   	'debug': $(if $(filter ${BUILD_TYPE},debug),true,false), \n\
-   	'deploy-date': \"$(shell LANG=en_us_88591 date +'%a, %d %b %Y %H:%M:%S %z %Z')\" \n\
-	}" > ${SERVE_DIR}/build-data.js
+	{\n\
+   	\"git-commit\": \"$(shell git rev-parse HEAD)\",\n\
+   	\"git-commit-date\": \"$(shell git show -s --format=%cD)\",\n\
+   	\"debug\": $(if $(filter ${BUILD_TYPE},debug),true,false),\n\
+   	\"deploy-date\": \"$(shell LANG=en_us_88591 date +'%a, %d %b %Y %H:%M:%S %z %Z')\"\n\
+	}" > ${SERVE_DIR}/build-data.json
 
 .PHONY: codegen_debug
 codegen_debug:

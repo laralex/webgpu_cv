@@ -1,3 +1,4 @@
+import { BUILD_DATA } from '../index.js';
 import { localizeString, localizeUi } from '/modules/localization.js';
 import { Util } from '/modules/util.js';
 

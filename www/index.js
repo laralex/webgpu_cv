@@ -16,6 +16,22 @@ const IS_TUTORIAL_SHOWN = van.state(false);
 const IS_INTRO_SHOWN = van.state(true);
 let IS_WASM_LOADED = false;
 
+async function loadBuildData() {
+   const buildDataDefaults = {
+     'git-commit': "stub",
+     'git-commit-date': "stub",
+     'debug': false,
+     'deploy-date': "stub"
+   }
+   const response = await fetch('./build-data.json');
+   const json = await response.json();
+   const buildData = Object.assign(buildDataDefaults, json);
+   return buildData;
+}
+
+export const BUILD_DATA = await loadBuildData();
+console.log('LOADED JSON', BUILD_DATA);
+
 // import mywasm from 'my-wasm';
 import init, { wasm_loop, wasm_resize, wasm_startup } from '/wasm/index.js';
 import { UI_STRINGS, CURRENT_LANGUAGE, localizeString, localizeUi } from '/modules/localization.js';

@@ -69,7 +69,7 @@ Util.monthDiff = function(d1, d2){
   months -= d1.getMonth();
   months += d2.getMonth();
   const monthDiff = months <= 0 ? 0 : months;
-  console.log("%%%%", d1, d2);
+  //console.log("%%%%", d1, d2);
   return monthDiff;
 }
 

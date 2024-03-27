@@ -20,9 +20,9 @@ jobs:
         id: set-runner
         uses: jimmygchen/runner-fallback-action@v1
         with:
+          github-token: ${{ secrets.HUB_TOKEN }}
           primary-runner: "self-hosted,linux"
           fallback-runner: "ubuntu-latest"
-          github-token: ${{ secrets.HUB_TOKEN }}
   build:
     needs: determine-runner
     runs-on: ${{ fromJson(needs.determine-runner.outputs.runner) }}

@@ -39,7 +39,7 @@ console.log('LOADED JSON', BUILD_DATA);
 
 // import mywasm from 'my-wasm';
 import init, { wasm_loop, wasm_resize, wasm_startup } from '/wasm/index.js';
-import { UI_STRINGS, CURRENT_LANGUAGE, localizeString, localizeUi } from '/modules/localization.js';
+import { UI_STRINGS, CURRENT_LANGUAGE, localizeString, localizeUi, localizeUiPostprocess } from '/modules/localization.js';
 import { Util } from '/modules/util.js';
 import { CvContent } from '/modules/cv.js';
 
@@ -252,7 +252,7 @@ function LanguagePicker(currentLanguage, currentFont, isVertical, tooltipLanguag
 	van.derive(() => localizePage(currentLanguage.val));
 	const options = Object.entries(LANGUAGES).map(([language, meta]) =>
       option({ value: language, selected: () => language == currentLanguage.val},
-         () => meta.emoji + " " + UI_STRINGS[meta.labelId][tooltipLanguage.val]));
+         () => (Util.isFlagEmojiSupported() ? meta.emoji + " " : "") + UI_STRINGS[meta.labelId][tooltipLanguage.val]));
    const labelBefore = isVertical ? span(() => UI_STRINGS[tooltipLabelId][tooltipLanguage.val]) : null;
    const labelAfter = !isVertical ? span(() => UI_STRINGS[tooltipLabelId][tooltipLanguage.val]) : null;
    return () => div(
@@ -414,7 +414,7 @@ function MoreSkillsButton() {
        }, ul(
             li(span("Rust, C#, Java, JavaScript")),
             li(span("PyTorch, Docker, Qualcomm\xa0SNPE, Unity, ARCore, Linux, LaTeX")),
-            li(span(localizeUi("skills_languages_1"))),
+            li(span(localizeUiPostprocess("skills_languages_1", Util.substituteFlagEmoji))),
          ),
       ),
    );

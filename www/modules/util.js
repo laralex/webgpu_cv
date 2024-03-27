@@ -1,6 +1,44 @@
 // utility functions
 export function Util () {};
 
+Util.isFlagEmojiSupported = (function() {
+  let isSupported = undefined;
+  var impl = function() {
+    console.log(isSupported);
+    if (isSupported !== undefined) return isSupported;
+    var canvas = document.createElement("canvas");
+    canvas.height = 10;
+    canvas.width = canvas.height * 2;
+    var ctx = canvas.getContext("2d");
+    ctx.font = canvas.height + "px Arial";
+    ctx.fillText("🇬🇧", 0, canvas.height);
+    var data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    var i = 0;
+    while (i < data.length) {
+      if (data[i] !== data[i + 1] || data[i] !== data[i + 2]) isSupported = true;
+      i += 4;
+    }
+    canvas.remove();
+    isSupported = isSupported || false;
+    return isSupported;
+  }
+  return impl
+})();
+
+Util.substituteFlagEmoji = function(string) {
+  const EMOJI_MAP = {
+    "%ENG%": "🇬🇧",
+    "%RUS%": "🇷🇺",
+    "%KOR%": "🇰🇷",
+    "%POL%": "🇵🇱",
+  }
+  let isSupported = Util.isFlagEmojiSupported();
+  Object.entries(EMOJI_MAP).forEach((kv) => {
+    string = string.replace(kv[0], (isSupported ? kv[1] : ""));
+  });
+  return string.replaceAll("\xa0\xa0", "\xa0");
+}
+
 Util.addClass = function(el, className) {
   var classList = className.split(' ');
   el.classList.add(classList[0]);

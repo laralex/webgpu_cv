@@ -24,7 +24,7 @@ export const UI_STRINGS = (function getLocalization() {
       web_cv_github: {en: "Source code", ru: "Исходный код", kr: "데모 소스 코드"},
       clear_cookies_button: {en: "Reload CV", ru: "Сбросить сайт", kr: "설정을 초기화"},
       skills_title: {en: "Extra skills", ru: "Прочие компетенции", kr: "다른 기술들"},
-      skills_languages_1: {en: "English\xa0🇬🇧\xa0(C1), Russian\xa0🇷🇺\xa0(N), Korean\xa0🇰🇷\xa0(A2), Polish\xa0🇵🇱\xa0(A1)", ru: "Английский\xa0C1\xa0🇬🇧, Корейский\xa0A2\xa0🇰🇷, Польский\xa0A1\xa0🇵🇱, Русский\xa0🇷🇺", kr: "영어\xa0🇬🇧\xa0(C1), 한국어\xa0🇰🇷\xa0(А2), 폴란드어\xa0🇵🇱\xa0(А1), 러시아\xa0사람\xa0🇷🇺"},
+      skills_languages_1: {en: "English\xa0%ENG%\xa0(C1), Russian\xa0%RUS%\xa0(N), Korean\xa0%KOR%\xa0(A2), Polish\xa0%POL%\xa0(A1)", ru: "Английский\xa0C1\xa0%ENG%, Корейский\xa0A2\xa0%KOR%, Польский\xa0A1\xa0%POL%, Русский\xa0%RUS%", kr: "영어\xa0%ENG%\xa0(C1), 한국어\xa0%KOR%\xa0(А2), 폴란드어\xa0%POL%\xa0(А1), 러시아\xa0사람\xa0%RUS%"},
       chapter_career: {en: "Career", ru: "Карьера", kr: "경력"},
       chapter_publications: {en: "Publications", ru: "Публикации", kr: "연구 출판"},
       chapter_projects: {en: "Projects", ru: "Проекты", kr: "프로젝트"},
@@ -82,6 +82,10 @@ export function localizeString(key, nullIfMissing = false) {
   }
 }
 
+export function localizeUiUnsafe(key) {
+   return () => UI_STRINGS[key][CURRENT_LANGUAGE.val];
+ }
+
 export function localizeUi(key, nullIfMissing = false) {
   return () => (key in UI_STRINGS
     ? (CURRENT_LANGUAGE.val in UI_STRINGS[key]
@@ -89,3 +93,11 @@ export function localizeUi(key, nullIfMissing = false) {
       : nullIfMissing ? null : key)
     : key);
 }
+
+export function localizeUiPostprocess(key, postprocess, nullIfMissing = false) {
+   return () => (key in UI_STRINGS
+     ? (CURRENT_LANGUAGE.val in UI_STRINGS[key]
+       ? postprocess(UI_STRINGS[key][CURRENT_LANGUAGE.val])
+       : nullIfMissing ? null : key)
+     : key);
+ }

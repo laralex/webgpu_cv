@@ -12,7 +12,7 @@ on:
 
 jobs:
   build:
-    runs-on: linux
+    runs-on: ubuntu-latest
     outputs:
       build-url: ${{ steps.upload-artifacts.outputs.artifact-url }}
       #build-zip: ${{ steps.zip-artifacts.outputs.build-zip }}

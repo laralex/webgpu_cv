@@ -535,6 +535,7 @@ function getFontFamilies(elements){
 }
 
 function configureFromFont(fontFamily = null, currentLanguage = null) {
+   document.body.style.zoom = "100%";
    let actualFontFamily = fontFamily;
    // if (actualFontFamily == null) {
    //    //actualFontFamily = getFontFamilies([para])[0].font;
@@ -551,16 +552,16 @@ function configureFromFont(fontFamily = null, currentLanguage = null) {
    // }
    const fontMap = new Map();
    fontMap.set("\"Share Tech\"",
-      {fontSize: '16pt', sidebarWidthRem: 27, cardDescriptionBasis: '11rem', relativeBasis: '1.0rem'}
+      {fontSize: '14pt', sidebarWidthRem: 27, cardDescriptionBasis: '11rem', relativeBasis: '1.0rem'}
    );
    fontMap.set("\"JetBrains Mono\"",
-      {fontSize: '13pt', sidebarWidthRem: 31, cardDescriptionBasis: '13rem', relativeBasis: '1.0rem'}
+      {fontSize: '12pt', sidebarWidthRem: 32, cardDescriptionBasis: '12rem', relativeBasis: '1.0rem'}
    );
    fontMap.set("\"Segoe UI\"",
-      {fontSize: '13pt', sidebarWidthRem: 31, cardDescriptionBasis: '11rem', relativeBasis: '1.0rem'}
+      {fontSize: '12pt', sidebarWidthRem: 31, cardDescriptionBasis: '11rem', relativeBasis: '1.0rem'}
    );
    let fontData = fontMap.get(actualFontFamily) ||
-      {fontSize: '15pt', sidebarWidthRem: 30, cardDescriptionBasis: '13rem', relativeBasis: '1.0rem'};
+      {fontSize: '13pt', sidebarWidthRem: 30, cardDescriptionBasis: '13rem', relativeBasis: '1.0rem'};
    console.log("-- FONT " + actualFontFamily + " : " + fontData.fontSize);
    document.documentElement.style.setProperty('--font-size-main', fontData.fontSize);
    document.documentElement.style.setProperty('--sidebar-width', fontData.sidebarWidth + "rem");

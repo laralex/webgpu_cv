@@ -10,7 +10,7 @@ jobs:
 
   deploy_cross:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJson(needs.determine-runner.outputs.runner) }}
     # [self-hosted]
     steps:
     - name: Install ssh keys

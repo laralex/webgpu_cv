@@ -2,6 +2,7 @@ run-name: "deploy: ${{ github.ref_name }} # ${{ github.sha }}"
 on:
   push:
     branches: [ "main" ]
+  workflow_call:
   # pull_request:
   #   branches: [ "main" ]
 jobs:
@@ -10,7 +11,7 @@ jobs:
 
   deploy_cross:
     needs: build
-    runs-on: ${{ fromJson(needs.determine-runner.outputs.runner) }}
+    runs-on: linux
     # [self-hosted]
     steps:
     - name: Install ssh keys

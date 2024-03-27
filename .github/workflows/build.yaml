@@ -11,21 +11,8 @@ on:
       #  value: ${{ jobs.build.outputs.build-zip }}
 
 jobs:
-  determine-runner:
-    runs-on: ubuntu-latest
-    outputs:
-      runner: ${{ steps.set-runner.outputs.use-runner }}
-    steps:
-      - name: Determine which runner to use
-        id: set-runner
-        uses: jimmygchen/runner-fallback-action@v1
-        with:
-          github-token: ${{ secrets.HUB_TOKEN }}
-          primary-runner: "self-hosted,linux"
-          fallback-runner: "ubuntu-latest"
   build:
-    needs: determine-runner
-    runs-on: ${{ fromJson(needs.determine-runner.outputs.runner) }}
+    runs-on: linux
     outputs:
       build-url: ${{ steps.upload-artifacts.outputs.artifact-url }}
       #build-zip: ${{ steps.zip-artifacts.outputs.build-zip }}

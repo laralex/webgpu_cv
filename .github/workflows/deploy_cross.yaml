@@ -16,12 +16,11 @@ jobs:
   build:
     uses: ./.github/workflows/build.yaml
     with:
-      runs_on: 'ubuntu-latest'
-    #${{ inputs.build_runs_on }}
+      runs_on: ${{ inputs.build_runs_on != '' && inputs.build_runs_on || 'ubuntu-latest' }}
 
   deploy_cross:
     needs: build
-    runs-on: ${{ inputs.deploy_runs_on }}
+    runs-on: ${{ inputs.deploy_runs_on != '' && inputs.deploy_runs_on || 'ubuntu-latest' }}
     steps:
     - id: configure-ssh
       if: ${{ inputs.deploy_runs_on == 'ubuntu-latest' }}

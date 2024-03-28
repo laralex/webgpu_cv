@@ -25,6 +25,11 @@ jobs:
         lfs: false
         submodules: false
 
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        target: wasm32-unknown-unknown
+
     - run: rustup target add wasm32-unknown-unknown
 
     - uses: jetli/wasm-bindgen-action@v0.2.0

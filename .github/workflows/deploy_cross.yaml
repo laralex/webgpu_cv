@@ -17,13 +17,13 @@ jobs:
     uses: ./.github/workflows/build.yaml
     with:
       runs-on: ${{ inputs.build-runs-on != '' && inputs.build-runs-on || 'deployer' }}
-  build_no_docker:
+  build_no_docker: # run if `build` failed
     needs: build
     uses: ./.github/workflows/build_no_docker.yaml
     if: ${{ failure() }}
     with:
       runs-on: ${{ inputs.build-runs-on != '' && inputs.build-runs-on || 'deployer' }}
-  deploy_cross:
+  deploy_cross: # run always, will fail if neither `build` nor `build_no_docker` succeeded
     needs: [build, build_no_docker]
     if: ${{ always() }}
     runs-on: ${{ inputs.deploy-runs-on != '' && inputs.deploy-runs-on || 'ubuntu-latest' }}
@@ -49,13 +49,10 @@ jobs:
       working-directory: ./tmp
       run: zip -r my_web_cv.zip .
 
-    - id: test-ssh
-      run: ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "echo STUB"
-
     - id: scp-artifacts
       run: scp tmp/my_web_cv.zip ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ vars.WORK_DIR }}
 
-    - id: deploy_artifacts
+    - id: deploy-artifacts
       if: ${{ success() }}
       run: |
         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "\

@@ -31,7 +31,7 @@ jobs:
     runs-on: ${{ inputs.deploy_runs_on }}
     steps:
     - id: configure-ssh
-      if: {{ inputs.deploy_runs_on == 'ubuntu-latest' }}
+      if: ${{ inputs.deploy_runs_on == 'ubuntu-latest' }}
       # check this thread to understand why its needed:
       # https://stackoverflow.com/a/70447517
       run: |

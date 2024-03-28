@@ -7,19 +7,11 @@ on:
       build_runs_on:
         description: 'Runner tag for `build` job'
         default: 'ubuntu-latest'
-        type: choice
-        options:
-        - ubuntu-latest
-        - deployer
-        # - deployee
+        type: string
       deploy_runs_on:
         description: 'Runner tag for `deploy` job'
         default: 'ubuntu-latest'
-        type: choice
-        options:
-        - ubuntu-latest
-        - deployer
-        # - deployee
+        type: string
 jobs:
   build:
     uses: ./.github/workflows/build.yaml

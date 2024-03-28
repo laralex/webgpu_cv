@@ -20,7 +20,6 @@ jobs:
   build_no_docker: # run if `build` failed
     # needs: build
     uses: ./.github/workflows/build_no_docker.yaml
-    if: ${{ failure() }}
     with:
       runs-on: ${{ inputs.build-runs-on != '' && inputs.build-runs-on || 'deployer' }}
   deploy_cross:

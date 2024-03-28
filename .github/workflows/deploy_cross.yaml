@@ -2,19 +2,36 @@ run-name: "deploy: ${{ github.ref_name }} # ${{ github.sha }}"
 on:
   push:
     branches: [ "main" ]
-  workflow_call:
-  # pull_request:
-  #   branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      build_runs_on:
+        description: 'Runner tag for `build` job'
+        default: ubuntu-latest
+        type: choice
+        options:
+        - ubuntu-latest
+        - deployer
+        # - deployee
+      deploy_runs_on:
+        description: 'Runner tag for `deploy` job'
+        default: ubuntu-latest
+        type: choice
+        options:
+        - ubuntu-latest
+        - deployer
+        # - deployee
 jobs:
   build:
     uses: ./.github/workflows/build.yaml
+    with:
+      runs-on: ${{ inputs.build_runs_on }}
 
   deploy_cross:
     needs: build
-    runs-on: linux
-    # [self-hosted]
+    runs-on: ${{ inputs.deploy_runs_on }}
     steps:
-    - name: Install ssh keys
+    - id: configure-ssh
+      if: {{ inputs.deploy_runs_on == 'ubuntu-latest' }}
       # check this thread to understand why its needed:
       # https://stackoverflow.com/a/70447517
       run: |
@@ -22,18 +39,17 @@ jobs:
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         ssh-keyscan -H ${{ secrets.SSH_HOST }} > ~/.ssh/known_hosts
 
-    - name: Download artifacts
+    - id: download-artifacts
       uses: actions/download-artifact@master
       with:
         name: my_web_cv.zip
         path: tmp
 
-    - name: Zip artifacts
-      id: zip-artifacts
+    - id: zip-artifacts
       working-directory: ./tmp
       run: zip -r my_web_cv.zip .
 
-    - name: Deploy artifacts
+    - id: deploy-artifacts
       run: |
         scp tmp/my_web_cv.zip ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ vars.WORK_DIR }}
         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "\
@@ -41,5 +57,6 @@ jobs:
           mv -f /var/www/my_web_cv/* /var/www/backup/my_web_cv 2>/dev/null; true && \
           unzip -o ${{ vars.WORK_DIR }}/my_web_cv.zip -d /var/www/my_web_cv && exit"
 
-    - name: Cleanup
+    - id: cleanup
+      if: ${{ always() && inputs.deploy_runs_on == 'ubuntu-latest' }}
       run: rm -rf ~/.ssh

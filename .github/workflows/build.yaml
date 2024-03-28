@@ -4,6 +4,16 @@
 run-name: "build: ${{ github.ref_name }} # ${{ github.sha }}"
 on:
   workflow_call:
+    inputs:
+      build_id:
+        required: true
+        type: number
+      runs_on:
+        required: true
+        type: string
+      perform_deploy:
+        required: true
+        type: boolean
     outputs:
       build-url:
         value: ${{ jobs.build.outputs.build-url }}
@@ -12,7 +22,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runs_on }}
     outputs:
       build-url: ${{ steps.upload-artifacts.outputs.artifact-url }}
       #build-zip: ${{ steps.zip-artifacts.outputs.build-zip }}
@@ -22,31 +32,23 @@ jobs:
         lfs: false
         submodules: false
 
-    - name: Configure Rust
-      run: rustup target add wasm32-unknown-unknown
+    - run: rustup target add wasm32-unknown-unknown
 
-    - name: Use wasm-bindgen
-      uses: jetli/wasm-bindgen-action@v0.2.0
+    - uses: jetli/wasm-bindgen-action@v0.2.0
 
-    - name: Make build_ci
-      run: make build_ci
+    - run: make build_ci
+      if: ${{ success() }}
 
-    - name: Run wasm-opt
-      uses: NiklasEi/wasm-opt-action@v2
+    - uses: NiklasEi/wasm-opt-action@v2
+      if: ${{ success() }}
       with:
         file: www/wasm/index_bg.wasm
 
-    # - name: 
-    #   run: make server_py
-    #   timeout-minutes: 1
-    #   continue-on-error: true
-
-    - name: Upload artifacts
-      id: upload-artifacts
+    - id: upload-artifacts
       uses: actions/upload-artifact@v4
+      if: ${{ success() }}
       with:
         name: my_web_cv.zip
         path: www
         if-no-files-found: error
         overwrite: false
-      # retention-days:

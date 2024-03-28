@@ -28,6 +28,8 @@ jobs:
     - run: rustup target add wasm32-unknown-unknown
 
     - uses: jetli/wasm-bindgen-action@v0.2.0
+      with:
+         version: 'latest'
 
     - run: make build
       if: ${{ success() }}

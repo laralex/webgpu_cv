@@ -12,7 +12,7 @@ install:
 .PHONY: wasm_debug
 wasm_debug:
 	cargo build --target=${RUST_TARGET} --config package.name=\"${WASM_NAME}\"
-	wasm-bindgen --target=web --omit-default-module-path \
+	wasm-bindgen --target=web --keep-debug --omit-default-module-path \
 		target/${RUST_TARGET}/debug/${WASM_NAME}.wasm \
 		--out-dir ${SERVE_WASM_DIR} --out-name index
 

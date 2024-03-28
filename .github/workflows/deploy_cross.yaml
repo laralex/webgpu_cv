@@ -23,13 +23,15 @@ jobs:
     runs-on: ${{ inputs.deploy-runs-on != '' && inputs.deploy-runs-on || 'ubuntu-latest' }}
     steps:
     - id: configure-ssh
-      if: ${{ inputs.deploy-runs-on == 'ubuntu-latest' }}
+      if: ${{ github.event_name == 'push' || inputs.deploy-runs-on == 'ubuntu-latest' }}
       # check this thread to understand why its needed:
       # https://stackoverflow.com/a/70447517
       run: |
         install -m 600 -D /dev/null ~/.ssh/id_rsa
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ secrets.SSH_HOST }} > ~/.ssh/known_hosts
+        host='host.example.com'
+        hosts="$(dig +short "$host" | grep -v '\.$' | sed -z 's|\n|,|g')$host"
+        ssh-keyscan -H "$hosts" > ~/.ssh/known_hosts
 
     - id: download-artifacts
       uses: actions/download-artifact@master
@@ -56,5 +58,5 @@ jobs:
           unzip -o ${{ vars.WORK_DIR }}/my_web_cv.zip -d /var/www/my_web_cv && exit"
 
     - id: cleanup
-      if: ${{ always() && inputs.deploy-runs-on == 'ubuntu-latest' }}
+      if: ${{ always() && ( github.event_name == 'push' || inputs.deploy-runs-on == 'ubuntu-latest' ) }}
       run: rm -rf ~/.ssh

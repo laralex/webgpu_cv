@@ -39,9 +39,14 @@ jobs:
       if: ${{ success() }}
 
     - uses: NiklasEi/wasm-opt-action@v2
+      id: wasm-opt
       if: ${{ success() }}
+      continue-on-error: true
       with:
         file: www/wasm/index_bg.wasm
+
+    - run: make wasm_opt
+      if: ${{ failure() && steps.wasm-opt.outcome == 'failure' }}
 
     - id: upload-artifacts
       uses: actions/upload-artifact@v4

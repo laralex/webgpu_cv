@@ -3,6 +3,11 @@
 
 run-name: "build: ${{ github.ref_name }} # ${{ github.sha }}"
 on:
+  workflow_dispatch:
+    inputs:
+      runs-on:
+        required: true
+        type: string
   workflow_call:
     inputs:
       runs_on:
@@ -16,7 +21,7 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ inputs.runs_on }}
+    runs-on: ${{ inputs.runs-on }}
     outputs:
       build-url: ${{ steps.upload-artifacts.outputs.artifact-url }}
       #build-zip: ${{ steps.zip-artifacts.outputs.build-zip }}

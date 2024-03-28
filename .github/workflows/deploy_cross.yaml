@@ -4,11 +4,11 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
     inputs:
-      build_runs_on:
+      build-runs-on:
         description: 'Runner tag for `build` job'
         default: 'ubuntu-latest'
         type: string
-      deploy_runs_on:
+      deploy-runs-on:
         description: 'Runner tag for `deploy` job'
         default: 'ubuntu-latest'
         type: string
@@ -16,14 +16,14 @@ jobs:
   build:
     uses: ./.github/workflows/build.yaml
     with:
-      runs_on: ${{ inputs.build_runs_on != '' && inputs.build_runs_on || 'ubuntu-latest' }}
+      runs-on: ${{ inputs.build-runs-on != '' && inputs.build-runs-on || 'ubuntu-latest' }}
 
   deploy_cross:
     needs: build
-    runs-on: ${{ inputs.deploy_runs_on != '' && inputs.deploy_runs_on || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.deploy-runs-on != '' && inputs.deploy-runs-on || 'ubuntu-latest' }}
     steps:
     - id: configure-ssh
-      if: ${{ inputs.deploy_runs_on == 'ubuntu-latest' }}
+      if: ${{ inputs.deploy-runs-on == 'ubuntu-latest' }}
       # check this thread to understand why its needed:
       # https://stackoverflow.com/a/70447517
       run: |
@@ -50,5 +50,5 @@ jobs:
           unzip -o ${{ vars.WORK_DIR }}/my_web_cv.zip -d /var/www/my_web_cv && exit"
 
     - id: cleanup
-      if: ${{ always() && inputs.deploy_runs_on == 'ubuntu-latest' }}
+      if: ${{ always() && inputs.deploy-runs-on == 'ubuntu-latest' }}
       run: rm -rf ~/.ssh

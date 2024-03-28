@@ -16,13 +16,13 @@ jobs:
   build:
     uses: ./.github/workflows/build.yaml
     with:
-      runs-on: ${{ inputs.build-runs-on != '' && inputs.build-runs-on || 'ubuntu-latest' }}
+      runs-on: ${{ inputs.build-runs-on != '' && inputs.build-runs-on || 'deployer' }}
   build_no_docker:
     needs: build
     uses: ./.github/workflows/build_no_docker.yaml
     if: ${{ failure() }}
     with:
-      runs-on: ${{ inputs.build-runs-on != '' && inputs.build-runs-on || 'ubuntu-latest' }}
+      runs-on: ${{ inputs.build-runs-on != '' && inputs.build-runs-on || 'deployer' }}
   deploy_cross:
     needs: [build, build_no_docker]
     if: ${{ always() }}

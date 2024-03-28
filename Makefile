@@ -6,19 +6,21 @@ SERVE_WASM_DIR?=${SERVE_DIR}/wasm
 
 .PHONY: install
 install:
+	rustup toolchain install stable-x86_64-unknown-linux-gnu
+	rustup +stable target add wasm32-unknown-unknown
 	cargo install -f wasm-bindgen-cli
 	cargo install wasm-opt --locked
 
 .PHONY: wasm_debug
 wasm_debug:
-	cargo build --target=${RUST_TARGET} --config package.name=\"${WASM_NAME}\"
+	cargo +stable build --target=${RUST_TARGET} --config package.name=\"${WASM_NAME}\"
 	wasm-bindgen --target=web --keep-debug \
 		target/${RUST_TARGET}/debug/${WASM_NAME}.wasm \
 		--out-dir ${SERVE_WASM_DIR} --out-name index
 
 .PHONY: wasm
 wasm:
-	cargo build --release --target=${RUST_TARGET} --config package.name=\"${WASM_NAME}\"
+	cargo +stable build --release --target=${RUST_TARGET} --config package.name=\"${WASM_NAME}\"
 	wasm-bindgen --target=web \
 		target/${RUST_TARGET}/release/${WASM_NAME}.wasm \
 		--out-dir ${SERVE_WASM_DIR} --out-name index

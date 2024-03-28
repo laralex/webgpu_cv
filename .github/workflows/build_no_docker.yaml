@@ -29,7 +29,7 @@ jobs:
 
     - uses: jetli/wasm-bindgen-action@v0.2.0
       with:
-         version: 'latest'
+         version: '0.2.92'
 
     - run: make build
       if: ${{ success() }}

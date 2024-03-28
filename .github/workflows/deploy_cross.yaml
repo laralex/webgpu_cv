@@ -23,9 +23,9 @@ jobs:
     if: ${{ failure() }}
     with:
       runs-on: ${{ inputs.build-runs-on != '' && inputs.build-runs-on || 'deployer' }}
-  deploy_cross: # run always, will fail if neither `build` nor `build_no_docker` succeeded
+  deploy_cross:
     needs: [build, build_no_docker]
-    if: ${{ always() }}
+    if: ${{ needs.build.result == 'success' || needs.build_no_docker.result == 'success' }}
     runs-on: ${{ inputs.deploy-runs-on != '' && inputs.deploy-runs-on || 'ubuntu-latest' }}
     steps:
     - id: configure-ssh

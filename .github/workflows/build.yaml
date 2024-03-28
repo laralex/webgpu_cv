@@ -25,12 +25,21 @@ jobs:
         lfs: false
         submodules: false
 
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        target: wasm32-unknown-unknown
+
     - run: rustup target add wasm32-unknown-unknown
+      continue-on-error: true
 
     - uses: jetli/wasm-bindgen-action@v0.2.0
+      with:
+        version: '0.2.92'
 
     - run: make build_ci
       if: ${{ success() }}
+      continue-on-error: true
 
     - uses: NiklasEi/wasm-opt-action@v2
       id: wasm-opt

@@ -6,7 +6,7 @@ on:
     inputs:
       build_runs_on:
         description: 'Runner tag for `build` job'
-        default: ubuntu-latest
+        default: 'ubuntu-latest'
         type: choice
         options:
         - ubuntu-latest
@@ -14,7 +14,7 @@ on:
         # - deployee
       deploy_runs_on:
         description: 'Runner tag for `deploy` job'
-        default: ubuntu-latest
+        default: 'ubuntu-latest'
         type: choice
         options:
         - ubuntu-latest

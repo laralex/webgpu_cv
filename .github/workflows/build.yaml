@@ -10,7 +10,7 @@ on:
         type: string
   workflow_call:
     inputs:
-      runs_on:
+      runs-on:
         required: true
         type: string
     outputs:

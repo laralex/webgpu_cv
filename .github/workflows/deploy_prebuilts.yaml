@@ -70,10 +70,11 @@ jobs:
     steps:
     - id: backup-current
       run: |
-        pwd
-        whoami
-        mkdir -p /var/www/backup/my_web_cv 2>/dev/null; true
+        mkdir -p /var/www/backup/my_web_cv
+        pwd /var/www/backup/my_web_cv
+        ls
         mv -f /var/www/my_web_cv/* /var/www/backup/my_web_cv 2>/dev/null; true
+        whoami
 
     - id: download-artifacts
       uses: actions/download-artifact@master

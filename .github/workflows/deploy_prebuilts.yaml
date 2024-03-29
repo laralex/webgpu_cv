@@ -54,7 +54,7 @@ jobs:
       run: scp tmp/my_web_cv.zip ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ vars.WORK_DIR }}
 
     - id: deploy-artifacts
-      if: ${{ success() && }}
+      if: ${{ success() }}
       run: |
         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "\
           mkdir -p /var/www/backup/my_web_cv && \

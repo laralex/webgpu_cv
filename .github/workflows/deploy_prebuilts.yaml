@@ -71,8 +71,8 @@ jobs:
     - id: backup-current
       run: |
         mkdir -p /var/www/backup/my_web_cv
-        mv -f /var/www/my_web_cv/* /var/www/backup/my_web_cv
-        whoami
+        cp -R /var/www/my_web_cv/* /var/www/backup/my_web_cv
+        rm -R /var/www/my_web_cv/*
 
     - id: download-artifacts
       uses: actions/download-artifact@master

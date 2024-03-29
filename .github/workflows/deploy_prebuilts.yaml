@@ -5,9 +5,11 @@ on:
       build-run-id:
         description: 'Workflow run ID of successful `build` job'
         type: number
+        required: true
       deploy-runs-on:
         description: 'Runner tag for `deploy` job'
         default: 'ubuntu-latest'
+        required: true
         type: string
 jobs:
   deploy_cross:

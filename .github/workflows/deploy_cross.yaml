@@ -24,6 +24,7 @@ jobs:
       runs-on: ${{ inputs.build-runs-on != '' && inputs.build-runs-on || 'deployer' }}
   deploy:
     needs: [build_no_docker]
+    secrets: inherit
     uses: ./.github/workflows/deploy_prebuilts.yaml
     with:
       build-run-id: ${{ github.run_id }}

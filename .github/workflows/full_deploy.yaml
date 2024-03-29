@@ -1,0 +1,35 @@
+run-name: "deploy: ${{ github.ref_name }} # ${{ github.sha }}"
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      build-runs-on:
+        description: 'Runner tag for `build` job'
+        default: 'deployer'
+        type: string
+      deploy-runs-on:
+        description: 'Runner tag for `deploy` job'
+        default: 'deployee'
+        type: string
+env:
+  FALLBACK_BUILD_RUNNER: 'ubuntu-latest'
+  FALLBACK_DEPLOY_RUNNER: 'deployee'
+
+jobs:
+  # build:
+  #   uses: ./.github/workflows/build.yaml
+  #   with:
+  #     runs-on: ${{ inputs.build-runs-on != '' && inputs.build-runs-on || env.FALLBACK_BUILD_RUNNER }}
+  build_no_docker: # run if `build` failed
+    # needs: build
+    uses: ./.github/workflows/build_no_docker.yaml
+    with:
+      runs-on: ${{ inputs.build-runs-on != '' && inputs.build-runs-on || env.FALLBACK_BUILD_RUNNER }}
+  deploy:
+    needs: [build_no_docker]
+    secrets: inherit
+    uses: ./.github/workflows/deploy.yaml
+    with:
+      build-run-id: ${{ github.run_id }}
+      runs-on: ${{ inputs.deploy-runs-on != '' && inputs.deploy-runs-on || env.FALLBACK_DEPLOY_RUNNER }}

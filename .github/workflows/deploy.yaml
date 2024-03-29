@@ -4,19 +4,31 @@ on:
     inputs:
       build-run-id:
         description: 'Workflow run ID of successful `build` job'
-        type: number
+        type: string
         required: true
-      deploy-runs-on:
+      runs-on:
+        description: 'Runner tag for `deploy` job'
+        default: 'ubuntu-latest'
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      build-run-id:
+        description: 'Workflow run ID of successful `build` job'
+        type: string
+        required: true
+      runs-on:
         description: 'Runner tag for `deploy` job'
         default: 'ubuntu-latest'
         required: true
         type: string
 jobs:
-  deploy_cross:
-    runs-on: ${{ inputs.deploy-runs-on != '' && inputs.deploy-runs-on || 'ubuntu-latest' }}
+  deploy:
+    runs-on: ${{ inputs.runs-on }}
+    if: ${{ inputs.runs-on != 'deployee' }}
     steps:
     - id: configure-ssh
-      if: ${{ github.event_name == 'push' || inputs.deploy-runs-on == 'ubuntu-latest' }}
+      if: ${{ inputs.runs-on == 'ubuntu-latest' }}
       # check this thread to understand why its needed:
       # https://stackoverflow.com/a/70447517
       run: |
@@ -32,6 +44,7 @@ jobs:
         name: my_web_cv.zip
         path: tmp
         run-id: ${{ inputs.build-run-id }}
+        github-token: ${{ github.token }}
 
     - id: zip-artifacts
       working-directory: ./tmp
@@ -49,5 +62,22 @@ jobs:
           unzip -o ${{ vars.WORK_DIR }}/my_web_cv.zip -d /var/www/my_web_cv && exit"
 
     - id: cleanup
-      if: ${{ always() && ( github.event_name == 'push' || inputs.deploy-runs-on == 'ubuntu-latest' ) }}
+      if: ${{ always() && ( inputs.runs-on == 'ubuntu-latest' ) }}
       run: rm -rf ~/.ssh
+  deploy_local:
+    runs-on: ${{ inputs.runs-on }}
+    if: ${{ inputs.runs-on == 'deployee' }}
+    steps:
+    - id: backup-current
+      run: |
+        mkdir -p /var/www/backup/my_web_cv
+        cp -R /var/www/my_web_cv/* /var/www/backup/my_web_cv
+        rm -R /var/www/my_web_cv/*
+
+    - id: download-artifacts
+      uses: actions/download-artifact@master
+      with:
+        name: my_web_cv.zip
+        path: /var/www/my_web_cv/
+        run-id: ${{ inputs.build-run-id }}
+        github-token: ${{ github.token }}

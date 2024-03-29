@@ -32,6 +32,7 @@ jobs:
         name: my_web_cv.zip
         path: tmp
         run-id: ${{ inputs.build-run-id }}
+        github-token: ${{ github.token }}
 
     - id: zip-artifacts
       working-directory: ./tmp

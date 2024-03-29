@@ -51,7 +51,9 @@ jobs:
       run: zip -r my_web_cv.zip .
 
     - id: scp-artifacts
-      run: scp tmp/my_web_cv.zip ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ vars.WORK_DIR }}
+      run: |
+        whoami
+        scp -v tmp/my_web_cv.zip ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ vars.WORK_DIR }}
 
     - id: deploy-artifacts
       if: ${{ success() }}

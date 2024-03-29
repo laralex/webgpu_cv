@@ -24,11 +24,11 @@ on:
         type: string
 jobs:
   deploy:
-    runs-on: ${{ inputs.runs-on != '' && inputs.runs-on || 'ubuntu-latest' }}
-    if: ${ inputs.runs-on != 'deployee' }
+    runs-on: ${{ inputs.runs-on }}
+    if: ${{ inputs.runs-on != 'deployee' }}
     steps:
     - id: configure-ssh
-      if: ${{ github.event_name == 'push' || inputs.runs-on == 'ubuntu-latest' }}
+      if: ${{ inputs.runs-on == 'ubuntu-latest' }}
       # check this thread to understand why its needed:
       # https://stackoverflow.com/a/70447517
       run: |
@@ -62,10 +62,10 @@ jobs:
           unzip -o ${{ vars.WORK_DIR }}/my_web_cv.zip -d /var/www/my_web_cv && exit"
 
     - id: cleanup
-      if: ${{ always() && ( github.event_name == 'push' || inputs.runs-on == 'ubuntu-latest' ) }}
+      if: ${{ always() && ( inputs.runs-on == 'ubuntu-latest' ) }}
       run: rm -rf ~/.ssh
   deploy_local:
-    runs-on: ${{ inputs.runs-on != '' && inputs.runs-on || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.runs-on }}
     if: ${{ inputs.runs-on == 'deployee' }}
     steps:
     - id: backup-current

@@ -20,7 +20,7 @@ jobs:
     outputs:
       build-url: ${{ steps.upload-artifacts.outputs.artifact-url }}
     env:
-      MAX_THREADS: ${{ inputs.runs-on == 'deployee' && 1 || 4 }}
+      MAX_THREADS: ${{ inputs.runs-on == 'deployee' && 2 || 4 }}
     steps:
     - uses: actions/checkout@v4
       with:

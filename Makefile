@@ -3,11 +3,9 @@ WASM_NAME?=my_wasm
 RUST_TARGET?=wasm32-unknown-unknown
 SERVE_DIR?=www
 SERVE_WASM_DIR?=${SERVE_DIR}/wasm
-CARGO_TOOLCHAIN?="+stable"
+CARGO_TOOLCHAIN?=+stable
 CARGO_FLAGS?=--target=${RUST_TARGET} --config package.name=\"${WASM_NAME}\"
-WASM_BINDGEN_FLAGS?=--target=web  --omit-default-module-path \
-		target/${RUST_TARGET}/debug/${WASM_NAME}.wasm \
-		--out-dir ${SERVE_WASM_DIR} --out-name index
+WASM_BINDGEN_FLAGS?=--target=web --omit-default-module-path --out-dir ${SERVE_WASM_DIR} --out-name index
 
 .PHONY: install
 install:
@@ -19,15 +17,15 @@ install:
 .PHONY: wasm_debug
 wasm_debug:
 	cargo $(CARGO_TOOLCHAIN) build $(CARGO_FLAGS)
-	wasm-bindgen --keep-debug $(WASM_BINDGEN_FLAGS)
+	wasm-bindgen --keep-debug $(WASM_BINDGEN_FLAGS) target/${RUST_TARGET}/debug/${WASM_NAME}.wasm 
 
 .PHONY: wasm
 wasm:
 	cargo $(CARGO_TOOLCHAIN) build --release $(CARGO_FLAGS)
-	wasm-bindgen $(WASM_BINDGEN_FLAGS)
+	wasm-bindgen $(WASM_BINDGEN_FLAGS) target/${RUST_TARGET}/release/${WASM_NAME}.wasm
 
 .PHONY: wasm_ci
-wasm_ci: CARGO_FLAGS += --jobs 1
+wasm_ci: CARGO_FLAGS += --jobs ${MAX_THREADS}
 wasm_ci: wasm
 
 .PHONY: wasm_opt

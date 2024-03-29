@@ -19,6 +19,8 @@ jobs:
     runs-on: ${{ inputs.runs-on }}
     outputs:
       build-url: ${{ steps.upload-artifacts.outputs.artifact-url }}
+    env:
+      MAX_THREADS: ${{ inputs.runs-on == 'deployee' && 1 || 4 }}
     steps:
     - uses: actions/checkout@v4
       with:

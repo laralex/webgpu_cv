@@ -22,42 +22,9 @@ jobs:
     uses: ./.github/workflows/build_no_docker.yaml
     with:
       runs-on: ${{ inputs.build-runs-on != '' && inputs.build-runs-on || 'deployer' }}
-  deploy_cross:
+  deploy:
     needs: [build_no_docker]
-    runs-on: ${{ inputs.deploy-runs-on != '' && inputs.deploy-runs-on || 'ubuntu-latest' }}
-    steps:
-    - id: configure-ssh
-      if: ${{ github.event_name == 'push' || inputs.deploy-runs-on == 'ubuntu-latest' }}
-      # check this thread to understand why its needed:
-      # https://stackoverflow.com/a/70447517
-      run: |
-        install -m 600 -D /dev/null ~/.ssh/id_rsa
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        host=${{ secrets.SSH_HOST }}
-        hosts="$(dig +short "$host" | grep -v '\.$' | sed -z 's|\n|,|g')$host"
-        ssh-keyscan -H "$hosts" > ~/.ssh/known_hosts
-
-    - id: download-artifacts
-      uses: actions/download-artifact@master
-      with:
-        name: my_web_cv.zip
-        path: tmp
-
-    - id: zip-artifacts
-      working-directory: ./tmp
-      run: zip -r my_web_cv.zip .
-
-    - id: scp-artifacts
-      run: scp tmp/my_web_cv.zip ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ vars.WORK_DIR }}
-
-    - id: deploy-artifacts
-      if: ${{ success() }}
-      run: |
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "\
-          mkdir -p /var/www/backup/my_web_cv && \
-          mv -f /var/www/my_web_cv/* /var/www/backup/my_web_cv 2>/dev/null; true && \
-          unzip -o ${{ vars.WORK_DIR }}/my_web_cv.zip -d /var/www/my_web_cv && exit"
-
-    - id: cleanup
-      if: ${{ always() && ( github.event_name == 'push' || inputs.deploy-runs-on == 'ubuntu-latest' ) }}
-      run: rm -rf ~/.ssh
+    uses: ./.github/workflows/deploy_prebuilts.yaml
+    with:
+      build-run-id: ${{ github.run_id }}
+      runs-on: ${{ inputs.deploy-runs-on != '' && inputs.deploy-runs-on || 'ubuntu-latest' }}

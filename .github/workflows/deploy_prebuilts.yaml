@@ -25,6 +25,7 @@ on:
 jobs:
   deploy:
     runs-on: ${{ inputs.runs-on != '' && inputs.runs-on || 'ubuntu-latest' }}
+    if: ${ inputs.runs-on != 'deployee' }
     steps:
     - id: configure-ssh
       if: ${{ github.event_name == 'push' || inputs.runs-on == 'ubuntu-latest' }}
@@ -53,7 +54,7 @@ jobs:
       run: scp tmp/my_web_cv.zip ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ vars.WORK_DIR }}
 
     - id: deploy-artifacts
-      if: ${{ success() }}
+      if: ${{ success() && }}
       run: |
         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "\
           mkdir -p /var/www/backup/my_web_cv && \
@@ -63,3 +64,19 @@ jobs:
     - id: cleanup
       if: ${{ always() && ( github.event_name == 'push' || inputs.runs-on == 'ubuntu-latest' ) }}
       run: rm -rf ~/.ssh
+  deploy_local:
+    runs-on: ${{ inputs.runs-on != '' && inputs.runs-on || 'ubuntu-latest' }}
+    if: ${ inputs.runs-on != 'deployee' }
+    steps:
+    - id: backup-current
+      run: |
+        mkdir -p /var/www/backup/my_web_cv
+        mv -f /var/www/my_web_cv/* /var/www/backup/my_web_cv 2>/dev/null; true
+
+    - id: download-artifacts
+      uses: actions/download-artifact@master
+      with:
+        name: my_web_cv.zip
+        path: /var/www/my_web_cv/
+        run-id: ${{ inputs.build-run-id }}
+        github-token: ${{ github.token }}

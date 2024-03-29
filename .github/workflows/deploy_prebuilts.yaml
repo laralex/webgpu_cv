@@ -4,7 +4,7 @@ on:
     inputs:
       build-run-id:
         description: 'Workflow run ID of successful `build` job'
-        type: number
+        type: string
         required: true
       runs-on:
         description: 'Runner tag for `deploy` job'
@@ -15,7 +15,7 @@ on:
     inputs:
       build-run-id:
         description: 'Workflow run ID of successful `build` job'
-        type: number
+        type: string
         required: true
       runs-on:
         description: 'Runner tag for `deploy` job'

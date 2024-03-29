@@ -3,27 +3,32 @@ WASM_NAME?=my_wasm
 RUST_TARGET?=wasm32-unknown-unknown
 SERVE_DIR?=www
 SERVE_WASM_DIR?=${SERVE_DIR}/wasm
+CARGO_TOOLCHAIN?="+stable"
+CARGO_FLAGS?=--target=${RUST_TARGET} --config package.name=\"${WASM_NAME}\"
+WASM_BINDGEN_FLAGS?=--target=web  --omit-default-module-path \
+		target/${RUST_TARGET}/debug/${WASM_NAME}.wasm \
+		--out-dir ${SERVE_WASM_DIR} --out-name index
 
 .PHONY: install
 install:
 	rustup toolchain install stable-x86_64-unknown-linux-gnu
-	rustup +stable target add wasm32-unknown-unknown
+	rustup $(CARGO_TOOLCHAIN) target add wasm32-unknown-unknown
 	cargo install -f wasm-bindgen-cli
 	cargo install wasm-opt --locked
 
 .PHONY: wasm_debug
 wasm_debug:
-	cargo +stable build --target=${RUST_TARGET} --config package.name=\"${WASM_NAME}\"
-	wasm-bindgen --target=web --keep-debug --omit-default-module-path \
-		target/${RUST_TARGET}/debug/${WASM_NAME}.wasm \
-		--out-dir ${SERVE_WASM_DIR} --out-name index
+	cargo $(CARGO_TOOLCHAIN) build $(CARGO_FLAGS)
+	wasm-bindgen --keep-debug $(WASM_BINDGEN_FLAGS)
 
 .PHONY: wasm
 wasm:
-	cargo +stable build --release --target=${RUST_TARGET} --config package.name=\"${WASM_NAME}\"
-	wasm-bindgen --target=web --omit-default-module-path \
-		target/${RUST_TARGET}/release/${WASM_NAME}.wasm \
-		--out-dir ${SERVE_WASM_DIR} --out-name index
+	cargo $(CARGO_TOOLCHAIN) build --release $(CARGO_FLAGS)
+	wasm-bindgen $(WASM_BINDGEN_FLAGS)
+
+.PHONY: wasm_ci
+wasm_ci: CARGO_FLAGS += --jobs 1
+wasm_ci: wasm
 
 .PHONY: wasm_opt
 wasm_opt:
@@ -48,6 +53,17 @@ codegen:
 codegen_debug:
 	BUILD_TYPE=debug $(MAKE) codegen
 
+.PHONY: build_debug
+build_debug: wasm_debug codegen_debug pdf_link
+
+# no `wasm_opt`
+.PHONY: build_ci
+build_ci: wasm_ci codegen pdf_link
+
+.PHONY: build
+build: wasm codegen pdf_link wasm_opt
+
+# ===== DEVELOPER DEPLOYMENT
 .PHONY: kill_server
 kill_server:
 	(lsof -t -i :${PORT} -s TCP:LISTEN | xargs kill -9) || true
@@ -67,17 +83,8 @@ server_js: kill_server
 server_py: kill_server
 	cd www && python3 -m http.server ${PORT}
 
-.PHONY: build_debug
-build_debug: wasm_debug codegen_debug pdf_link
-
 .PHONY: app_debug
 app_debug: build_debug server_py
-
-.PHONY: build_ci
-build_ci: wasm codegen pdf_link
-
-.PHONY: build
-build: build_ci wasm_opt
 
 .PHONY: app
 app: build server_py

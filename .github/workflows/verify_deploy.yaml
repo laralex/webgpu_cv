@@ -1,0 +1,25 @@
+run-name: "verify_deploy: ${{ github.ref_name }} # ${{ github.sha }}"
+on:
+   workflow_dispatch:
+   workflow_call:
+
+defaults:
+   run:
+      working-directory: /var/www/my_web_cv/
+
+jobs:
+   verify-deploy:
+      runs-on: deployee
+      steps:
+      - name: verify-required
+        run: |
+            test -f index.js
+            test -f index.html
+            test -d assets
+            test -d wasm
+
+      - name: verify-optional
+        continue-on-error: true
+        run: |
+            test -L assets/__softlink_cv_rus.pdf
+            test -L assets/__softlink_cv_eng.pdf

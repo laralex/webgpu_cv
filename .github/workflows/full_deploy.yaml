@@ -29,3 +29,6 @@ jobs:
     with:
       build-run-id: ${{ github.run_id }}
       runs-on: ${{ inputs.deploy-runs-on != '' && inputs.deploy-runs-on || 'deployee' }}
+  verify:
+    needs: [deploy]
+    uses: ./.github/workflows/verify_deploy.yaml

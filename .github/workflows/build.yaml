@@ -1,15 +1,22 @@
 run-name: "build: ${{ github.ref_name }} # ${{ github.sha }}"
 on:
   workflow_dispatch:
+    
     inputs:
       runs-on:
         required: true
         type: string
+      optimize-wasm:
+        default: true
+        type: boolean
   workflow_call:
     inputs:
       runs-on:
         required: true
         type: string
+      optimize-wasm:
+        default: true
+        type: boolean
     outputs:
       build-url:
         value: ${{ jobs.build.outputs.build-url }}
@@ -19,6 +26,8 @@ jobs:
     runs-on: ${{ inputs.runs-on }}
     outputs:
       build-url: ${{ steps.upload-artifacts.outputs.artifact-url }}
+    env:
+      MAX_THREADS: ${{ inputs.runs-on == 'deployee' && 2 || 4 }}
     steps:
     - uses: actions/checkout@v4
       with:
@@ -31,31 +40,31 @@ jobs:
         target: wasm32-unknown-unknown
 
     - run: rustup target add wasm32-unknown-unknown
-      continue-on-error: true
 
     - uses: jetli/wasm-bindgen-action@v0.2.0
       with:
-        version: '0.2.92'
+         version: '0.2.92'
 
-    - run: make build_ci
+    - id: build
+      run: make build_ci
       if: ${{ success() }}
+
+    - run: |
+        cargo install wasm-opt --locked --jobs ${{ env.MAX_THREADS }}
+        make wasm_opt
+      if: ${{ success() && inputs.optimize-wasm }}
+      timeout-minutes: 15
       continue-on-error: true
 
-    - uses: NiklasEi/wasm-opt-action@v2
-      id: wasm-opt
-      if: ${{ success() }}
-      continue-on-error: true
-      with:
-        file: www/wasm/index_bg.wasm
-
-    - run: make wasm_opt
-      if: ${{ failure() && steps.wasm-opt.outcome == 'failure' }}
+    - id: zip-artifacts
+      working-directory: ./www
+      run: zip -y -r ../my_web_cv.zip .
 
     - id: upload-artifacts
       uses: actions/upload-artifact@v4
-      if: ${{ success() }}
+      if: ${{ always() && steps.build.outcome == 'success' }}
       with:
         name: my_web_cv.zip
-        path: www
+        path: my_web_cv.zip
         if-no-files-found: error
         overwrite: false

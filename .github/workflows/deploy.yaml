@@ -62,8 +62,10 @@ jobs:
         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "\
           mkdir -p /var/www/backup/my_web_cv && \
           mkdir -p /var/www/my_web_cv && \
-          mv -f /var/www/my_web_cv/* /var/www/backup/my_web_cv 2>/dev/null; true && \
-          unzip -o ${{ vars.WORK_DIR }}/my_web_cv.zip -d /var/www/my_web_cv && exit"
+          find /var/www/my_web_cv/ -exec cp -r {} /var/www/backup/my_web_cv \; && \
+          rm -R /var/www/my_web_cv/* && \
+          unzip -o ${{ vars.WORK_DIR }}/my_web_cv.zip -d /var/www/my_web_cv && \
+          exit"
 
     - id: cleanup
       if: ${{ always() && ( inputs.runs-on == 'ubuntu-latest' ) }}

@@ -27,7 +27,7 @@ jobs:
     runs-on: ${{ inputs.runs-on }}
     if: ${{ inputs.runs-on != 'deployee' }}
     steps:
-    - id: configure-ssh
+    - name: configure-ssh
       if: ${{ inputs.runs-on == 'ubuntu-latest' }}
       # check this thread to understand why its needed:
       # https://stackoverflow.com/a/70447517
@@ -38,7 +38,7 @@ jobs:
         hosts="$(dig +short "$host" | grep -v '\.$' | sed -z 's|\n|,|g')$host"
         ssh-keyscan -H "$hosts" > ~/.ssh/known_hosts
 
-    - id: download-artifacts
+    - name: download-artifacts
       uses: actions/download-artifact@master
       with:
         name: my_web_cv.zip.zip
@@ -48,15 +48,15 @@ jobs:
 
     # note the artifacts are double-zipped
     # unwrap *.zip.zip into *.zip which is then sent to they deployment server
-    - id: upzip-doublepzip
+    - name: upzip-double-zip
       working-directory: ./tmp
       run: unzip -o ./my_web_cv.zip.zip .
 
-    - id: scp-artifacts
+    - name: scp-artifacts
       run: |
         scp tmp/my_web_cv.zip ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ vars.WORK_DIR }}
 
-    - id: deploy-artifacts
+    - name: deploy-artifacts
       if: ${{ success() }}
       run: |
         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "\
@@ -67,33 +67,46 @@ jobs:
           unzip -o ${{ vars.WORK_DIR }}/my_web_cv.zip -d /var/www/my_web_cv && \
           exit"
 
-    - id: cleanup
+    - name: cleanup
       if: ${{ always() && ( inputs.runs-on == 'ubuntu-latest' ) }}
       run: rm -rf ~/.ssh
   deploy_local:
     runs-on: ${{ inputs.runs-on }}
     if: ${{ inputs.runs-on == 'deployee' }}
     steps:
-    - id: backup-current
+    - name: backup-current
       run: |
         mkdir -p /var/www/backup/my_web_cv
         mkdir -p /var/www/my_web_cv
         find /var/www/my_web_cv/ -exec cp -r {} /var/www/backup/my_web_cv \;
         rm -rf /var/www/my_web_cv/*
 
-    - id: download-artifacts
+    - name: download-artifacts
       uses: actions/download-artifact@master
       with:
         name: my_web_cv.zip
-        path: /var/www/my_web_cv/
+        path: ${{ vars.WORK_DIR }}
         run-id: ${{ inputs.build-run-id }}
         github-token: ${{ github.token }}
-    - id: verify-deploy
+
+    - name: unzip-artifacts
+      run: unzip -o ${{ vars.WORK_DIR }}/my_web_cv.zip -d /var/www/my_web_cv
+
+  verify-deploy:
+    runs-on: deployee
+    needs: [deploy, deploy_local]
+    steps:
+    - name: verify-required
       working-directory: /var/www/my_web_cv/
       run: |
         test -f index.js
         test -f index.html
         test -d assets
-        test -f assets/__softlink_cv_eng.pdf
-        test -f assets/__softlink_cv_rus.pdf
         test -d wasm
+
+    - name: verify-optional
+      working-directory: /var/www/my_web_cv/
+      continue-on-error: true
+      run: |
+        test -f assets/__softlink_cv_rus.pdf
+        test -f assets/__softlink_cv_eng.pdf

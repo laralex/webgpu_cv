@@ -7,6 +7,7 @@ const CANVAS_ID = "main-canvas";
 const SIDEBAR_WIDTH_OVERRIDE_PX = van.state(0);
 const SIDEBAR_WIDTH_FONT_PX = van.state(0);
 const CURRENT_GRAPHICS_LEVEL = van.state("medium");
+const CURRENT_FPS_LIMIT = van.state(45);
 const CURRENT_FONT_FAMILY = van.state("\"Share Tech\"");
 const DEFAULT_MAIN_CHAPTER = "chapter_career";
 const DEFAULT_SUB_CHAPTER = "career_huawei";
@@ -39,7 +40,7 @@ export const BUILD_DATA = {
 // };
 
 // import mywasm from 'my-wasm';
-import init, { wasm_loop, wasm_resize, wasm_startup } from '/wasm/index.js';
+import init, { wasm_loop, wasm_resize, wasm_startup, wasm_set_fps_limit } from '/wasm/index.js';
 import { UI_STRINGS, CURRENT_LANGUAGE, localizeString, localizeUi, localizeUiPostprocess } from '/modules/localization.js';
 import { Util } from '/modules/util.js';
 import { CvContent } from '/modules/cv.js';
@@ -58,6 +59,7 @@ function dumpUiCookies() {
 
 function dumpDemoCookies() {
    Util.setCookie('graphicsLevel', CURRENT_GRAPHICS_LEVEL.val);
+   Util.setCookie('fpsLimit', CURRENT_FPS_LIMIT.val);
 }
 
 function dumpCookies() {
@@ -75,6 +77,7 @@ function loadCookies() {
    }
    setState('language', CURRENT_LANGUAGE);
    setState('fontFamily', CURRENT_FONT_FAMILY);
+   setState('fpsLimit', CURRENT_FPS_LIMIT);
    setState('graphicsLevel', CURRENT_GRAPHICS_LEVEL);
    setState('mainChapter', CURRENT_CV_PAGE[0]);
    setState('subChapter', CURRENT_CV_PAGE[1]);
@@ -85,6 +88,7 @@ function loadCookies() {
 function clearCookies() {
    Util.deleteCookie('language');
    Util.deleteCookie('fontFamily');
+   Util.deleteCookie('fpsLimit');
    Util.deleteCookie('graphicsLevel');
    Util.deleteCookie('mainChapter');
    Util.deleteCookie('subChapter');
@@ -207,6 +211,33 @@ function FontPicker(currentFont) {
          class: 'interactive btn',
          value: currentFont,
          oninput: e => currentFont.val = e.target.value,
+      }, options,),
+      labelAfter,
+   );
+}
+
+function FpsLimitPicker(currentLimit) {
+   const FPS_LIMITS = [
+      10, 30, 45, 60, 90, 144
+   ];
+	const options = FPS_LIMITS.map((fpsLimit, index) =>
+      option({ value: fpsLimit, selected: () => fpsLimit == currentLimit.val}, () => `${fpsLimit} FPS`));
+   const labelBefore = null;
+   const labelAfter = span(localizeUi('fps_limit'));
+   van.derive(() => {
+      var newLimit = currentLimit.val;
+      if (IS_WASM_LOADED) {
+         console.log("new fps", newLimit);
+         wasm_set_fps_limit(newLimit);
+      }
+   })
+   return () => div(
+      { class: 'fps-limit-picker ' + "flex-row" },
+      labelBefore,
+      select({
+         class: 'interactive btn',
+         value: currentLimit,
+         oninput: e => currentLimit.val = e.target.value,
       }, options,),
       labelAfter,
    );
@@ -686,6 +717,7 @@ window.onload = function() {
    van.add(document.getElementById("canvas-wrapper"), HelpButton({height: "80"}));
    van.add(document.getElementById("controls_column"), LanguagePicker(CURRENT_LANGUAGE, CURRENT_FONT_FAMILY, /*vertical*/ false));
    van.add(document.getElementById("controls_column"), GraphicsLevelPicker(CURRENT_GRAPHICS_LEVEL, /*vertical*/ false));
+   van.add(document.getElementById("controls_column"), FpsLimitPicker(CURRENT_FPS_LIMIT, /*vertical*/ false));
    van.add(document.getElementById("controls_row"), RepositoryLink({width: "49%"}));
    van.add(document.getElementById("controls_row"), ClearCookiesButton({width: "49%"}));
    document.querySelectorAll(".firstinfo").forEach(element => {
@@ -746,9 +778,6 @@ window.onload = function() {
    if (ADD_PARALLAX) {
       // myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png), url(../assets/bg6-min.png)";
       myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png), url(../assets/bg10-min.png)";
-      myPhoto.style.backgroundSize = "cover, 150%";
-      myPhoto.style.backgroundScale = "cover, 150%";
-      // myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png)";
       addParallax({
          element: myPhoto, sensitivityXY: [0.015, 0.010],
          parallaxes: [1.0, 0.15], centers: [[0, 0], [-10, -5]]
@@ -770,11 +799,11 @@ window.onload = function() {
       // server, and then we wait on the returned promise to wait for the
       // wasm to be loaded.
       await init('./wasm/index_bg.wasm');
-      IS_WASM_LOADED = true;
-
+      
       // And afterwards we can use all the functionality defined in wasm.
       configureCanvas();
       wasm_startup();
-      wasm_loop(CANVAS_ID);
+      IS_WASM_LOADED = true;
+      wasm_loop(CANVAS_ID, CURRENT_FPS_LIMIT.val);
    })();
 }

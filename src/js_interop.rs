@@ -24,7 +24,16 @@ pub fn window() -> web_sys::Window {
 pub fn request_animation_frame(f: &Closure<dyn FnMut()>) {
     window()
         .request_animation_frame(f.as_ref().unchecked_ref())
-        .expect("should register `requestAnimationFrame` OK");
+        .expect("must've registered `requestAnimationFrame`");
+}
+
+pub fn set_frame_timeout(f: &Closure<dyn FnMut()>, timeout_ms: i32) {
+    window()
+        .set_timeout_with_callback_and_timeout_and_arguments_0(
+            f.as_ref().unchecked_ref(),
+            timeout_ms,
+        )
+        .expect("must've registered `set_frame_timeout`");
 }
 
 pub fn document() -> web_sys::Document {

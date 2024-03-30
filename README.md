@@ -2,8 +2,6 @@
 WebGL2 + Rust + JS (VanJS)
 
 Known issues:
-- No CI
-   - pdf links
-   - build data
+- build data
 - No chapters content
 - Mobile layout

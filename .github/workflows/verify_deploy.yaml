@@ -22,4 +22,6 @@ jobs:
         continue-on-error: true
         run: |
             test -L assets/__softlink_cv_rus.pdf
+            readlink -e assets/__softlink_cv_rus.pdf
             test -L assets/__softlink_cv_eng.pdf
+            readlink -e assets/__softlink_cv_eng.pdf

@@ -89,17 +89,6 @@ function Highlight(text) {
    return span({class: "bold"}, text)
 }
 
-function CvButton(labelId, bgValue, onclick) {
-   let bg = getBackgroundColorStyle(bgValue);
-   return div({class: "cv-button"},
-      button({
-         class: "interactive btn font-Large expand-button",
-         style: bg,
-         onclick: e => onclick(),
-      }, i({class: () => "bx bxs-up-arrow"}, "\t"), span(localizeUi(labelId))),
-   );
-}
-
 function CvChapter({uniqueId, titleElement, isDefaultActive, bgValue, borderBgValue, onclick, extraClasses = "", extraActiveClasses = "", extraInsideClasses = "", insideConstructor = () => span(localizeUi("placeholder"))}) {
    const border = `background: ${borderBgValue}`;
    return div({id: uniqueId, class: () => "cv-chapter flex-column " + (BUILD_DATA.debug && !SMOOTH ? "" : " smooth ") + (isDefaultActive.val ? extraActiveClasses + " active " : " inactive ") + extraClasses},

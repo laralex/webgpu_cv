@@ -104,7 +104,7 @@
   line-height: 1em;
 }
 
-.badgescard img {
+.badgescard img, .badgescard svg {
   max-width: 50px;
 }
 
@@ -181,7 +181,22 @@
 
 .grid-item {
    flex: 0 0 auto;
+   width: 25%;
+   /* height: 3rem; */
+   /* overflow: hidden;
+  overflow-x: auto;
+  overflow-y: auto; */
+    /* height: auto; */
+    object-fit: contain;
 }
+
+.grid-item * {
+  flex-shrink: 0;
+  min-height:100%;
+  min-width: 100%;
+  object-fit: cover;
+}
+
 .grid-item:nth-child(odd) {
    flex: 0 0 auto;
 }

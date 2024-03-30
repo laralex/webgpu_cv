@@ -284,10 +284,10 @@ function GraphicsLevelPicker(currentGraphicsLevel, isVertical) {
 }
 
 function ResumePdfLink() {
-   return button({class:"grid-item contact interactive btn", role:"button"},
+   return button({class:"grid-item contact interactive btn wiggle-animation", role:"button"},
       // bxs-download
       a({ class: "font-normalsize", href: localizeUi("pdf_cv_href"), target: "_blank"},
-      i({ class: "bx bxs-file-pdf bx-tada font-Huge", style: "color: var(--color-gmail);"}),
+      img({ src: "./third_party/boxicons-2.1.4/svg/solid/bxs-file-pdf.svg", style: "filter: var(--filter-gmail)"}),
          // () => localizeString("cv")().text + " " + localizeString("pdf")().text,
          // label({style: "display:block;"}, ),
          // label({style: "display:block;"}, ),
@@ -349,16 +349,15 @@ function RepositoryLink({width}) {
          role:"button",
          style: () => `width:${width}; margin: 2px 0 0 0; text-align: center;`
       },
-      a({href: "https://github.com/laralex/my_web_cv", target: "_blank"},
-         i({ class: "bx bxl-github", style: "font-size:1.3rem;color: var(--color-github)"}),
-         label(" "),
+      a({class: "flex-row", href: "https://github.com/laralex/my_web_cv", target: "_blank"},
+         img({ src: "./third_party/boxicons-2.1.4/svg/logos/bxl-github.svg", style: "filter: var(--color-github)"}),
          label(localizeUi("web_cv_github")),
       ));
 }
 
 function ClearCookiesButton({width}) {
    return button({
-         class:"btn-block interactive btn font-large",
+         class:"btn-block interactive btn font-large flex-row",
          role:"button",
          style: () => `width:${width}; margin: 2px 0 0 0; text-align: center;`,
          onclick: () => {
@@ -366,8 +365,7 @@ function ClearCookiesButton({width}) {
             location.reload();
          },
       },
-      i({ class: "bx bx-refresh", style: "font-size:1.3rem;color: var(--color-github)"}),
-      label(" "),
+      img({ src: "./third_party/boxicons-2.1.4/svg/regular/bx-refresh.svg", style: "filter: var(--color-github)"}),
       label(localizeUi("clear_cookies_button")),
    );
 }
@@ -394,7 +392,7 @@ function MoreSkillsButton() {
       button({
          class: "interactive btn font-Large expand-button",
          onclick: e => isExpanded.val = !isExpanded.val,
-      }, i({class: () => isExpanded.val ? "bx bxs-up-arrow" : "bx bxs-down-arrow"}), i(" "), localizeUi("skills_title")),
+      }, img({height: "15", src: () => isExpanded.val ? "./third_party/boxicons-2.1.4/svg/solid/bxs-up-arrow.svg" : "./third_party/boxicons-2.1.4/svg/solid/bxs-down-arrow.svg"}), i(" "), localizeUi("skills_title")),
       div({
          class: "inside font-large",
          style: () => isExpanded.val ? "" : "display: none;",
@@ -747,13 +745,13 @@ window.onload = function() {
 
    if (ADD_PARALLAX) {
       // myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png), url(../assets/bg6-min.png)";
-      myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png), url(../assets/clouds.png), url(../assets/cloud2.png), url(../assets/moon.png), url(../assets/bg10-min.png)";
-      myPhoto.style.backgroundSize = "cover, 0%, 0%, 25%, 150%";
-      myPhoto.style.backgroundScale = "cover, 100%, 60%, 25%, 150%";
+      myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png), url(../assets/bg10-min.png)";
+      myPhoto.style.backgroundSize = "cover, 150%";
+      myPhoto.style.backgroundScale = "cover, 150%";
       // myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png)";
       addParallax({
          element: myPhoto, sensitivityXY: [0.015, 0.010],
-         parallaxes: [1.0, 0.6, 0.4, 0.3, 0.15], centers: [[0, 0], [0, -10], [75, 10], [/*100*/10000, 5], [-10, -5]]
+         parallaxes: [1.0, 0.15], centers: [[0, 0], [-10, -5]]
       });
    } else {
       myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png)";

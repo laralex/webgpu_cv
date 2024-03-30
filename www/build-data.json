@@ -1,6 +1,6 @@
 {
-   	"git-commit": "b8941155a91881e57dfd82282d74ef2ab5d89136",
-   	"git-commit-date": "Sat, 30 Mar 2024 16:24:53 +0300",
-   	"debug": false,
-   	"deploy-date": "Sat, 30 Mar 2024 18:16:47 +0300 MSK"
+   	"git-commit": "2b55beb9c8d20c4c06bd936778c6073c7b8f63ed",
+   	"git-commit-date": "Sat, 30 Mar 2024 19:29:45 +0300",
+   	"debug": true,
+   	"deploy-date": "Sat, 30 Mar 2024 20:43:58 +0300 MSK"
 }

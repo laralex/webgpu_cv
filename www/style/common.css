@@ -27,10 +27,15 @@
    --color-font-title: #4D4637;
    --color-font-title-light: #5A5A5A;
    --color-linkedin: #0077b5;
+   --filter-linkedin: invert(30%) sepia(96%) saturate(3657%) hue-rotate(183deg) brightness(90%) contrast(101%);
    --color-telegram: #229ed9;
+   --filter-telegram: invert(51%) sepia(82%) saturate(2002%) hue-rotate(167deg) brightness(96%) contrast(76%);
    --color-gmail: #c71610;
+   --filter-gmail: invert(11%) sepia(61%) saturate(7443%) hue-rotate(357deg) brightness(99%) contrast(93%);
    --color-green: #03c04a;
    --color-github: #171515;
+   --filter-github: brightness(0%);
+;
 
    --pixel-bg: var(--color-theme-accent);
    --pixel-border: var(--color-theme-bold); /* Inner border color: */
@@ -177,6 +182,7 @@ a:active, a:visited, a:link {
 .flex-row {
    display: flex;
    flex-direction: row;
+   align-items: center;
 }
 
 .flex-column {
@@ -457,4 +463,49 @@ select option {
 .left-right-aligned > div {
    justify-content: space-evenly;
    align-items: center;
+}
+
+.wiggle-animation
+{
+    -webkit-animation: wiggle 1.5s ease infinite;
+            animation: wiggle 1.5s ease infinite;
+}
+
+@keyframes wiggle
+{
+    from
+    {
+        -webkit-transform: scale3d(1, 1, 1);
+                transform: scale3d(1, 1, 1);
+    }
+
+    10%,
+    20%
+    {
+        -webkit-transform: scale3d(.95, .95, .95) rotate3d(0, 0, 1, -10deg);
+                transform: scale3d(.95, .95, .95) rotate3d(0, 0, 1, -10deg);
+    }
+
+    30%,
+    50%,
+    70%,
+    90%
+    {
+        -webkit-transform: scale3d(1, 1, 1) rotate3d(0, 0, 1, 10deg);
+                transform: scale3d(1, 1, 1) rotate3d(0, 0, 1, 10deg);
+    }
+
+    40%,
+    60%,
+    80%
+    {
+        -webkit-transform: rotate3d(0, 0, 1, -10deg);
+                transform: rotate3d(0, 0, 1, -10deg);
+    }
+
+    to
+    {
+        -webkit-transform: scale3d(1, 1, 1);
+                transform: scale3d(1, 1, 1);
+    }
 }

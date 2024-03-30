@@ -95,6 +95,7 @@ jobs:
   verify-deploy:
     runs-on: deployee
     needs: [deploy, deploy_local]
+    if: ${{ always() }}
     steps:
     - name: verify-required
       working-directory: /var/www/my_web_cv/

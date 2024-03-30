@@ -17,16 +17,11 @@ const IS_INTRO_SHOWN = van.state(true);
 let IS_WASM_LOADED = false;
 
 async function loadBuildData() {
-   const buildDataDefaults = {
-     'git-commit': "stub",
-     'git-commit-date': "stub",
-     'debug': false,
-     'deploy-date': "stub"
-   }
    const response = await fetch('./build-data.json');
-   const json = await response.json();
-   const buildData = Object.assign(buildDataDefaults, json);
-   return buildData;
+   const buildData = await response.json();
+   Object.entries(buildData).forEach((kv) => {
+      BUILD_DATA[kv[0]] = kv[1];
+   });
 }
 
 export const BUILD_DATA = {
@@ -35,7 +30,13 @@ export const BUILD_DATA = {
    'debug': false,
    'deploy-date': "stub"
 };
-console.log('LOADED JSON', BUILD_DATA);
+
+// {
+//    'git-commit': "stub",
+//    'git-commit-date': "stub",
+//    'debug': false,
+//    'deploy-date': "stub"
+// };
 
 // import mywasm from 'my-wasm';
 import init, { wasm_loop, wasm_resize, wasm_startup } from '/wasm/index.js';
@@ -177,8 +178,7 @@ function FullscreenButtonImpl(fullscreenElement, extraClasses, isInteractive, he
 
 function HelpButton({height = "80"}) {
    return div({class: "help-button btn canvas-button", onclick: () => IS_TUTORIAL_SHOWN.val = true },
-      img({ src:"../assets/help-circle-regular-240.png", height: height,
-         title: getBuildDataString(), })
+      img({ src:"../assets/help-circle-regular-240.png", height: height })
    );
    // return null;
 }
@@ -196,18 +196,6 @@ function FontPicker(currentFont) {
       "\"JetBrains Mono\"",
       "\"Segoe UI\"",
    ];
-   van.derive(() => {
-      const baseFamilies = getComputedStyle(document.body).getPropertyValue('--font-families-const');
-      let customFamilies = currentFont.val + ", ";
-      // FONTS.forEach((f) => {
-      //    if (f !== currentFont.val) {
-      //       customFamilies += f + ", ";
-      //    }
-      // });
-      const overrideFamilies = customFamilies + baseFamilies;
-      document.documentElement.style.setProperty('--font-families', overrideFamilies);
-      configureFromFont(currentFont.val);
-   });
 	const options = FONTS.map((fontFamily, index) =>
       option({ value: fontFamily, selected: () => fontFamily == currentFont.val}, fontFamily));
    const labelBefore = null;
@@ -681,14 +669,24 @@ window.onload = function() {
    van.derive(() => {
       dumpCookies();
    })
+   van.derive(() => {
+      console.log("$$ Setting font " + CURRENT_FONT_FAMILY.val);
+      const baseFamilies = getComputedStyle(document.body).getPropertyValue('--font-families-const');
+      let customFamilies = CURRENT_FONT_FAMILY.val + ", ";
+      // FONTS.forEach((f) => {
+      //    if (f !== currentFont.val) {
+      //       customFamilies += f + ", ";
+      //    }
+      // });
+      const overrideFamilies = customFamilies + baseFamilies;
+      document.documentElement.style.setProperty('--font-families', overrideFamilies);
+      configureFromFont(CURRENT_FONT_FAMILY.val, CURRENT_LANGUAGE.val);
+   });
    configureFromFont(CURRENT_FONT_FAMILY.val, CURRENT_LANGUAGE.val); // other elements' relative sizes depend on this configuration
    configureResizingBorder();
    van.add(document.getElementById("canvas-wrapper"), FullscreenButton({extraClasses: "fullscreen-button", height: "80"}));
    van.add(document.getElementById("canvas-wrapper"), HelpButton({height: "80"}));
    van.add(document.getElementById("controls_column"), LanguagePicker(CURRENT_LANGUAGE, CURRENT_FONT_FAMILY, /*vertical*/ false));
-   if (BUILD_DATA.debug || true) {
-      van.add(document.getElementById("controls_column"), FontPicker(CURRENT_FONT_FAMILY));
-   }
    van.add(document.getElementById("controls_column"), GraphicsLevelPicker(CURRENT_GRAPHICS_LEVEL, /*vertical*/ false));
    van.add(document.getElementById("controls_row"), RepositoryLink({width: "49%"}));
    van.add(document.getElementById("controls_row"), ClearCookiesButton({width: "49%"}));
@@ -723,7 +721,30 @@ window.onload = function() {
       //    .forEach(addAppearAnimation);
    }
    const myPhoto = document.getElementById('my-photo');
-   myPhoto.title = getBuildDataString();
+   loadBuildData().finally(() => {
+      console.log("LOADED BUILD_DATA", BUILD_DATA);
+
+      // show build data on hover of my photo
+      myPhoto.title = getBuildDataString();
+
+      // add select to font family
+      if (BUILD_DATA.debug) {
+         van.add(document.getElementById("controls_column"), FontPicker(CURRENT_FONT_FAMILY));
+      }
+
+      // add scroll management that controls CV chapters
+      const callbackScrollSpeed = Util.computeScrollSpeed();
+      const scrollCallback = getScrollCallback({
+         chapterBorderStickiness: BUILD_DATA.debug ? 3 : 5,
+         chapterAfterBorderStickiness: BUILD_DATA.debug ? 0 : 3,
+      });
+      window.addEventListener('wheel', event => {
+         let wheelSpeed = callbackScrollSpeed(event);
+         const ELEMENT_SCROLL_SPEED = BUILD_DATA.debug ? 0.3 : 0.15;
+         scrollCallback(event, wheelSpeed * ELEMENT_SCROLL_SPEED);
+      }, { capture: true, passive: false });
+   });
+
    if (ADD_PARALLAX) {
       // myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png), url(../assets/bg6-min.png)";
       myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png), url(../assets/clouds.png), url(../assets/cloud2.png), url(../assets/moon.png), url(../assets/bg10-min.png)";
@@ -737,18 +758,6 @@ window.onload = function() {
    } else {
       myPhoto.style.backgroundImage = "url(../assets/my_photo_tiny.png)";
    }
-
-   // listen to "scroll" event
-   const callbackScrollSpeed = Util.computeScrollSpeed();
-   const scrollCallback = getScrollCallback({
-      chapterBorderStickiness: BUILD_DATA.debug ? 3 : 5,
-      chapterAfterBorderStickiness: BUILD_DATA.debug ? 0 : 3,
-   });
-   window.addEventListener('wheel', event => {
-      let wheelSpeed = callbackScrollSpeed(event);
-      const ELEMENT_SCROLL_SPEED = BUILD_DATA.debug ? 0.3 : 0.15;
-      scrollCallback(event, wheelSpeed * ELEMENT_SCROLL_SPEED);
-   }, { capture: true, passive: false });
 
    // Use ES module import syntax to import functionality from the module
    // that we have compiled.

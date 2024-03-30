@@ -72,9 +72,9 @@ kill_server:
 .PHONY: server_webpack
 server_webpack: kill_server
 	cd www && \
-		npm install && \
-		npm run build && \
-		DEVPORT=${PORT} npm run start-dev
+	export SET NODE_OPTIONS=--openssl-legacy-provider && \
+	npx webpack-dev-server --port ${PORT}
+#webpack-dev-server --port ${PORT}
 
 .PHONY: server_js
 server_js: kill_server

@@ -76,7 +76,7 @@ jobs:
       run: |
         mkdir -p /var/www/backup/my_web_cv
         mkdir -p /var/www/my_web_cv
-        cp -R /var/www/my_web_cv/* /var/www/backup/my_web_cv
+        find /var/www/my_web_cv/ -exec cp -r {} /var/www/backup/my_web_cv \;
         rm -R /var/www/my_web_cv/*
 
     - id: download-artifacts

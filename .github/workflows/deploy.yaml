@@ -61,6 +61,7 @@ jobs:
       run: |
         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "\
           mkdir -p /var/www/backup/my_web_cv && \
+          mkdir -p /var/www/my_web_cv && \
           mv -f /var/www/my_web_cv/* /var/www/backup/my_web_cv 2>/dev/null; true && \
           unzip -o ${{ vars.WORK_DIR }}/my_web_cv.zip -d /var/www/my_web_cv && exit"
 
@@ -74,6 +75,7 @@ jobs:
     - id: backup-current
       run: |
         mkdir -p /var/www/backup/my_web_cv
+        mkdir -p /var/www/my_web_cv
         cp -R /var/www/my_web_cv/* /var/www/backup/my_web_cv
         rm -R /var/www/my_web_cv/*
 
@@ -84,3 +86,12 @@ jobs:
         path: /var/www/my_web_cv/
         run-id: ${{ inputs.build-run-id }}
         github-token: ${{ github.token }}
+    - id: verify-deploy
+      working-directory: /var/www/my_web_cv/
+      run: |
+        test -f index.js
+        test -f index.html
+        test -d assets
+        test -f assets/__softlink_cv_eng.pdf
+        test -f assets/__softlink_cv_rus.pdf
+        test -d wasm

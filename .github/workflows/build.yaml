@@ -56,6 +56,8 @@ jobs:
       timeout-minutes: 15
       continue-on-error: true
 
+    # since `download-artifacts` loses symbolic links if artifacts are uploaded as raw files
+    # I zip the artifacts, so that `download-artifacts` double zips them
     - id: zip-artifacts
       working-directory: ./www
       run: zip -y -r ../my_web_cv.zip .

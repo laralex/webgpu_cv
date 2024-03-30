@@ -41,14 +41,16 @@ jobs:
     - id: download-artifacts
       uses: actions/download-artifact@master
       with:
-        name: my_web_cv.zip
+        name: my_web_cv.zip.zip
         path: tmp
         run-id: ${{ inputs.build-run-id }}
         github-token: ${{ github.token }}
 
-    - id: zip-artifacts
+    # note the artifacts are double-zipped
+    # unwrap *.zip.zip into *.zip which is then sent to they deployment server
+    - id: upzip-doublepzip
       working-directory: ./tmp
-      run: zip -r my_web_cv.zip .
+      run: unzip -o ./my_web_cv.zip.zip .
 
     - id: scp-artifacts
       run: |

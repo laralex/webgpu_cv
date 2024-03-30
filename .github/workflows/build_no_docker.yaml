@@ -49,7 +49,9 @@ jobs:
       run: make build_ci
       if: ${{ success() }}
 
-    - run: cargo install wasm-opt --locked --jobs ${{ env.MAX_THREADS }}
+    - run: |
+        cargo install wasm-opt --locked --jobs ${{ env.MAX_THREADS }}
+        make wasm_opt
       if: ${{ success() && inputs.optimize-wasm }}
       timeout-minutes: 15
       continue-on-error: true

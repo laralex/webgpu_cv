@@ -34,8 +34,11 @@ wasm_opt:
 
 .PHONY: pdf_link
 pdf_link:
-	ln -sfn $(shell find ${SERVE_DIR}/assets -type f -iname "*eng*.pdf" ! -iname "*softlink*") ${SERVE_DIR}/assets/__softlink_cv_eng.pdf
-	ln -sfn $(shell find ${SERVE_DIR}/assets -type f -iname "*rus*.pdf" ! -iname "*softlink*") ${SERVE_DIR}/assets/__softlink_cv_rus.pdf
+	find ${SERVE_DIR}/assets -type l -iname "*softlink*.pdf" -delete && \
+	ln -sfn $(shell cd ${SERVE_DIR}/assets && find . -type f -iname "*eng*.pdf" ! -iname "*softlink*") \
+		${SERVE_DIR}/assets/__softlink_cv_eng.pdf && \
+	ln -sfn $(shell cd ${SERVE_DIR}/assets && find . -type f -iname "*rus*.pdf" ! -iname "*softlink*") \
+		${SERVE_DIR}/assets/__softlink_cv_rus.pdf
 
 .PHONY: codegen
 codegen:

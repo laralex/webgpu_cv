@@ -21,7 +21,8 @@ jobs:
     # needs: build
     uses: ./.github/workflows/build_no_docker.yaml
     with:
-      runs-on: ${{ inputs.build-runs-on != '' && inputs.build-runs-on || 'ubuntu-latest' }}
+      runs-on: ${{ inputs.build-runs-on != '' && inputs.build-runs-on || 'deployer' }}
+      optimize-wasm: true
   deploy:
     needs: [build_no_docker]
     secrets: inherit

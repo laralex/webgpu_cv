@@ -395,8 +395,12 @@ select option {
    padding-left: 1em;
 }
 
-.demo-controls .flex-row {
+.demo-controls div.flex-row {
    justify-content: space-between;
+}
+
+.demo-controls .flex-tight {
+   justify-content: center;
 }
 
 .demo-controls > div {

@@ -380,7 +380,7 @@ function RepositoryLink({width}) {
          role:"button",
          style: () => `width:${width}; margin: 2px 0 0 0; text-align: center;`
       },
-      a({class: "flex-row", href: "https://github.com/laralex/my_web_cv", target: "_blank"},
+      a({class: "flex-row flex-tight", href: "https://github.com/laralex/my_web_cv", target: "_blank"},
          img({ src: "./third_party/boxicons-2.1.4/svg/logos/bxl-github.svg", style: "filter: var(--color-github)"}),
          label(localizeUi("web_cv_github")),
       ));
@@ -388,7 +388,7 @@ function RepositoryLink({width}) {
 
 function ClearCookiesButton({width}) {
    return button({
-         class:"btn-block interactive btn font-large flex-row",
+         class:"btn-block interactive btn font-large flex-row flex-tight",
          role:"button",
          style: () => `width:${width}; margin: 2px 0 0 0; text-align: center;`,
          onclick: () => {

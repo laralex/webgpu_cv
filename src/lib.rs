@@ -11,15 +11,16 @@ use wasm_bindgen::prelude::*;
 use lazy_static::lazy_static;
 use web_sys::WebGl2RenderingContext;
 use std::cell::Cell;
+use std::sync::RwLock;
 use std::{cell::RefCell, ops::Deref, rc::Rc, sync::Mutex};
 use std::time::{Duration, Instant};
 
 // static CELL: Lazy<Box<&dyn renderer::IDemo>> = Lazy::new(|| Box::default());
 // static DEMO: &mut dyn renderer::IDemo = Default::default();
 lazy_static!{
-    static ref FRAME_IDX: Mutex<usize> = Mutex::new(0);
-    static ref PENDING_VIEWPORT_RESIZE: Mutex<Option<(u32, u32)>> = Mutex::new(None);
-    static ref PENDING_FRAMETIME_LIMIT_UPDATE: Mutex<Option<Duration>> = Mutex::new(None);
+    static ref FRAME_IDX: RwLock<usize> = RwLock::new(0);
+    static ref PENDING_VIEWPORT_RESIZE: RwLock<Option<(u32, u32)>> = RwLock::new(None);
+    static ref PENDING_FRAMETIME_LIMIT_UPDATE: RwLock<Option<Duration>> = RwLock::new(None);
     // static ref GAME: Mutex<game_of_life::Grid> = Mutex::new(game_of_life::Grid::new(1, 1));
     //static ref CANVAS: RwLock<web_sys::HtmlCanvasElement> = RwLock::default();
     //static ref CANVAS_ID: RwLock<String> = RwLock::new("__stub__".to_owned());
@@ -44,7 +45,7 @@ pub fn wasm_startup() {
 
 #[wasm_bindgen]
 pub fn wasm_resize(gl: *mut web_sys::WebGl2RenderingContext, width: u32, height: u32) {
-    *PENDING_VIEWPORT_RESIZE.lock().unwrap() = Some((width, height));
+    *PENDING_VIEWPORT_RESIZE.write().unwrap() = Some((width, height));
     //webgl::update_webgl_viewport(&gl, (width, height));
     // gl.viewport(0, 0, width, height);
 }
@@ -56,7 +57,7 @@ pub fn wasm_resize(gl: *mut web_sys::WebGl2RenderingContext, width: u32, height:
 
 #[wasm_bindgen]
 pub fn wasm_set_fps_limit(fps_limit: u64) {
-    *PENDING_FRAMETIME_LIMIT_UPDATE.lock().unwrap() = Some(Duration::from_micros(1_000_000 / fps_limit));
+    *PENDING_FRAMETIME_LIMIT_UPDATE.write().unwrap() = Some(Duration::from_micros(1_000_000 / fps_limit));
 }
 
 #[wasm_bindgen]
@@ -66,7 +67,7 @@ pub fn wasm_switch_demo() {
 
 #[wasm_bindgen]
 pub fn wasm_get_frame_idx() -> usize {
-    FRAME_IDX.try_lock().map(|g| *g).unwrap_or_default()
+    *FRAME_IDX.read().unwrap()
 }
 
 fn configure_mousemove(canvas: &web_sys::HtmlCanvasElement, gl: &WebGl2RenderingContext, mouse_state: Rc<Cell<renderer::MouseState>>) -> Result<(), JsValue> {
@@ -157,8 +158,9 @@ pub fn wasm_loop(canvas_dom_id: &str, target_fps: u32) -> Result<(), JsValue> {
     }));
     let mut demo_state = renderer::ExternalState {
         mouse: mouse_state,
-        screen_size: Rc::new(Cell::new((0, 0))),
+        screen_size: (0, 0),
         delta_sec: 0.0,
+        frame_idx: *FRAME_IDX.read().unwrap(),
     };
     configure_mousedown(&canvas, &gl, demo_state.mouse.clone())?;
     configure_mouseup(&canvas, &gl, demo_state.mouse.clone())?;
@@ -168,30 +170,46 @@ pub fn wasm_loop(canvas_dom_id: &str, target_fps: u32) -> Result<(), JsValue> {
     //let mut time_then = js_interop::now();
     let mut target_frametime_ms = 1000 / target_fps as i32;
     *engine_cb_clone.borrow_mut() = Some(Closure::new(move || {
-        let mut guard = PENDING_VIEWPORT_RESIZE.try_lock().unwrap();
-        if let Some((new_width, new_height)) = *guard {
+        // handle events
+        if let Some((new_width, new_height)) = *PENDING_VIEWPORT_RESIZE.read().unwrap() {
             gl.viewport(0, 0, new_width as i32, new_height as i32);
-            *guard = None;
+            demo_state.screen_size = (new_width, new_height);
+            match PENDING_VIEWPORT_RESIZE.try_write() {
+                Ok(mut w) => *w = None,
+                _ => web_sys::console::log_1(&"Failed to reset RwLock in wasm: PENDING_VIEWPORT_RESIZE".into()),
+            }
         }
-        if let Some(new_target_frametime) = *PENDING_FRAMETIME_LIMIT_UPDATE.try_lock().unwrap() {
+        if let Some(new_target_frametime) = *PENDING_FRAMETIME_LIMIT_UPDATE.read().unwrap() {
             target_frametime_ms = new_target_frametime.as_millis() as i32;
+            match PENDING_FRAMETIME_LIMIT_UPDATE.try_write() {
+                Ok(mut w) => *w = None,
+                _ => web_sys::console::log_1(&"Failed to reset RwLock in wasm: PENDING_FRAMETIME_LIMIT_UPDATE".into()),
+            }
         }
+        *PENDING_VIEWPORT_RESIZE.write().unwrap() = None;
         //let time_now = js_interop::now();
         //let elapsed = Duration::from_secs_f64(time_now - time_then);
         //time_then = time_now;
         //let elapsed_sec = elapsed.as_secs_f32();
 
+        // populate engine step input
         let tick = 0.1 / target_frametime_ms as f32;
-        //web_sys::console::log_2(&"TICK: ".into(), &tick.into());
         demo_state.delta_sec = tick;
+        demo_state.frame_idx = *FRAME_IDX.read().unwrap();
+        let mut current_mouse_state = demo_state.mouse.get();
+        current_mouse_state.unit_position = (
+            current_mouse_state.viewport_position.0 as f32 / demo_state.screen_size.0 as f32,
+            current_mouse_state.viewport_position.1 as f32 / demo_state.screen_size.1 as f32,
+        );
 
+        // engine step
         demo.tick(&demo_state);
         demo.render(&mut gl, tick);
 
-        *FRAME_IDX.lock().unwrap() += 1;
+        // prepare next frame
+        *FRAME_IDX.write().unwrap() += 1;
 
         // clear mouseup events for next frame
-        let mut current_mouse_state = demo_state.mouse.get();
         if current_mouse_state.left < 0.0 {
             current_mouse_state.left = 0.0;
         }

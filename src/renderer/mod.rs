@@ -14,8 +14,9 @@ pub struct MouseState {
 
 pub struct ExternalState {
    pub mouse: Rc<Cell<MouseState>>,
-   pub screen_size: Rc<Cell<(i32, i32)>>,
-   pub delta_sec: f32
+   pub screen_size: (u32, u32),
+   pub delta_sec: f32,
+   pub frame_idx: usize,
 }
 
 pub trait IDemo {

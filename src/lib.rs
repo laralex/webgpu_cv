@@ -4,6 +4,7 @@ mod webgl;
 mod gl_utils;
 mod renderer;
 
+use renderer::MouseState;
 use renderer::{triangle::TriangleDemo, IDemo};
 
 use wasm_bindgen::prelude::*;
@@ -48,6 +49,11 @@ pub fn wasm_resize(gl: *mut web_sys::WebGl2RenderingContext, width: u32, height:
     // gl.viewport(0, 0, width, height);
 }
 
+// #[wasm_bindgen]
+// pub fn wasm_get_resize_callback() -> Closure<dyn FnMut(u32, u32)> {
+
+// }
+
 #[wasm_bindgen]
 pub fn wasm_set_fps_limit(fps_limit: u64) {
     *PENDING_FRAMETIME_LIMIT_UPDATE.lock().unwrap() = Some(Duration::from_micros(1_000_000 / fps_limit));
@@ -63,32 +69,62 @@ pub fn wasm_get_frame_idx() -> usize {
     FRAME_IDX.try_lock().map(|g| *g).unwrap_or_default()
 }
 
-fn configure_mousemove(canvas: &web_sys::HtmlCanvasElement, gl: &WebGl2RenderingContext, mouse_state: &renderer::MouseState) -> Result<(), JsValue> {
-    let is_down = mouse_state.is_down.clone();
-    let screen_position = mouse_state.screen_position.clone();
+fn configure_mousemove(canvas: &web_sys::HtmlCanvasElement, gl: &WebGl2RenderingContext, mouse_state: Rc<Cell<renderer::MouseState>>) -> Result<(), JsValue> {
     let closure = Closure::<dyn FnMut(_)>::new(move |event: web_sys::MouseEvent| {
-        screen_position.set((event.offset_x(), event.offset_y()));
+        let current_state = mouse_state.get();
+        mouse_state.set(MouseState {
+            viewport_position: (event.offset_x(), event.offset_y()),
+            ..current_state
+        });
     });
     canvas.add_event_listener_with_callback("mousemove", closure.as_ref().unchecked_ref())?;
     closure.forget();
     Ok(())
 }
 
-fn configure_mousedown(canvas: &web_sys::HtmlCanvasElement, gl: &WebGl2RenderingContext, mouse_state: &renderer::MouseState) -> Result<(), JsValue> {
-    let is_down = mouse_state.is_down.clone();
+fn configure_mousedown(canvas: &web_sys::HtmlCanvasElement, gl: &WebGl2RenderingContext, mouse_state: Rc<Cell<renderer::MouseState>>) -> Result<(), JsValue> {
     let closure = Closure::<dyn FnMut(_)>::new(move |event: web_sys::MouseEvent| {
-        is_down.set(true);
-        web_sys::console::log_1(&"Rust mousedown".into());
+        let current_state = mouse_state.get();
+        match event.button() {
+            0 => mouse_state.set(MouseState {
+                left: 1.0,
+                ..current_state
+            }),
+            1 => mouse_state.set(MouseState {
+                middle: 1.0,
+                ..current_state
+            }),
+            2 => mouse_state.set(MouseState {
+                right: 1.0,
+                ..current_state
+            }),
+            _ => {},
+        }
     });
     canvas.add_event_listener_with_callback("mousedown", closure.as_ref().unchecked_ref())?;
     closure.forget();
     Ok(())
 }
 
-fn configure_mouseup(canvas: &web_sys::HtmlCanvasElement, gl: &WebGl2RenderingContext, mouse_state: &renderer::MouseState) -> Result<(), JsValue> {
-    let is_down = mouse_state.is_down.clone();
+fn configure_mouseup(canvas: &web_sys::HtmlCanvasElement, gl: &WebGl2RenderingContext, mouse_state: Rc<Cell<renderer::MouseState>>) -> Result<(), JsValue> {
     let closure = Closure::<dyn FnMut(_)>::new(move |event: web_sys::MouseEvent| {
-        is_down.set(false);
+        let current_state = mouse_state.get();
+        match event.button() {
+            0 => mouse_state.set(MouseState {
+                left: -1.0,
+                ..current_state
+            }),
+            1 => mouse_state.set(MouseState {
+                middle: -1.0,
+                ..current_state
+            }),
+            2 => mouse_state.set(MouseState {
+                right: -1.0,
+                ..current_state
+            }),
+            _ => {},
+        }
+        web_sys::console::log_1(&"Rust mousedown".into());
     });
     canvas.add_event_listener_with_callback("mouseup", closure.as_ref().unchecked_ref())?;
     closure.forget();
@@ -112,13 +148,21 @@ pub fn wasm_loop(canvas_dom_id: &str, target_fps: u32) -> Result<(), JsValue> {
 
     let canvas = webgl::canvas(canvas_dom_id)?;
     let mut gl = webgl::init_webgl_context(&canvas).expect("Failed to get WebGL2 context");
-    let mouse_state = renderer::MouseState {
-        is_down: Rc::new(Cell::new(false)),
-        screen_position: Rc::new(Cell::new((0, 0))),
+    let mouse_state = Rc::new(Cell::new(renderer::MouseState {
+        left: 0.0,
+        middle: 0.0,
+        right: 0.0,
+        viewport_position: (0, 0),
+        unit_position: (0.0, 0.0),
+    }));
+    let mut demo_state = renderer::ExternalState {
+        mouse: mouse_state,
+        screen_size: Rc::new(Cell::new((0, 0))),
+        delta_sec: 0.0,
     };
-    configure_mousedown(&canvas, &gl, &mouse_state)?;
-    configure_mouseup(&canvas, &gl, &mouse_state)?;
-    configure_mousemove(&canvas, &gl, &mouse_state)?;
+    configure_mousedown(&canvas, &gl, demo_state.mouse.clone())?;
+    configure_mouseup(&canvas, &gl, demo_state.mouse.clone())?;
+    configure_mousemove(&canvas, &gl, demo_state.mouse.clone())?;
 
     let mut demo = TriangleDemo::new(&gl);
     //let mut time_then = js_interop::now();
@@ -139,9 +183,25 @@ pub fn wasm_loop(canvas_dom_id: &str, target_fps: u32) -> Result<(), JsValue> {
 
         let tick = 0.1 / target_frametime_ms as f32;
         //web_sys::console::log_2(&"TICK: ".into(), &tick.into());
-        demo.tick(tick, &mouse_state);
+        demo_state.delta_sec = tick;
+
+        demo.tick(&demo_state);
         demo.render(&mut gl, tick);
+
         *FRAME_IDX.lock().unwrap() += 1;
+
+        // clear mouseup events for next frame
+        let mut current_mouse_state = demo_state.mouse.get();
+        if current_mouse_state.left < 0.0 {
+            current_mouse_state.left = 0.0;
+        }
+        if current_mouse_state.middle < 0.0 {
+            current_mouse_state.middle = 0.0;
+        }
+        if current_mouse_state.right < 0.0 {
+            current_mouse_state.right = 0.0;
+        }
+        demo_state.mouse.set(current_mouse_state);
 
         // Schedule ourself for another requestAnimationFrame callback.
         js_interop::set_frame_timeout(timeout_cb.borrow().as_ref().unwrap(), target_frametime_ms);

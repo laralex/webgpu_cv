@@ -3,6 +3,15 @@ pub mod triangle;
 use std::{cell::Cell, rc::Rc};
 use web_sys::WebGl2RenderingContext as GL;
 
+#[derive(Default, Clone, Copy)]
+pub enum GraphicsLevel {
+   Minimal = 0x00,
+   Low = 0x10,
+   #[default] Medium = 0x20,
+   High = 0x30,
+   Ultra = 0xFF,
+}
+
 #[derive(Clone, Copy)]
 pub struct MouseState {
    pub left: f32,
@@ -30,4 +39,5 @@ impl ExternalState {
 pub trait IDemo {
    fn tick(&mut self, state: &ExternalState);
    fn render(&mut self, gl: &mut GL, delta_sec: f32);
+   fn set_graphics_level(&mut self, level: GraphicsLevel);
 }

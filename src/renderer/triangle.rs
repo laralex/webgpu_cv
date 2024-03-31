@@ -1,16 +1,15 @@
-use super::{ExternalState, IDemo, MouseState};
+use super::{ExternalState, IDemo, MouseState, GraphicsLevel};
 use crate::gl_utils;
 use web_sys::{WebGl2RenderingContext as GL, WebGlProgram, WebGlVertexArrayObject};
 
 pub struct TriangleDemo {
    main_program: WebGlProgram,
-   render_timer: f32,
-   tick_timer: f32,
    clear_color: [f32; 4],
+   num_rendered_vertices: i32,
 }
 
 impl TriangleDemo {
-   pub fn new(gl: &GL) -> Self {
+   pub fn new(gl: &GL, graphics_level: GraphicsLevel) -> Self {
       let vertex_shader_source = std::include_str!("shaders/no_vao_triangle.vert");
       let fragment_shader_source = std::include_str!("shaders/vertex_color.frag");
 
@@ -29,19 +28,18 @@ impl TriangleDemo {
 
       gl_utils::delete_program_shaders(gl, &main_program);
 
-      Self {
+      let mut me = Self {
          main_program,
-         render_timer: 0.0,
-         tick_timer: 0.0,
          clear_color: [0.0; 4],
-      }
+         num_rendered_vertices: 0,
+      };
+      me.set_graphics_level(graphics_level);
+      me
    }
 }
 
 impl IDemo for TriangleDemo {
    fn tick(&mut self, input: &ExternalState) {
-      self.tick_timer += input.delta_sec;
-
       let mouse_pos = input.mouse_unit_position();
       self.clear_color[0] = mouse_pos.0;
       self.clear_color[1] = mouse_pos.1;
@@ -51,12 +49,18 @@ impl IDemo for TriangleDemo {
    }
 
    fn render(&mut self, gl: &mut GL, delta_sec: f32) {
-      self.render_timer += delta_sec;
-
       gl.bind_framebuffer(GL::FRAMEBUFFER, None);
       gl_utils::clear_with_color_f32(
          gl, GL::COLOR_ATTACHMENT0, &self.clear_color, 0);
       gl.use_program(Some(&self.main_program));
-      gl.draw_arrays(GL::TRIANGLES, 0, 3);
+      gl.draw_arrays(GL::TRIANGLES, 0, self.num_rendered_vertices);
    }
+
+   fn set_graphics_level(&mut self, level: GraphicsLevel) {
+      self.num_rendered_vertices = match level {
+         GraphicsLevel::Minimal | GraphicsLevel::Low => 3,
+         _ => 6,
+      };
+   }
+
 }

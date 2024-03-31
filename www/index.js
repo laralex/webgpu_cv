@@ -6,7 +6,13 @@ const CANVAS_ID = "main-canvas";
 
 const SIDEBAR_WIDTH_OVERRIDE_PX = van.state(0);
 const SIDEBAR_WIDTH_FONT_PX = van.state(0);
-const CURRENT_GRAPHICS_LEVEL = van.state("medium");
+const GRAPHICS_LEVELS = {
+   low:    0x10,
+   medium: 0x20,
+   high:   0x30,
+   ultra:  0xFF,
+}
+const CURRENT_GRAPHICS_LEVEL = van.state(GRAPHICS_LEVELS.medium);
 const CURRENT_FPS_LIMIT = van.state(45);
 const CURRENT_FONT_FAMILY = van.state("\"Share Tech\"");
 const DEFAULT_MAIN_CHAPTER = "chapter_career";
@@ -40,7 +46,7 @@ export const BUILD_DATA = {
 // };
 
 // import mywasm from 'my-wasm';
-import init, { wasm_loop, wasm_resize, wasm_startup, wasm_set_fps_limit } from '/wasm/index.js';
+import init, { wasm_loop, wasm_resize, wasm_startup, wasm_set_fps_limit, wasm_set_graphics_level } from '/wasm/index.js';
 import { UI_STRINGS, CURRENT_LANGUAGE, localizeString, localizeUi, localizeUiPostprocess } from '/modules/localization.js';
 import { Util } from '/modules/util.js';
 import { CvContent } from '/modules/cv.js';
@@ -290,16 +296,20 @@ function LanguagePicker(currentLanguage, currentFont, isVertical, tooltipLanguag
 }
 
 function GraphicsLevelPicker(currentGraphicsLevel, isVertical) {
-   const GRAPHICS_LEVELS = {
-      low: {labelId: 'graphics_low', emoji: "✰✰✰"},
-      medium: {labelId: 'graphics_medium', emoji: "★✰✰"},
-      high: {labelId: 'graphics_high', emoji: "★★✰"},
-      ultra: {labelId: 'graphics_ultra', emoji: "★★★"},
-   }
-   const options = Object.entries(GRAPHICS_LEVELS).map(([level, meta]) =>
+   const meta = {};
+   meta[GRAPHICS_LEVELS.low] = {labelId: 'graphics_low', emoji: "✰✰✰"};
+   meta[GRAPHICS_LEVELS.medium] = {labelId: 'graphics_medium', emoji: "★✰✰"};
+   meta[GRAPHICS_LEVELS.high] = {labelId: 'graphics_high', emoji: "★★✰"};
+   meta[GRAPHICS_LEVELS.ultra] = {labelId: 'graphics_ultra', emoji: "★★★"};
+   const options = Object.entries(meta).map(([level, meta]) =>
       option({ value: level, selected: () => level == currentGraphicsLevel.val},
          () => localizeString(meta.labelId)().text + " " +  meta.emoji));
-   van.derive(() => console.log("Set graphics_level="+currentGraphicsLevel.val));
+   van.derive(() => {
+      if (IS_WASM_LOADED) {
+         wasm_set_graphics_level(currentGraphicsLevel.val)
+      }
+      console.log("Set graphics_level="+currentGraphicsLevel.val)
+   });
    const labelBefore = isVertical ? span(localizeUi('graphics_levels')) : null;
    const labelAfter = !isVertical ? span(localizeUi('graphics_levels')) : null;
    return div(

@@ -4,7 +4,7 @@ mod webgl;
 mod gl_utils;
 mod renderer;
 
-use renderer::MouseState;
+use renderer::{GraphicsLevel, MouseState};
 use renderer::{triangle::TriangleDemo, IDemo};
 
 use wasm_bindgen::prelude::*;
@@ -21,6 +21,7 @@ lazy_static!{
     static ref FRAME_IDX: RwLock<usize> = RwLock::new(0);
     static ref PENDING_VIEWPORT_RESIZE: RwLock<Option<(u32, u32)>> = RwLock::new(None);
     static ref PENDING_FRAMETIME_LIMIT_UPDATE: RwLock<Option<Duration>> = RwLock::new(None);
+    static ref PENDING_GRAPHICS_LEVEL_UPDATE: RwLock<Option<GraphicsLevel>> = RwLock::new(None);
     // static ref GAME: Mutex<game_of_life::Grid> = Mutex::new(game_of_life::Grid::new(1, 1));
     //static ref CANVAS: RwLock<web_sys::HtmlCanvasElement> = RwLock::default();
     //static ref CANVAS_ID: RwLock<String> = RwLock::new("__stub__".to_owned());
@@ -46,18 +47,24 @@ pub fn wasm_startup() {
 #[wasm_bindgen]
 pub fn wasm_resize(gl: *mut web_sys::WebGl2RenderingContext, width: u32, height: u32) {
     *PENDING_VIEWPORT_RESIZE.write().unwrap() = Some((width, height));
-    //webgl::update_webgl_viewport(&gl, (width, height));
-    // gl.viewport(0, 0, width, height);
 }
 
-// #[wasm_bindgen]
-// pub fn wasm_get_resize_callback() -> Closure<dyn FnMut(u32, u32)> {
-
-// }
 
 #[wasm_bindgen]
 pub fn wasm_set_fps_limit(fps_limit: u64) {
     *PENDING_FRAMETIME_LIMIT_UPDATE.write().unwrap() = Some(Duration::from_micros(1_000_000 / fps_limit));
+}
+
+#[wasm_bindgen]
+pub fn wasm_set_graphics_level(level_code: u64) {
+    *PENDING_GRAPHICS_LEVEL_UPDATE.write().unwrap() = Some(match level_code {
+        0x00 => GraphicsLevel::Minimal,
+        0x10 => GraphicsLevel::Low,
+        0x20 => GraphicsLevel::Medium,
+        0x30 => GraphicsLevel::High,
+        0xFF => GraphicsLevel::Ultra,
+        _ => Default::default(),
+    });
 }
 
 #[wasm_bindgen]
@@ -164,7 +171,7 @@ pub fn wasm_loop(canvas_dom_id: &str, target_fps: u32) -> Result<(), JsValue> {
     configure_mouseup(&canvas, &gl, demo_state.mouse.clone())?;
     configure_mousemove(&canvas, &gl, demo_state.mouse.clone())?;
 
-    let mut demo = TriangleDemo::new(&gl);
+    let mut demo = TriangleDemo::new(&gl, PENDING_GRAPHICS_LEVEL_UPDATE.read().unwrap().clone().unwrap_or_default());
     //let mut time_then = js_interop::now();
     let mut target_frametime_ms = 1000 / target_fps as i32;
     *engine_cb_clone.borrow_mut() = Some(Closure::new(move || {
@@ -188,6 +195,16 @@ pub fn wasm_loop(canvas_dom_id: &str, target_fps: u32) -> Result<(), JsValue> {
                 match PENDING_FRAMETIME_LIMIT_UPDATE.try_write() {
                     Ok(mut w) => *w = None,
                     _ => web_sys::console::log_1(&"Failed to reset RwLock in wasm: PENDING_FRAMETIME_LIMIT_UPDATE".into()),
+                }
+            }
+        }
+        if let Ok(reader) = PENDING_GRAPHICS_LEVEL_UPDATE.try_read() {
+            if let Some(new_graphics_level) = *reader {
+                demo.set_graphics_level(new_graphics_level);
+                std::mem::drop(reader);
+                match PENDING_GRAPHICS_LEVEL_UPDATE.try_write() {
+                    Ok(mut w) => *w = None,
+                    _ => web_sys::console::log_1(&"Failed to reset RwLock in wasm: PENDING_GRAPHICS_LEVEL_UPDATE".into()),
                 }
             }
         }

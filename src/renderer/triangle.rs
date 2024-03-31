@@ -1,4 +1,4 @@
-use super::IDemo;
+use super::{IDemo, MouseState};
 use crate::gl_utils;
 use web_sys::{WebGl2RenderingContext as GL, WebGlProgram, WebGlVertexArrayObject};
 
@@ -39,12 +39,12 @@ impl TriangleDemo {
 }
 
 impl IDemo for TriangleDemo {
-   fn tick(&mut self, delta_sec: f32) {
+   fn tick(&mut self, delta_sec: f32, mouse_state: &MouseState) {
       self.tick_timer += delta_sec;
 
-      self.clear_color[0] = (self.tick_timer * 1.0).sin();
-      self.clear_color[1] = (self.tick_timer * 1.2).sin();
-      self.clear_color[2] = (self.tick_timer * 1.6).sin();
+      self.clear_color[0] = mouse_state.screen_position.get().0 as f32 * 0.001;
+      self.clear_color[1] = mouse_state.screen_position.get().1 as f32 * 0.001;
+      self.clear_color[2] = if mouse_state.is_down.get() { 1.0 } else { 0.5 };
       self.clear_color[3] = 1.0;
    }
 

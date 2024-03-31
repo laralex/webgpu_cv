@@ -9,6 +9,7 @@ use renderer::{triangle::TriangleDemo, IDemo};
 use wasm_bindgen::prelude::*;
 use lazy_static::lazy_static;
 use web_sys::WebGl2RenderingContext;
+use std::cell::Cell;
 use std::{cell::RefCell, ops::Deref, rc::Rc, sync::Mutex};
 use std::time::{Duration, Instant};
 
@@ -53,12 +54,49 @@ pub fn wasm_set_fps_limit(fps_limit: u64) {
 }
 
 #[wasm_bindgen]
+pub fn wasm_switch_demo() {
+
+}
+
+#[wasm_bindgen]
 pub fn wasm_get_frame_idx() -> usize {
     FRAME_IDX.try_lock().map(|g| *g).unwrap_or_default()
 }
 
+fn configure_mousemove(canvas: &web_sys::HtmlCanvasElement, gl: &WebGl2RenderingContext, mouse_state: &renderer::MouseState) -> Result<(), JsValue> {
+    let is_down = mouse_state.is_down.clone();
+    let screen_position = mouse_state.screen_position.clone();
+    let closure = Closure::<dyn FnMut(_)>::new(move |event: web_sys::MouseEvent| {
+        screen_position.set((event.offset_x(), event.offset_y()));
+    });
+    canvas.add_event_listener_with_callback("mousemove", closure.as_ref().unchecked_ref())?;
+    closure.forget();
+    Ok(())
+}
+
+fn configure_mousedown(canvas: &web_sys::HtmlCanvasElement, gl: &WebGl2RenderingContext, mouse_state: &renderer::MouseState) -> Result<(), JsValue> {
+    let is_down = mouse_state.is_down.clone();
+    let closure = Closure::<dyn FnMut(_)>::new(move |event: web_sys::MouseEvent| {
+        is_down.set(true);
+        web_sys::console::log_1(&"Rust mousedown".into());
+    });
+    canvas.add_event_listener_with_callback("mousedown", closure.as_ref().unchecked_ref())?;
+    closure.forget();
+    Ok(())
+}
+
+fn configure_mouseup(canvas: &web_sys::HtmlCanvasElement, gl: &WebGl2RenderingContext, mouse_state: &renderer::MouseState) -> Result<(), JsValue> {
+    let is_down = mouse_state.is_down.clone();
+    let closure = Closure::<dyn FnMut(_)>::new(move |event: web_sys::MouseEvent| {
+        is_down.set(false);
+    });
+    canvas.add_event_listener_with_callback("mouseup", closure.as_ref().unchecked_ref())?;
+    closure.forget();
+    Ok(())
+}
+
 #[wasm_bindgen]
-pub fn wasm_loop(canvas_element_id: &str, target_fps: u32) -> Result<(), JsValue> {
+pub fn wasm_loop(canvas_dom_id: &str, target_fps: u32) -> Result<(), JsValue> {
     // callbacks wired with JS canvas
     // engine callback will schedule timeout callback (to limit fps)
     // timeout callback will schedule engine callback (to render the next frame)
@@ -71,7 +109,17 @@ pub fn wasm_loop(canvas_element_id: &str, target_fps: u32) -> Result<(), JsValue
         js_interop::request_animation_frame(engine_cb.borrow().as_ref().unwrap());
     }) as Box<dyn FnMut()>));
 
-    let mut gl = webgl::init_webgl_context(canvas_element_id).expect("Failed to get WebGL2 context");
+
+    let canvas = webgl::canvas(canvas_dom_id)?;
+    let mut gl = webgl::init_webgl_context(&canvas).expect("Failed to get WebGL2 context");
+    let mouse_state = renderer::MouseState {
+        is_down: Rc::new(Cell::new(false)),
+        screen_position: Rc::new(Cell::new((0, 0))),
+    };
+    configure_mousedown(&canvas, &gl, &mouse_state)?;
+    configure_mouseup(&canvas, &gl, &mouse_state)?;
+    configure_mousemove(&canvas, &gl, &mouse_state)?;
+
     let mut demo = TriangleDemo::new(&gl);
     //let mut time_then = js_interop::now();
     let mut target_frametime_ms = 1000 / target_fps as i32;
@@ -91,7 +139,7 @@ pub fn wasm_loop(canvas_element_id: &str, target_fps: u32) -> Result<(), JsValue
 
         let tick = 0.1 / target_frametime_ms as f32;
         //web_sys::console::log_2(&"TICK: ".into(), &tick.into());
-        demo.tick(tick);
+        demo.tick(tick, &mouse_state);
         demo.render(&mut gl, tick);
         *FRAME_IDX.lock().unwrap() += 1;
 

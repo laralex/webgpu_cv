@@ -1,24 +1,25 @@
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
+use web_sys::Element;
 use web_sys::{WebGl2RenderingContext, WebGlShader, WebGlProgram};
 use std::convert::TryInto;
 
-pub fn init_webgl_context(canvas_id: &str) -> Result<WebGl2RenderingContext, JsValue> {
+pub fn canvas(canvas_dom_id: &str) -> Result<web_sys::HtmlCanvasElement, Element> {
     let document = web_sys::window().unwrap().document().unwrap();
-    let canvas = document.get_element_by_id(canvas_id).unwrap();
-    let canvas: web_sys::HtmlCanvasElement = canvas.dyn_into::<web_sys::HtmlCanvasElement>()?;
+    let canvas = document.get_element_by_id(canvas_dom_id).unwrap();
+    canvas.dyn_into::<web_sys::HtmlCanvasElement>()
+}
+
+pub fn init_webgl_context(canvas: &web_sys::HtmlCanvasElement) -> Result<WebGl2RenderingContext, JsValue> {
     let gl: WebGl2RenderingContext = canvas
         .get_context("webgl2")?
         .unwrap()
         .dyn_into::<WebGl2RenderingContext>()?;
-    update_webgl_viewport(&gl, canvas_id);
+    update_webgl_viewport(&gl, canvas);
     Ok(gl)
 }
 
-pub fn update_webgl_viewport(gl: &WebGl2RenderingContext, canvas_id: &str) -> Result<(), JsValue> {
-    let document = web_sys::window().unwrap().document().unwrap();
-    let canvas = document.get_element_by_id(canvas_id).unwrap();
-    let canvas: web_sys::HtmlCanvasElement = canvas.dyn_into::<web_sys::HtmlCanvasElement>()?;
+pub fn update_webgl_viewport(gl: &WebGl2RenderingContext, canvas: &web_sys::HtmlCanvasElement) -> Result<(), JsValue> {
     gl.viewport(
         0,
         0,

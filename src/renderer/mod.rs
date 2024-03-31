@@ -9,7 +9,6 @@ pub struct MouseState {
    pub middle: f32,
    pub right: f32,
    pub viewport_position: (i32, i32),
-   pub unit_position: (f32, f32),
 }
 
 pub struct ExternalState {
@@ -19,6 +18,15 @@ pub struct ExternalState {
    pub frame_idx: usize,
 }
 
+impl ExternalState {
+   pub fn mouse_unit_position(&self) -> (f32, f32) {
+      let px_pos = self.mouse.get().viewport_position;
+      return (
+         px_pos.0 as f32 / self.screen_size.0 as f32,
+         px_pos.1 as f32 / self.screen_size.1 as f32,
+      )
+   }
+}
 pub trait IDemo {
    fn tick(&mut self, state: &ExternalState);
    fn render(&mut self, gl: &mut GL, delta_sec: f32);

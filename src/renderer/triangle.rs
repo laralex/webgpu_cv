@@ -42,12 +42,12 @@ impl IDemo for TriangleDemo {
    fn tick(&mut self, input: &ExternalState) {
       self.tick_timer += input.delta_sec;
 
-      let mouse_pos = input.mouse.get().unit_position;
+      let mouse_pos = input.mouse_unit_position();
       self.clear_color[0] = mouse_pos.0;
       self.clear_color[1] = mouse_pos.1;
       self.clear_color[2] = input.mouse.get().left;
       self.clear_color[3] = 1.0;
-      // web_sys::console::log_3(&"Rust mousedown".into(), &mouse_pos.0.into(), &mouse_pos.1.into());
+      // web_sys::console::log_3(&"Rust tick".into(), &mouse_pos.0.into(), &mouse_pos.1.into());
    }
 
    fn render(&mut self, gl: &mut GL, delta_sec: f32) {

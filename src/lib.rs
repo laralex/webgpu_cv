@@ -67,7 +67,7 @@ pub fn wasm_switch_demo() {
 
 #[wasm_bindgen]
 pub fn wasm_get_frame_idx() -> usize {
-    *FRAME_IDX.read().unwrap()
+    FRAME_IDX.try_read().map_or(0, |r| *r)
 }
 
 fn configure_mousemove(canvas: &web_sys::HtmlCanvasElement, gl: &WebGl2RenderingContext, mouse_state: Rc<Cell<renderer::MouseState>>) -> Result<(), JsValue> {
@@ -125,9 +125,8 @@ fn configure_mouseup(canvas: &web_sys::HtmlCanvasElement, gl: &WebGl2RenderingCo
             }),
             _ => {},
         }
-        web_sys::console::log_1(&"Rust mousedown".into());
     });
-    canvas.add_event_listener_with_callback("mouseup", closure.as_ref().unchecked_ref())?;
+    js_interop::window().add_event_listener_with_callback("mouseup", closure.as_ref().unchecked_ref())?;
     closure.forget();
     Ok(())
 }
@@ -154,11 +153,10 @@ pub fn wasm_loop(canvas_dom_id: &str, target_fps: u32) -> Result<(), JsValue> {
         middle: 0.0,
         right: 0.0,
         viewport_position: (0, 0),
-        unit_position: (0.0, 0.0),
     }));
     let mut demo_state = renderer::ExternalState {
         mouse: mouse_state,
-        screen_size: (0, 0),
+        screen_size: (1, 1),
         delta_sec: 0.0,
         frame_idx: *FRAME_IDX.read().unwrap(),
     };
@@ -171,22 +169,28 @@ pub fn wasm_loop(canvas_dom_id: &str, target_fps: u32) -> Result<(), JsValue> {
     let mut target_frametime_ms = 1000 / target_fps as i32;
     *engine_cb_clone.borrow_mut() = Some(Closure::new(move || {
         // handle events
-        if let Some((new_width, new_height)) = *PENDING_VIEWPORT_RESIZE.read().unwrap() {
-            gl.viewport(0, 0, new_width as i32, new_height as i32);
-            demo_state.screen_size = (new_width, new_height);
-            match PENDING_VIEWPORT_RESIZE.try_write() {
-                Ok(mut w) => *w = None,
-                _ => web_sys::console::log_1(&"Failed to reset RwLock in wasm: PENDING_VIEWPORT_RESIZE".into()),
+        if let Ok(reader) = PENDING_VIEWPORT_RESIZE.try_read() {
+            if let Some((new_width, new_height)) = *reader {
+                web_sys::console::log_3(&"Rust resize".into(), &new_width.into(), &new_height.into());
+                gl.viewport(0, 0, new_width as i32, new_height as i32);
+                demo_state.screen_size = (new_width, new_height);
+                std::mem::drop(reader);
+                match PENDING_VIEWPORT_RESIZE.try_write() {
+                    Ok(mut w) => *w = None,
+                    _ => web_sys::console::log_1(&"Failed to reset RwLock in wasm: PENDING_VIEWPORT_RESIZE".into()),
+                }
             }
         }
-        if let Some(new_target_frametime) = *PENDING_FRAMETIME_LIMIT_UPDATE.read().unwrap() {
-            target_frametime_ms = new_target_frametime.as_millis() as i32;
-            match PENDING_FRAMETIME_LIMIT_UPDATE.try_write() {
-                Ok(mut w) => *w = None,
-                _ => web_sys::console::log_1(&"Failed to reset RwLock in wasm: PENDING_FRAMETIME_LIMIT_UPDATE".into()),
+        if let Ok(reader) = PENDING_FRAMETIME_LIMIT_UPDATE.try_read() {
+            if let Some(new_target_frametime) = *reader {
+                target_frametime_ms = new_target_frametime.as_millis() as i32;
+                std::mem::drop(reader);
+                match PENDING_FRAMETIME_LIMIT_UPDATE.try_write() {
+                    Ok(mut w) => *w = None,
+                    _ => web_sys::console::log_1(&"Failed to reset RwLock in wasm: PENDING_FRAMETIME_LIMIT_UPDATE".into()),
+                }
             }
         }
-        *PENDING_VIEWPORT_RESIZE.write().unwrap() = None;
         //let time_now = js_interop::now();
         //let elapsed = Duration::from_secs_f64(time_now - time_then);
         //time_then = time_now;
@@ -196,11 +200,6 @@ pub fn wasm_loop(canvas_dom_id: &str, target_fps: u32) -> Result<(), JsValue> {
         let tick = 0.1 / target_frametime_ms as f32;
         demo_state.delta_sec = tick;
         demo_state.frame_idx = *FRAME_IDX.read().unwrap();
-        let mut current_mouse_state = demo_state.mouse.get();
-        current_mouse_state.unit_position = (
-            current_mouse_state.viewport_position.0 as f32 / demo_state.screen_size.0 as f32,
-            current_mouse_state.viewport_position.1 as f32 / demo_state.screen_size.1 as f32,
-        );
 
         // engine step
         demo.tick(&demo_state);
@@ -210,6 +209,7 @@ pub fn wasm_loop(canvas_dom_id: &str, target_fps: u32) -> Result<(), JsValue> {
         *FRAME_IDX.write().unwrap() += 1;
 
         // clear mouseup events for next frame
+        let mut current_mouse_state = demo_state.mouse.get();
         if current_mouse_state.left < 0.0 {
             current_mouse_state.left = 0.0;
         }
@@ -218,6 +218,9 @@ pub fn wasm_loop(canvas_dom_id: &str, target_fps: u32) -> Result<(), JsValue> {
         }
         if current_mouse_state.right < 0.0 {
             current_mouse_state.right = 0.0;
+        }
+        if current_mouse_state.left > 0.0 {
+            web_sys::console::log_2(&"Rust frame".into(), &demo_state.frame_idx.into());
         }
         demo_state.mouse.set(current_mouse_state);
 

@@ -799,11 +799,11 @@ window.onload = function() {
       // server, and then we wait on the returned promise to wait for the
       // wasm to be loaded.
       await init('./wasm/index_bg.wasm');
+      IS_WASM_LOADED = true;
       
       // And afterwards we can use all the functionality defined in wasm.
-      configureCanvas();
       wasm_startup();
-      IS_WASM_LOADED = true;
+      configureCanvas();
       wasm_loop(CANVAS_ID, CURRENT_FPS_LIMIT.val);
    })();
 }

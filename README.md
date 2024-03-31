@@ -7,8 +7,8 @@ Known issues:
    - project web-site
    - project trees-ruler
 - Demos:
+   - fullscreen request rejected (js error)
    - async switch of demos
-   - pass screen info (h/w)
 - No demos:
    - job Huawei
    - job Samsung

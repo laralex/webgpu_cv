@@ -159,21 +159,26 @@ pub fn wasm_loop(canvas_dom_id: &str, target_fps: u32) -> Result<(), JsValue> {
         left: 0.0,
         middle: 0.0,
         right: 0.0,
+        wheel: 0.0, /* TODO: not populated */
         viewport_position: (0, 0),
     }));
     let mut demo_state = renderer::ExternalState {
         mouse: mouse_state,
         screen_size: (1, 1),
-        delta_sec: 0.0,
+        time_delta_sec: 0.0,
+        time_sec: 0.0,
         frame_idx: *FRAME_IDX.read().unwrap(),
+        frame_rate: 1.0,
+        date: chrono::Utc::now().date_naive(), /* NOTE: set once */
+        sound_sample_rate: 44100.0, /* NOTE: set once */
     };
     configure_mousedown(&canvas, &gl, demo_state.mouse.clone())?;
     configure_mouseup(&canvas, &gl, demo_state.mouse.clone())?;
     configure_mousemove(&canvas, &gl, demo_state.mouse.clone())?;
 
     let mut demo = TriangleDemo::new(&gl, PENDING_GRAPHICS_LEVEL_UPDATE.read().unwrap().clone().unwrap_or_default());
-    //let mut time_then = js_interop::now();
-    let mut target_frametime_ms = 1000 / target_fps as i32;
+    let mut time_then_sec = js_interop::now() * 0.001;
+    let mut target_frame_time_ms = 1000 / target_fps as i32;
     *engine_cb_clone.borrow_mut() = Some(Closure::new(move || {
         // handle events
         if let Ok(reader) = PENDING_VIEWPORT_RESIZE.try_read() {
@@ -190,7 +195,7 @@ pub fn wasm_loop(canvas_dom_id: &str, target_fps: u32) -> Result<(), JsValue> {
         }
         if let Ok(reader) = PENDING_FRAMETIME_LIMIT_UPDATE.try_read() {
             if let Some(new_target_frametime) = *reader {
-                target_frametime_ms = new_target_frametime.as_millis() as i32;
+                target_frame_time_ms = new_target_frametime.as_millis() as i32;
                 std::mem::drop(reader);
                 match PENDING_FRAMETIME_LIMIT_UPDATE.try_write() {
                     Ok(mut w) => *w = None,
@@ -208,19 +213,20 @@ pub fn wasm_loop(canvas_dom_id: &str, target_fps: u32) -> Result<(), JsValue> {
                 }
             }
         }
-        //let time_now = js_interop::now();
-        //let elapsed = Duration::from_secs_f64(time_now - time_then);
-        //time_then = time_now;
-        //let elapsed_sec = elapsed.as_secs_f32();
+        
+        let time_now_sec = js_interop::now() * 0.001;
+        let elapsed_sec = time_now_sec - time_then_sec;
+        time_then_sec = time_now_sec;
 
         // populate engine step input
-        let tick = 0.1 / target_frametime_ms as f32;
-        demo_state.delta_sec = tick;
+        demo_state.time_delta_sec = (elapsed_sec as f32).max(1e-6);
+        demo_state.time_sec += demo_state.time_delta_sec;
+        demo_state.frame_rate = 1.0 / demo_state.time_delta_sec;
         demo_state.frame_idx = *FRAME_IDX.read().unwrap();
 
         // engine step
         demo.tick(&demo_state);
-        demo.render(&mut gl, tick);
+        demo.render(&mut gl, demo_state.time_delta_sec);
 
         // prepare next frame
         *FRAME_IDX.write().unwrap() += 1;
@@ -237,12 +243,12 @@ pub fn wasm_loop(canvas_dom_id: &str, target_fps: u32) -> Result<(), JsValue> {
             current_mouse_state.right = 0.0;
         }
         if current_mouse_state.left > 0.0 {
-            web_sys::console::log_2(&"Rust frame".into(), &demo_state.frame_idx.into());
+            web_sys::console::log_3(&"Rust delta/time".into(), &demo_state.frame_rate.into(), &demo_state.time_sec.into());
         }
         demo_state.mouse.set(current_mouse_state);
 
         // Schedule ourself for another requestAnimationFrame callback.
-        js_interop::set_frame_timeout(timeout_cb.borrow().as_ref().unwrap(), target_frametime_ms);
+        js_interop::set_frame_timeout(timeout_cb.borrow().as_ref().unwrap(), target_frame_time_ms);
     }));
 
     js_interop::request_animation_frame(engine_cb_clone.borrow().as_ref().unwrap());

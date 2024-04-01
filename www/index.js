@@ -12,7 +12,7 @@ const GRAPHICS_LEVELS = {
    high:   0x30,
    ultra:  0xFF,
 }
-const CURRENT_GRAPHICS_LEVEL = van.state(GRAPHICS_LEVELS.medium);
+const CURRENT_GRAPHICS_LEVEL = van.state(GRAPHICS_LEVELS.low);
 const CURRENT_FPS_LIMIT = van.state(45);
 const CURRENT_FONT_FAMILY = van.state("\"Share Tech\"");
 const DEFAULT_MAIN_CHAPTER = "chapter_career";

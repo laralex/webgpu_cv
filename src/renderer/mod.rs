@@ -17,14 +17,19 @@ pub struct MouseState {
    pub left: f32,
    pub middle: f32,
    pub right: f32,
+   pub wheel: f32,
    pub viewport_position: (i32, i32),
 }
 
 pub struct ExternalState {
    pub mouse: Rc<Cell<MouseState>>,
    pub screen_size: (u32, u32),
-   pub delta_sec: f32,
+   pub time_sec: f32,
+   pub time_delta_sec: f32,
    pub frame_idx: usize,
+   pub frame_rate: f32,
+   pub date: chrono::NaiveDate,
+   #[allow(unused)] pub sound_sample_rate: f32,
 }
 
 impl ExternalState {

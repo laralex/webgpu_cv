@@ -7,7 +7,7 @@ Known issues:
    - project web-site
    - project trees-ruler
 - Demos:
-   - fullscreen request rejected (js error)
+   - fullscreen with F11 is weird (js error in firefox)
    - async switch of demos
    - low fps when mouse leaves canvas
 - No demos:

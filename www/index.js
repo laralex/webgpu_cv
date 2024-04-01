@@ -21,6 +21,7 @@ const CURRENT_CV_PAGE = [van.state(DEFAULT_MAIN_CHAPTER), van.state(DEFAULT_SUB_
 const CV_PAGE_ORDER = {}
 const IS_TUTORIAL_SHOWN = van.state(false);
 const IS_INTRO_SHOWN = van.state(true);
+const IS_FULLSCREEN = van.state(false);
 let WASM_INSTANCE = undefined;
 
 async function loadBuildData() {
@@ -102,7 +103,37 @@ function clearCookies() {
    Util.deleteCookie('showIntro');
    Util.deleteCookie('sidebarWidth');
 }
-
+   
+   // van.derive(() => console.log('full', IS_FULLSCREEN.val));
+function setFullScreen(elem, enableFullscreen) {
+   // ## The below if statement seems to work better ## if ((document.fullScreenElement && document.fullScreenElement !== null) || (document.msfullscreenElement && document.msfullscreenElement !== null) || (!document.mozFullScreen && !document.webkitIsFullScreen)) {
+   let enableFullscreen_ = enableFullscreen === undefined || enableFullscreen === true;
+   let disableFullscreen_ = enableFullscreen === undefined || enableFullscreen === false;
+   if (enableFullscreen_ && ((document.fullScreenElement !== undefined && document.fullScreenElement === null) || (document.msFullscreenElement !== undefined && document.msFullscreenElement === null) || (document.mozFullScreen !== undefined && !document.mozFullScreen) || (document.webkitIsFullScreen !== undefined && !document.webkitIsFullScreen))) {
+         if (elem.requestFullScreen) {
+            elem.requestFullScreen();
+         } else if (elem.mozRequestFullScreen) {
+            elem.mozRequestFullScreen();
+         } else if (elem.webkitRequestFullScreen) {
+            elem.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+         } else if (elem.msRequestFullscreen) {
+            elem.msRequestFullscreen();
+         }
+         IS_FULLSCREEN.val = true;
+   } else if (disableFullscreen_) {
+         if (document.cancelFullScreen) {
+            document.cancelFullScreen();
+         } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+         } else if (document.webkitCancelFullScreen) {
+            document.webkitCancelFullScreen();
+         } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+         }
+         IS_FULLSCREEN.val = false;
+   }
+   // console.log('setFullScreen', IS_FULLSCREEN.val, enableFullscreen_, disableFullscreen_);
+}
 
 function FullscreenButton({extraClasses = "", isInteractive = true, height = "80"}) {
    return FullscreenButtonImpl(document.getElementById("canvas-wrapper"),
@@ -110,69 +141,6 @@ function FullscreenButton({extraClasses = "", isInteractive = true, height = "80
 }
 
 function FullscreenButtonImpl(fullscreenElement, extraClasses, isInteractive, height) {
-   const IS_FULLSCREEN = van.state(false);
-   const checkFullscreen = function(event) {
-      const dw = (window.outerWidth-screen.width);
-      const dh = (window.outerHeight-screen.height);
-      const enable = dw == 0 && dh == 0;
-      console.log('checkFullscreen', dw, dh);
-      setFullScreen(fullscreenElement, enable);
-   };
-   document.body.onfullscreenchange = (e) => {
-      setFullScreen(fullscreenElement, !IS_FULLSCREEN.val)
-   };
-   window.addEventListener("keyup", function(event){
-      var code = event.keyCode || event.which || event.code;
-      if(code == 122){
-         console.log('F11 keyup');
-         setTimeout(function(){checkFullscreen();},250);
-         event.preventDefault();
-      }
-      else if (code == 27) {
-         console.log('ESC keyup');
-         if (IS_FULLSCREEN.val) {
-            event.preventDefault();
-         }
-      }
-   });
-   window.addEventListener("resize", function(){
-      if (IS_FULLSCREEN.val) {
-         console.log('RESIZE checkFullscreen');
-         setTimeout(function(){checkFullscreen();},250);
-      }
-   })
-   // van.derive(() => console.log('full', IS_FULLSCREEN.val));
-   function setFullScreen(elem, enableFullscreen) {
-      // ## The below if statement seems to work better ## if ((document.fullScreenElement && document.fullScreenElement !== null) || (document.msfullscreenElement && document.msfullscreenElement !== null) || (!document.mozFullScreen && !document.webkitIsFullScreen)) {
-      let enableFullscreen_ = enableFullscreen === undefined || enableFullscreen === true;
-      let disableFullscreen_ = enableFullscreen === undefined || enableFullscreen === false;
-      if (enableFullscreen_ && ((document.fullScreenElement !== undefined && document.fullScreenElement === null) || (document.msFullscreenElement !== undefined && document.msFullscreenElement === null) || (document.mozFullScreen !== undefined && !document.mozFullScreen) || (document.webkitIsFullScreen !== undefined && !document.webkitIsFullScreen))) {
-          if (elem.requestFullScreen) {
-              elem.requestFullScreen();
-          } else if (elem.mozRequestFullScreen) {
-              elem.mozRequestFullScreen();
-          } else if (elem.webkitRequestFullScreen) {
-              elem.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
-          } else if (elem.msRequestFullscreen) {
-              elem.msRequestFullscreen();
-          }
-          IS_FULLSCREEN.val = true;
-      } else if (disableFullscreen_) {
-          if (document.cancelFullScreen) {
-              document.cancelFullScreen();
-          } else if (document.mozCancelFullScreen) {
-              document.mozCancelFullScreen();
-          } else if (document.webkitCancelFullScreen) {
-              document.webkitCancelFullScreen();
-          } else if (document.msExitFullscreen) {
-              document.msExitFullscreen();
-          }
-          IS_FULLSCREEN.val = false;
-      }
-      console.log('setFullScreen', IS_FULLSCREEN.val, enableFullscreen_, disableFullscreen_);
-  }
-
-
    return () => 
       div({
          class: () => extraClasses + (isInteractive ? " btn " : "") + " canvas-button",
@@ -599,6 +567,39 @@ function configureFromFont(fontFamily = null, currentLanguage = null) {
    document.documentElement.style.setProperty('--size-normalsize', fontData.relativeBasis);
 }
 
+function configureFullscreenSwitch() {
+   const checkFullscreen = function(event) {
+      const dw = (window.outerWidth-screen.width);
+      const dh = (window.outerHeight-screen.height);
+      const enable = dw == 0 && dh == 0;
+      // console.log('checkFullscreen', dw, dh);
+      setFullScreen(fullscreenElement, enable);
+   };
+   document.body.onfullscreenchange = (e) => {
+      setFullScreen(fullscreenElement, !IS_FULLSCREEN.val)
+   };
+   window.addEventListener("keyup", function(event){
+      var code = event.keyCode || event.which || event.code;
+      if(code == 122){
+         // console.log('F11 keyup');
+         setTimeout(function(){checkFullscreen();},250);
+         event.preventDefault();
+      }
+      else if (code == 27) {
+         // console.log('ESC keyup');
+         if (IS_FULLSCREEN.val) {
+            event.preventDefault();
+         }
+      }
+   });
+   window.addEventListener("resize", function(){
+      if (IS_FULLSCREEN.val) {
+         // console.log('RESIZE checkFullscreen');
+         setTimeout(function(){checkFullscreen();},250);
+      }
+   })
+}
+
 function addParallax({element, sensitivityXY, parallaxes, centers}) {
    document.addEventListener("mousemove", parallax);
    function parallax(e) {
@@ -724,6 +725,7 @@ window.onload = function() {
    });
    configureFromFont(CURRENT_FONT_FAMILY.val, CURRENT_LANGUAGE.val); // other elements' relative sizes depend on this configuration
    configureResizingBorder();
+   configureFullscreenSwitch();
    van.add(document.getElementById("canvas-wrapper"), FullscreenButton({extraClasses: "fullscreen-button", height: "80"}));
    van.add(document.getElementById("canvas-wrapper"), HelpButton({height: "80"}));
    van.add(document.getElementById("controls_column"), LanguagePicker(CURRENT_LANGUAGE, CURRENT_FONT_FAMILY, /*vertical*/ false));
@@ -749,6 +751,7 @@ window.onload = function() {
          IS_TUTORIAL_SHOWN.val = false;
       }}));
    });
+   
    if (IS_INTRO_SHOWN.val == true) {
       console.log('@@@', IS_INTRO_SHOWN.val);
       van.add(document.body, IntroPopup({onclose: () => {

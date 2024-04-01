@@ -2,6 +2,8 @@ run-name: "verify_deploy: ${{ github.ref_name }} # ${{ github.sha }}"
 on:
    workflow_dispatch:
    workflow_call:
+   schedule:
+      - cron: "0 5,18 * * *"
 
 defaults:
    run:
@@ -21,7 +23,21 @@ jobs:
       - name: verify-optional
         continue-on-error: true
         run: |
-            test -L assets/__softlink_cv_rus.pdf
-            readlink -e assets/__softlink_cv_rus.pdf
-            test -L assets/__softlink_cv_eng.pdf
-            readlink -e assets/__softlink_cv_eng.pdf
+         test -L assets/__softlink_cv_eng.pdf
+         test -L assets/__softlink_cv_rus.pdf
+         readlink -e assets/__softlink_cv_eng.pdf
+         readlink -e assets/__softlink_cv_rus.pdf
+   verify-server:
+      runs-on: deployer
+      steps:
+      - name: check_web_cv
+        run: |
+         curl -sSf http://alexlarionov.online
+         curl -sSf http://alexlarionov.online/index.js
+         curl -sSf http://alexlarionov.online/assets/__softlink_cv_eng.pdf
+         curl -sSf http://alexlarionov.online/assets/__softlink_cv_rus.pdf
+      - name: check_trees_ruler
+        run: |
+         curl -sSf http://alexlarionov.online/trees_ruler
+         curl -sSf http://alexlarionov.online/trees_ruler/eng
+         curl -sSf http://alexlarionov.online/trees_ruler/rus

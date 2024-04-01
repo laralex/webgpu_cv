@@ -32,12 +32,12 @@ jobs:
       steps:
       - name: check_web_cv
         run: |
-         curl -sSf http://alexlarionov.online
-         curl -sSf http://alexlarionov.online/index.js
-         curl -sSf http://alexlarionov.online/assets/__softlink_cv_eng.pdf
-         curl -sSf http://alexlarionov.online/assets/__softlink_cv_rus.pdf
+         curl -sSf ${{ secrets.WEB_SERVER }}
+         curl -sSf ${{ secrets.WEB_SERVER }}/index.js
+         curl -sSf ${{ secrets.WEB_SERVER }}/assets/__softlink_cv_eng.pdf
+         curl -sSf ${{ secrets.WEB_SERVER }}/assets/__softlink_cv_rus.pdf
       - name: check_trees_ruler
         run: |
-         curl -sSf http://alexlarionov.online/trees_ruler
-         curl -sSf http://alexlarionov.online/trees_ruler/eng
-         curl -sSf http://alexlarionov.online/trees_ruler/rus
+         curl -sSf ${{ secrets.WEB_SERVER }}/trees_ruler
+         curl -sSf ${{ secrets.WEB_SERVER }}/trees_ruler/eng
+         curl -sSf ${{ secrets.WEB_SERVER }}/trees_ruler/rus

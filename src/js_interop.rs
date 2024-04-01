@@ -9,12 +9,12 @@ macro_rules! js_log {
 }
 pub(crate) use js_log;
 
-pub fn now() -> f64 {
+pub fn now_sec() -> f64 {
    web_sys::window()
        .expect("should have a Window")
        .performance()
        .expect("should have a Performance")
-       .now()
+       .now() * 0.001
 }
 
 pub fn window() -> web_sys::Window {

@@ -77,6 +77,29 @@ impl Default for ExternalState {
     }
 }
 
+impl ExternalState {
+   pub fn begin_frame(&mut self, elapsed_sec: f32) {
+      self.time_delta_sec = elapsed_sec.max(1e-6);
+      self.time_sec += self.time_delta_sec;
+      self.frame_rate = 1.0 / self.time_delta_sec;
+   }
+
+   pub fn end_frame(&mut self) {
+      let mut current_mouse_state = self.mouse.get();
+      if current_mouse_state.left < 0.0 {
+         current_mouse_state.left = 0.0;
+      }
+      if current_mouse_state.middle < 0.0 {
+         current_mouse_state.middle = 0.0;
+      }
+      if current_mouse_state.right < 0.0 {
+         current_mouse_state.right = 0.0;
+      }
+      self.mouse.set(current_mouse_state);
+      self.frame_idx += 1;
+   }
+}
+
 pub trait IDemo {
    fn tick(&mut self, state: &ExternalState);
    fn render(&mut self, gl: &mut GL, delta_sec: f32);

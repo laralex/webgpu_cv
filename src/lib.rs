@@ -56,15 +56,8 @@ pub fn wasm_set_fps_limit(fps_limit: u64) {
 }
 
 #[wasm_bindgen]
-pub fn wasm_set_graphics_level(level_code: u64) {
-    *PENDING_GRAPHICS_LEVEL_UPDATE.write().unwrap() = Some(match level_code {
-        0x00 => GraphicsLevel::Minimal,
-        0x10 => GraphicsLevel::Low,
-        0x20 => GraphicsLevel::Medium,
-        0x30 => GraphicsLevel::High,
-        0xFF => GraphicsLevel::Ultra,
-        _ => Default::default(),
-    });
+pub fn wasm_set_graphics_level(level_code: u32) {
+    *PENDING_GRAPHICS_LEVEL_UPDATE.write().unwrap() = Some(GraphicsLevel::from(level_code));
 }
 
 #[wasm_bindgen]
@@ -138,8 +131,21 @@ fn configure_mouseup(canvas: &web_sys::HtmlCanvasElement, gl: &WebGl2RenderingCo
     Ok(())
 }
 
+fn poll_pending_event<T, F: FnMut(&T)>(event: &RwLock<Option<T>>, mut handler: F) {
+    if let Ok(reader) = event.try_read() {
+        if let Some(v) = reader.as_ref() {
+            handler(&v);
+            std::mem::drop(reader);
+            match event.try_write() {
+                Ok(mut w) => *w = None,
+                _ => web_sys::console::log_1(&"Failed to reset RwLock in wasm".into()),
+            }
+        }
+    }
+}
+
 #[wasm_bindgen]
-pub fn wasm_loop(canvas_dom_id: &str, target_fps: u32) -> Result<(), JsValue> {
+pub fn wasm_loop(canvas_dom_id: &str, target_fps: u32, graphics_level_code: u32) -> Result<(), JsValue> {
     // callbacks wired with JS canvas
     // engine callback will schedule timeout callback (to limit fps)
     // timeout callback will schedule engine callback (to render the next frame)
@@ -155,64 +161,31 @@ pub fn wasm_loop(canvas_dom_id: &str, target_fps: u32) -> Result<(), JsValue> {
 
     let canvas = webgl::canvas(canvas_dom_id)?;
     let mut gl = webgl::init_webgl_context(&canvas).expect("Failed to get WebGL2 context");
-    let mouse_state = Rc::new(Cell::new(renderer::MouseState {
-        left: 0.0,
-        middle: 0.0,
-        right: 0.0,
-        wheel: 0.0, /* TODO: not populated */
-        viewport_position: (0, 0),
-    }));
-    let mut demo_state = renderer::ExternalState {
-        mouse: mouse_state,
-        screen_size: (1, 1),
-        time_delta_sec: 0.0,
-        time_sec: 0.0,
-        frame_idx: *FRAME_IDX.read().unwrap(),
-        frame_rate: 1.0,
-        date: chrono::Utc::now().date_naive(), /* NOTE: set once */
-        sound_sample_rate: 44100.0, /* NOTE: set once */
-    };
+    
+    let mut demo_state = renderer::ExternalState::default();
+    demo_state.frame_idx = *FRAME_IDX.read().unwrap();
+    demo_state.date = chrono::Utc::now().date_naive(); /* NOTE: set once */
+    demo_state.sound_sample_rate = 44100.0; /* NOTE: set once */
     configure_mousedown(&canvas, &gl, demo_state.mouse.clone())?;
     configure_mouseup(&canvas, &gl, demo_state.mouse.clone())?;
     configure_mousemove(&canvas, &gl, demo_state.mouse.clone())?;
 
-    let mut demo = TriangleDemo::new(&gl, PENDING_GRAPHICS_LEVEL_UPDATE.read().unwrap().clone().unwrap_or_default());
+    let mut demo = TriangleDemo::new(&gl, GraphicsLevel::from(graphics_level_code));
     let mut time_then_sec = js_interop::now() * 0.001;
     let mut target_frame_time_ms = 1000 / target_fps as i32;
     *engine_cb_clone.borrow_mut() = Some(Closure::new(move || {
         // handle events
-        if let Ok(reader) = PENDING_VIEWPORT_RESIZE.try_read() {
-            if let Some((new_width, new_height)) = *reader {
-                web_sys::console::log_3(&"Rust resize".into(), &new_width.into(), &new_height.into());
-                gl.viewport(0, 0, new_width as i32, new_height as i32);
-                demo_state.screen_size = (new_width, new_height);
-                std::mem::drop(reader);
-                match PENDING_VIEWPORT_RESIZE.try_write() {
-                    Ok(mut w) => *w = None,
-                    _ => web_sys::console::log_1(&"Failed to reset RwLock in wasm: PENDING_VIEWPORT_RESIZE".into()),
-                }
-            }
-        }
-        if let Ok(reader) = PENDING_FRAMETIME_LIMIT_UPDATE.try_read() {
-            if let Some(new_target_frametime) = *reader {
-                target_frame_time_ms = new_target_frametime.as_millis() as i32;
-                std::mem::drop(reader);
-                match PENDING_FRAMETIME_LIMIT_UPDATE.try_write() {
-                    Ok(mut w) => *w = None,
-                    _ => web_sys::console::log_1(&"Failed to reset RwLock in wasm: PENDING_FRAMETIME_LIMIT_UPDATE".into()),
-                }
-            }
-        }
-        if let Ok(reader) = PENDING_GRAPHICS_LEVEL_UPDATE.try_read() {
-            if let Some(new_graphics_level) = *reader {
-                demo.set_graphics_level(new_graphics_level);
-                std::mem::drop(reader);
-                match PENDING_GRAPHICS_LEVEL_UPDATE.try_write() {
-                    Ok(mut w) => *w = None,
-                    _ => web_sys::console::log_1(&"Failed to reset RwLock in wasm: PENDING_GRAPHICS_LEVEL_UPDATE".into()),
-                }
-            }
-        }
+        poll_pending_event(&PENDING_VIEWPORT_RESIZE, |&(new_width, new_height)| {
+            web_sys::console::log_3(&"Rust resize".into(), &new_width.into(), &new_height.into());
+            gl.viewport(0, 0, new_width as i32, new_height as i32);
+            demo_state.screen_size = (new_width, new_height);
+        });
+        poll_pending_event(&PENDING_GRAPHICS_LEVEL_UPDATE, |&new_graphics_level| {
+            demo.set_graphics_level(new_graphics_level);
+        });
+        poll_pending_event(&PENDING_FRAMETIME_LIMIT_UPDATE, |&new_target_frametime| {
+            target_frame_time_ms = new_target_frametime.as_millis() as i32;
+        });
         
         let time_now_sec = js_interop::now() * 0.001;
         let elapsed_sec = time_now_sec - time_then_sec;

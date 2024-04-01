@@ -814,6 +814,6 @@ window.onload = function() {
       // And afterwards we can use all the functionality defined in wasm.
       wasm_startup();
       configureCanvas();
-      wasm_loop(CANVAS_ID, CURRENT_FPS_LIMIT.val);
+      wasm_loop(CANVAS_ID, CURRENT_FPS_LIMIT.val, CURRENT_GRAPHICS_LEVEL.val);
    })();
 }

@@ -12,6 +12,20 @@ pub enum GraphicsLevel {
    Ultra = 0xFF,
 }
 
+impl From<u32> for GraphicsLevel {
+    fn from(level_code: u32) -> Self {
+      match level_code {
+         0x00 => GraphicsLevel::Minimal,
+         0x10 => GraphicsLevel::Low,
+         0x20 => GraphicsLevel::Medium,
+         0x30 => GraphicsLevel::High,
+         0xFF => GraphicsLevel::Ultra,
+         _ => Default::default(),
+      }
+    }
+}
+
+
 #[derive(Clone, Copy)]
 pub struct MouseState {
    pub left: f32,
@@ -41,6 +55,28 @@ impl ExternalState {
       )
    }
 }
+
+impl Default for ExternalState {
+    fn default() -> Self {
+        Self { 
+         mouse: Rc::new(Cell::new(MouseState {
+            left: Default::default(),
+            middle: Default::default(),
+            right: Default::default(),
+            wheel: Default::default(), /* TODO: not populated */
+            viewport_position: Default::default(),
+         })),
+         screen_size: (1, 1),
+         time_delta_sec: Default::default(),
+         time_sec: Default::default(),
+         frame_idx: Default::default(),
+         frame_rate: 1.0,
+         date: Default::default(),
+         sound_sample_rate: Default::default(),
+       }
+    }
+}
+
 pub trait IDemo {
    fn tick(&mut self, state: &ExternalState);
    fn render(&mut self, gl: &mut GL, delta_sec: f32);

@@ -9,6 +9,7 @@ Known issues:
 - Demos:
    - fullscreen request rejected (js error)
    - async switch of demos
+   - low fps when mouse leaves canvas
 - No demos:
    - job Huawei
    - job Samsung

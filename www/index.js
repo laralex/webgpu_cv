@@ -21,7 +21,7 @@ const CURRENT_CV_PAGE = [van.state(DEFAULT_MAIN_CHAPTER), van.state(DEFAULT_SUB_
 const CV_PAGE_ORDER = {}
 const IS_TUTORIAL_SHOWN = van.state(false);
 const IS_INTRO_SHOWN = van.state(true);
-let IS_WASM_LOADED = false;
+let WASM_INSTANCE = undefined;
 
 async function loadBuildData() {
    const response = await fetch('./build-data.json');
@@ -46,7 +46,8 @@ export const BUILD_DATA = {
 // };
 
 // import mywasm from 'my-wasm';
-import init, { wasm_loop, wasm_resize, wasm_startup, wasm_set_fps_limit, wasm_set_graphics_level } from '/wasm/index.js';
+// import init, { wasm_loop, wasm_resize, wasm_startup, wasm_set_fps_limit, wasm_set_graphics_level } from '/wasm/index.js';
+import init, { WasmInterface } from '/wasm/index.js';
 import { UI_STRINGS, CURRENT_LANGUAGE, localizeString, localizeUi, localizeUiPostprocess } from '/modules/localization.js';
 import { Util } from '/modules/util.js';
 import { CvContent } from '/modules/cv.js';
@@ -232,9 +233,9 @@ function FpsLimitPicker(currentLimit) {
    const labelAfter = span(localizeUi('fps_limit'));
    van.derive(() => {
       var newLimit = currentLimit.val;
-      if (IS_WASM_LOADED) {
+      if (WASM_INSTANCE) {
          console.log("new fps", newLimit);
-         wasm_set_fps_limit(newLimit);
+         WASM_INSTANCE.wasm_set_fps_limit(newLimit);
       }
    })
    return () => div(
@@ -305,8 +306,8 @@ function GraphicsLevelPicker(currentGraphicsLevel, isVertical) {
       option({ value: level, selected: () => level == currentGraphicsLevel.val},
          () => localizeString(meta.labelId)().text + " " +  meta.emoji));
    van.derive(() => {
-      if (IS_WASM_LOADED) {
-         wasm_set_graphics_level(currentGraphicsLevel.val)
+      if (WASM_INSTANCE) {
+         WASM_INSTANCE.wasm_set_graphics_level(currentGraphicsLevel.val)
       }
       console.log("Set graphics_level="+currentGraphicsLevel.val)
    });
@@ -625,8 +626,8 @@ function configureCanvas() {
       canvas.width = canvas.clientWidth;
       canvas.height = window.innerHeight;
       console.log(canvas.width, canvas.height);
-      if (IS_WASM_LOADED) {
-         wasm_resize(gl, canvas.width, canvas.height);
+      if (WASM_INSTANCE) {
+         WASM_INSTANCE.wasm_resize(gl, canvas.width, canvas.height);
       }
    }
    document.addEventListener("visibilitychange", resizeCanvas, false);
@@ -809,11 +810,12 @@ window.onload = function() {
       // server, and then we wait on the returned promise to wait for the
       // wasm to be loaded.
       await init('./wasm/index_bg.wasm');
-      IS_WASM_LOADED = true;
-      
+
       // And afterwards we can use all the functionality defined in wasm.
-      wasm_startup();
+      WASM_INSTANCE = new WasmInterface(CANVAS_ID);
       configureCanvas();
-      wasm_loop(CANVAS_ID, CURRENT_FPS_LIMIT.val, CURRENT_GRAPHICS_LEVEL.val);
+      WASM_INSTANCE.wasm_set_fps_limit(CURRENT_FPS_LIMIT.val);
+      WASM_INSTANCE.wasm_set_graphics_level(CURRENT_GRAPHICS_LEVEL.val);
+      WASM_INSTANCE.wasm_loop();
    })();
 }

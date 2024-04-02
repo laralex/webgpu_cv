@@ -31,4 +31,5 @@ jobs:
       runs-on: ${{ inputs.deploy-runs-on != '' && inputs.deploy-runs-on || 'deployee' }}
   verify:
     needs: [deploy]
+    secrets: inherit
     uses: ./.github/workflows/verify_deploy.yaml

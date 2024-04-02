@@ -48,7 +48,7 @@ export const BUILD_DATA = {
 
 // import mywasm from 'my-wasm';
 // import init, { wasm_loop, wasm_resize, wasm_startup, wasm_set_fps_limit, wasm_set_graphics_level } from '/wasm/index.js';
-import init, { WasmInterface } from '/wasm/index.js';
+import init, { WasmInterface, DemoId } from '/wasm/index.js';
 import { UI_STRINGS, CURRENT_LANGUAGE, localizeString, localizeUi, localizeUiPostprocess } from '/modules/localization.js';
 import { Util } from '/modules/util.js';
 import { CvContent } from '/modules/cv.js';
@@ -663,7 +663,7 @@ function getScrollCallback({chapterBorderStickiness, chapterAfterBorderStickines
             borderStickinessLeft = chapterBorderStickiness;
             if (isScrollable && afterBorderStickinessLeft > 0) {
                --afterBorderStickinessLeft;
-               console.log("afterStickiness", afterBorderStickinessLeft);
+               // console.log("afterStickiness", afterBorderStickinessLeft);
                event.preventDefault();
             } else {
                curTextDiv.scrollTop += scrollSpeed;
@@ -671,7 +671,7 @@ function getScrollCallback({chapterBorderStickiness, chapterAfterBorderStickines
          }
       }
 
-      console.log("borderStickiness", borderStickinessLeft);
+      // console.log("borderStickiness", borderStickinessLeft);
       if (borderStickinessLeft > 0) {
          return;
       }
@@ -723,6 +723,23 @@ window.onload = function() {
       document.documentElement.style.setProperty('--font-families', overrideFamilies);
       configureFromFont(CURRENT_FONT_FAMILY.val, CURRENT_LANGUAGE.val);
    });
+   van.derive(() => {
+      const remap = {
+         "career_huawei": DemoId.CareerHuawei,
+         "career_samsung": DemoId.CareerSamsung,
+         "publications_wacv_2024": DemoId.PublicationWacv2024,
+         "project_this_cv": DemoId.ProjectThisCv,
+         "project_unity_4X_strategy_volunteer": DemoId.Triangle,
+         "project_image_processing_tool": DemoId.ProjectTreesRuler,
+         "education_master": DemoId.EducationMasters,
+         "education_bachelor": DemoId.EducationBachelor,
+      }
+      const demoId = remap[CURRENT_CV_PAGE[1].val];
+      if (WASM_INSTANCE) {
+         console.log("Switch demo", demoId);
+         WASM_INSTANCE.wasm_switch_demo(demoId);
+      }
+   })
    configureFromFont(CURRENT_FONT_FAMILY.val, CURRENT_LANGUAGE.val); // other elements' relative sizes depend on this configuration
    configureResizingBorder();
    configureFullscreenSwitch();

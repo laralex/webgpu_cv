@@ -4,7 +4,7 @@ mod webgl;
 mod gl_utils;
 mod renderer;
 
-use renderer::{GraphicsLevel, MouseState};
+use renderer::{GraphicsLevel, MouseState, ExternalState};
 use renderer::{triangle::TriangleDemo, IDemo};
 
 use wasm_bindgen::prelude::*;
@@ -30,10 +30,24 @@ use std::time::{Duration, Instant};
 
 #[wasm_bindgen]
 pub struct WasmInterface {
-    demo_state: Rc<RefCell<renderer::ExternalState>>,
+    demo_state: Rc<RefCell<ExternalState>>,
     pending_graphics_level: Rc<RefCell<Option<GraphicsLevel>>>,
+    pending_demo_id: Rc<RefCell<Option<DemoId>>>,
     canvas: web_sys::HtmlCanvasElement,
     gl: web_sys::WebGl2RenderingContext,
+}
+
+#[wasm_bindgen]
+#[derive(Copy, Clone)]
+pub enum DemoId {
+    Triangle,
+    CareerHuawei,
+    CareerSamsung,
+    PublicationWacv2024,
+    ProjectTreesRuler,
+    ProjectThisCv,
+    EducationMasters,
+    EducationBachelor,
 }
 
 #[wasm_bindgen]
@@ -47,10 +61,11 @@ impl WasmInterface {
 
         let canvas = webgl::canvas(canvas_dom_id)?;
         let gl = webgl::init_webgl_context(&canvas).expect("Failed to get WebGL2 context");
+        let demo_state = Rc::new(RefCell::new(renderer::ExternalState::default()));
         Ok(Self {
-            demo_state: Default::default(),
+            demo_state,
             pending_graphics_level: Rc::new(RefCell::new(None)),
-            // demo: Box::new(demo),
+            pending_demo_id: Rc::new(RefCell::new(None)),
             canvas,
             gl,
         })
@@ -74,9 +89,9 @@ impl WasmInterface {
     }
 
     #[wasm_bindgen]
-    pub fn wasm_set_fps_limit(&mut self, fps_limit: u64) {
+    pub fn wasm_set_fps_limit(&mut self, fps_limit: i32) {
         if let Ok(mut state) = self.demo_state.try_borrow_mut() {
-            state.time_delta_limit_ms = 1_000 / fps_limit as i32;
+            state.time_delta_limit_ms = 1_000 / fps_limit;
         }
     }
 
@@ -89,8 +104,9 @@ impl WasmInterface {
     }
 
     #[wasm_bindgen]
-    pub async fn wasm_switch_demo(progress_callback: &js_sys::Function) {
-
+    // , progress_callback: &js_sys::Function
+    pub async fn wasm_switch_demo(&mut self, demo_id: DemoId) {
+        *self.pending_demo_id.borrow_mut() = Some(demo_id);
     }
 
     #[wasm_bindgen]
@@ -114,16 +130,20 @@ impl WasmInterface {
         let mut gl = self.gl.clone();
         let demo_state = self.demo_state.clone();
         let mut time_then_sec = js_interop::now_sec();
-        let mut demo = Box::new(TriangleDemo::new(&gl, self.demo_state.borrow().graphics_level));
+        let mut demo: Box<dyn IDemo> = Box::new(TriangleDemo::new(&gl, self.demo_state.borrow().graphics_level));
         let pending_graphics_level = self.pending_graphics_level.clone();
+        let pending_demo_id = self.pending_demo_id.clone();
         // let frametime_limit_ms = demo_state.borrow().deref().d;
         // self.demo.set_graphics_level(let Ok(graphics_level) = elf.graphics_level)try_;.borrow( {}
         *engine_cb_clone.borrow_mut() = Some(Closure::new(move || {
-            if let Ok(graphics_level) = pending_graphics_level.try_borrow() {
-                if let Some(graphics_level) = *graphics_level {
-                    demo.set_graphics_level(graphics_level.to_owned());
-                }
-            }
+            poll_pending_event(&pending_graphics_level, |&graphics_level| {
+                demo.set_graphics_level(graphics_level.to_owned());
+                demo_state.borrow_mut().graphics_level = graphics_level;
+            });
+            poll_pending_event(&pending_demo_id, |&demo_id| {
+                demo = renderer::make_demo(demo_id, &gl, demo_state.borrow().graphics_level);
+            });
+
             let time_now_sec = js_interop::now_sec();
             let elapsed_sec = time_now_sec - time_then_sec;
             time_then_sec = time_now_sec;
@@ -192,15 +212,12 @@ fn configure_mouseup(mouse_state: Rc<Cell<renderer::MouseState>>) -> Result<(), 
     Ok(())
 }
 
-fn poll_pending_event<T, F: FnMut(&T)>(event: &RwLock<Option<T>>, mut handler: F) {
-    if let Ok(reader) = event.try_read() {
+fn poll_pending_event<T, F: FnMut(&T)>(event: &Rc<RefCell<Option<T>>>, mut handler: F) {
+    if let Ok(reader) = event.try_borrow() {
         if let Some(v) = reader.as_ref() {
             handler(&v);
             std::mem::drop(reader);
-            match event.try_write() {
-                Ok(mut w) => *w = None,
-                _ => web_sys::console::log_1(&"Failed to reset RwLock in wasm".into()),
-            }
+            *event.borrow_mut() = None;
         }
     }
 }

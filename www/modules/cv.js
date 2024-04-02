@@ -233,8 +233,6 @@ function CvCareer(currentCvPage, chapterConnections, chapterId, chapterArgs) {
 function CvPublications(currentCvPage, chapterConnections, chapterId, chapterArgs) {
    const data = [
       { id: "publications_wacv_2024", color: SUBCHAPTER_COLOR[0], borderColor: SUBCHAPTER_BORDER_COLOR[0], constructor: CvSamsung },
-      { id: "russian"               , color: SUBCHAPTER_COLOR[1], borderColor: SUBCHAPTER_BORDER_COLOR[1], constructor: CvChapter },
-      { id: "english"               , color: SUBCHAPTER_COLOR[2], borderColor: SUBCHAPTER_BORDER_COLOR[2], constructor: CvChapter },
       // #71BC8E #428D61 #428D61
    ];
    populateConnections(chapterConnections, chapterId, data.map(x => x.id));
@@ -260,9 +258,9 @@ function CvPublications(currentCvPage, chapterConnections, chapterId, chapterArg
 
 function CvProjects(currentCvPage, chapterConnections, chapterId, chapterArgs) {
    const data = [
-      { id: "this_cv"                     , color: SUBCHAPTER_COLOR[0], borderColor: SUBCHAPTER_BORDER_COLOR[0], constructor: CvSamsung },
-      { id: "unity_4X_strategy_volunteer" , color: SUBCHAPTER_COLOR[1], borderColor: SUBCHAPTER_BORDER_COLOR[1], constructor: CvChapter },
-      { id: "image_processing_tool"       , color: SUBCHAPTER_COLOR[2], borderColor: SUBCHAPTER_BORDER_COLOR[2], constructor: CvChapter },
+      { id: "project_this_cv"                     , color: SUBCHAPTER_COLOR[0], borderColor: SUBCHAPTER_BORDER_COLOR[0], constructor: CvSamsung },
+      { id: "project_unity_4X_strategy_volunteer" , color: SUBCHAPTER_COLOR[1], borderColor: SUBCHAPTER_BORDER_COLOR[1], constructor: CvChapter },
+      { id: "project_image_processing_tool"       , color: SUBCHAPTER_COLOR[2], borderColor: SUBCHAPTER_BORDER_COLOR[2], constructor: CvChapter },
       // #FFB993
    ];
    populateConnections(chapterConnections, chapterId, data.map(x => x.id));

@@ -27,7 +27,7 @@ impl TriangleDemo {
          .unwrap();
 
       gl_utils::delete_program_shaders(gl, &main_program);
-
+      web_sys::console::log_1(&"Rust loaded TriangleDemo".into());
       let mut me = Self {
          main_program,
          clear_color: [0.0; 4],
@@ -58,8 +58,11 @@ impl IDemo for TriangleDemo {
 
    fn set_graphics_level(&mut self, level: GraphicsLevel) {
       self.num_rendered_vertices = match level {
-         GraphicsLevel::Minimal | GraphicsLevel::Low => 3,
-         _ => 6,
+         GraphicsLevel::Minimal => 0,
+         GraphicsLevel::Low => 3,
+         GraphicsLevel::Medium => 6,
+         GraphicsLevel::High => 9,
+         GraphicsLevel::Ultra => 12,
       };
    }
 

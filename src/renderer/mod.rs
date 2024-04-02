@@ -3,6 +3,10 @@ pub mod triangle;
 use std::{cell::Cell, rc::Rc};
 use web_sys::WebGl2RenderingContext as GL;
 
+use crate::DemoId;
+
+use self::triangle::TriangleDemo;
+
 #[derive(Default, Clone, Copy)]
 pub enum GraphicsLevel {
    Minimal = 0x00,
@@ -108,4 +112,27 @@ pub trait IDemo {
    fn tick(&mut self, state: &ExternalState);
    fn render(&mut self, gl: &mut GL, delta_sec: f32);
    fn set_graphics_level(&mut self, level: GraphicsLevel);
+}
+
+
+pub fn make_demo(id: DemoId, gl: &GL, graphics_level: GraphicsLevel) -> Box<dyn IDemo> {
+   Box::new(match id {
+      DemoId::Triangle =>
+         TriangleDemo::new(gl, graphics_level),
+      DemoId::CareerHuawei =>
+         TriangleDemo::new(gl, GraphicsLevel::Low),
+      DemoId::CareerSamsung =>
+         TriangleDemo::new(gl, GraphicsLevel::Medium),
+      DemoId::PublicationWacv2024 =>
+         TriangleDemo::new(gl, GraphicsLevel::High),
+      DemoId::ProjectTreesRuler =>
+         TriangleDemo::new(gl, GraphicsLevel::Ultra),
+      DemoId::ProjectThisCv =>
+         TriangleDemo::new(gl, GraphicsLevel::Low),
+      DemoId::EducationMasters =>
+         TriangleDemo::new(gl, GraphicsLevel::Medium),
+      DemoId::EducationBachelor =>
+         TriangleDemo::new(gl, GraphicsLevel::High),
+      _ => TriangleDemo::new(gl, GraphicsLevel::Minimal),
+   })
 }

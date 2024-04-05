@@ -1,6 +1,9 @@
+pub mod first;
+pub use first::StubDemo;
 pub mod triangle;
 
-use std::{cell::Cell, rc::Rc};
+use std::{cell::Cell, pin::Pin, rc::Rc, sync::Mutex};
+use futures::future::BoxFuture;
 use web_sys::WebGl2RenderingContext as GL;
 
 use crate::DemoId;
@@ -110,29 +113,45 @@ impl ExternalState {
 
 pub trait IDemo {
    fn tick(&mut self, state: &ExternalState);
-   fn render(&mut self, gl: &mut GL, delta_sec: f32);
    fn set_graphics_level(&mut self, level: GraphicsLevel);
+   fn render(&mut self, gl: &GL, delta_sec: f32);
 }
 
+pub trait SimpleFuture {
+   type Output;
+   type Context;
+   // std::future::Future uses std::task::Context<'_>
+   // we use a mock argument        Self::Context
+   fn poll(self: std::pin::Pin<&mut Self>, cx: &mut Self::Context) -> std::task::Poll<Self::Output>;
+}
 
-pub fn make_demo(id: DemoId, gl: &GL, graphics_level: GraphicsLevel) -> Box<dyn IDemo> {
-   Box::new(match id {
+impl<T,C> SimpleFuture for Box<dyn SimpleFuture<Output=T, Context=C>> {
+    type Output=T;
+    type Context=C;
+
+    fn poll(mut self: std::pin::Pin<&mut Self>, cx: &mut Self::Context) -> std::task::Poll<Self::Output> {
+        self.as_mut().poll(cx)
+    }
+}
+
+pub fn start_loading_demo<'a>(id: DemoId, gl: Rc<GL>, graphics_level: GraphicsLevel) -> Pin<Box<dyn SimpleFuture<Output=Box<dyn IDemo>, Context=()>>> {
+   Box::pin(match id {
       DemoId::Triangle =>
-         TriangleDemo::new(gl, graphics_level),
+         TriangleDemo::start_loading(gl, graphics_level),
       DemoId::CareerHuawei =>
-         TriangleDemo::new(gl, GraphicsLevel::Low),
+         TriangleDemo::start_loading(gl, GraphicsLevel::Low),
       DemoId::CareerSamsung =>
-         TriangleDemo::new(gl, GraphicsLevel::Medium),
+         TriangleDemo::start_loading(gl, GraphicsLevel::Medium),
       DemoId::PublicationWacv2024 =>
-         TriangleDemo::new(gl, GraphicsLevel::High),
+         TriangleDemo::start_loading(gl, GraphicsLevel::High),
       DemoId::ProjectTreesRuler =>
-         TriangleDemo::new(gl, GraphicsLevel::Ultra),
+         TriangleDemo::start_loading(gl, GraphicsLevel::Ultra),
       DemoId::ProjectThisCv =>
-         TriangleDemo::new(gl, GraphicsLevel::Low),
+         TriangleDemo::start_loading(gl, GraphicsLevel::Low),
       DemoId::EducationMasters =>
-         TriangleDemo::new(gl, GraphicsLevel::Medium),
+         TriangleDemo::start_loading(gl, GraphicsLevel::Medium),
       DemoId::EducationBachelor =>
-         TriangleDemo::new(gl, GraphicsLevel::High),
-      _ => TriangleDemo::new(gl, GraphicsLevel::Minimal),
+         TriangleDemo::start_loading(gl, GraphicsLevel::High),
+      _ => TriangleDemo::start_loading(gl, GraphicsLevel::Minimal),
    })
 }

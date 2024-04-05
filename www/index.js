@@ -702,6 +702,20 @@ Deployed: ${BUILD_DATA["deploy-date"]}\n\
 DEBUG: ${BUILD_DATA["debug"]}`;
 }
 
+function getCurrentDemoId() {
+   const remap = {
+      "career_huawei": DemoId.CareerHuawei,
+      "career_samsung": DemoId.CareerSamsung,
+      "publications_wacv_2024": DemoId.PublicationWacv2024,
+      "project_this_cv": DemoId.ProjectThisCv,
+      "project_unity_4X_strategy_volunteer": DemoId.Triangle,
+      "project_image_processing_tool": DemoId.ProjectTreesRuler,
+      "education_master": DemoId.EducationMasters,
+      "education_bachelor": DemoId.EducationBachelor,
+   }
+   return remap[CURRENT_CV_PAGE[1].val];
+}
+
 window.onload = function() {
    van.derive(() => {
       sidebar.style.flexBasis = Math.max(SIDEBAR_WIDTH_OVERRIDE_PX.val || 0, SIDEBAR_WIDTH_FONT_PX.val || 0) + "px";
@@ -724,20 +738,10 @@ window.onload = function() {
       configureFromFont(CURRENT_FONT_FAMILY.val, CURRENT_LANGUAGE.val);
    });
    van.derive(() => {
-      const remap = {
-         "career_huawei": DemoId.CareerHuawei,
-         "career_samsung": DemoId.CareerSamsung,
-         "publications_wacv_2024": DemoId.PublicationWacv2024,
-         "project_this_cv": DemoId.ProjectThisCv,
-         "project_unity_4X_strategy_volunteer": DemoId.Triangle,
-         "project_image_processing_tool": DemoId.ProjectTreesRuler,
-         "education_master": DemoId.EducationMasters,
-         "education_bachelor": DemoId.EducationBachelor,
-      }
-      const demoId = remap[CURRENT_CV_PAGE[1].val];
+      const demoId = getCurrentDemoId();
       if (WASM_INSTANCE) {
          console.log("Switch demo", demoId);
-         WASM_INSTANCE.wasm_switch_demo(demoId);
+         WASM_INSTANCE.wasm_start_loading_demo(demoId);
       }
    })
    configureFromFont(CURRENT_FONT_FAMILY.val, CURRENT_LANGUAGE.val); // other elements' relative sizes depend on this configuration
@@ -836,6 +840,7 @@ window.onload = function() {
       configureCanvas();
       WASM_INSTANCE.wasm_set_fps_limit(CURRENT_FPS_LIMIT.val);
       WASM_INSTANCE.wasm_set_graphics_level(CURRENT_GRAPHICS_LEVEL.val);
+      WASM_INSTANCE.wasm_start_loading_demo(getCurrentDemoId);
       WASM_INSTANCE.wasm_loop();
    })();
 }

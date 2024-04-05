@@ -1,6 +1,10 @@
-use super::{ExternalState, IDemo, MouseState, GraphicsLevel};
+use std::{future::Future, rc::Rc, sync::Mutex};
+
+use super::{ExternalState, GraphicsLevel, IDemo, MouseState, SimpleFuture};
 use crate::gl_utils;
-use web_sys::{WebGl2RenderingContext as GL, WebGlProgram, WebGlVertexArrayObject};
+use wasm_bindgen::convert::OptionIntoWasmAbi;
+use web_sys::{WebGl2RenderingContext as GL, WebGlProgram, WebGlShader, WebGlVertexArrayObject};
+use futures::{future::BoxFuture, FutureExt};
 
 pub struct TriangleDemo {
    main_program: WebGlProgram,
@@ -8,26 +12,134 @@ pub struct TriangleDemo {
    num_rendered_vertices: i32,
 }
 
+struct InstantiateDemoFuture;
+impl Future for InstantiateDemoFuture {
+   type Output = ();
+
+   fn poll(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
+      let mut x = 0_u32;
+      for i in 0..200000 {
+         x = x.saturating_add(i);
+      }
+      std::task::Poll::Ready(())
+   }
+}
+
+enum DemoLoadingStage {
+   CompileShaders = 0,
+   LinkPrograms,
+   DummyWait,
+   SetGraphicsLevel,
+}
+
+struct DemoLoadingProcess {
+   stage: DemoLoadingStage,
+   stage_percent: f32,
+   graphics_level: GraphicsLevel,
+   main_program: Option<WebGlProgram>,
+   vert_shader: Option<WebGlShader>,
+   frag_shader: Option<WebGlShader>,
+   gl: Rc<GL>,
+}
+
+impl SimpleFuture for DemoLoadingProcess {
+   type Output = Box<dyn IDemo>;
+   type Context = ();
+
+   fn poll(mut self: std::pin::Pin<&mut Self>, cx: &mut Self::Context) -> std::task::Poll<Self::Output> {
+      use DemoLoadingStage::*;
+      match self.stage {
+         CompileShaders => {
+            let vertex_shader_source = std::include_str!("shaders/no_vao_triangle.vert");
+            let fragment_shader_source = std::include_str!("shaders/vertex_color.frag");
+            let vertex_shader = gl_utils::compile_shader(
+                  &self.gl, GL::VERTEX_SHADER, vertex_shader_source)
+               .inspect_err(|err| panic!("Vert shader failed to compile {}", err.as_string().unwrap()))
+               .unwrap();
+            let fragment_shader = gl_utils::compile_shader(
+                  &self.gl,GL::FRAGMENT_SHADER, fragment_shader_source)
+               .inspect_err(|err| panic!("Frag shader failed to compile {}", err.as_string().unwrap()))
+               .unwrap();
+            self.vert_shader = Some(vertex_shader);
+            self.frag_shader = Some(fragment_shader);
+            self.stage_percent = 0.6;
+            self.stage = LinkPrograms;
+            std::task::Poll::Pending
+         },
+         LinkPrograms => {
+            let main_program = gl_utils::link_program_vert_frag(
+               &self.gl, &self.vert_shader.as_ref().unwrap(), &self.frag_shader.as_ref().unwrap())
+               .inspect_err(|err| panic!("Program failed to link {}", err.as_string().unwrap()))
+               .unwrap();
+            self.main_program = Some(main_program);
+            gl_utils::delete_program_shaders(&self.gl, &self.main_program.as_ref().unwrap());
+            self.vert_shader = None;
+            self.frag_shader = None;
+            self.stage_percent = 0.8;
+            self.stage = DummyWait;
+            std::task::Poll::Pending
+         }
+         DummyWait => {
+            let mut x = 0_i32;
+            for i in 0..100000 {
+               x = x.saturating_add(i);
+            }
+            self.stage_percent += 0.01;
+            if (self.stage_percent >= 1.0) {
+               self.stage_percent = 1.0;
+               self.stage = SetGraphicsLevel;
+            }
+            web_sys::console::log_2(&"Rust loading".into(), &self.stage_percent.into());
+            std::task::Poll::Pending
+         }
+         SetGraphicsLevel => {
+            self.stage_percent = 1.0;
+            let mut demo = TriangleDemo {
+               main_program: self.main_program.as_ref().unwrap().clone(),
+               clear_color: [0.0; 4],
+               num_rendered_vertices: 3,
+            };
+            demo.set_graphics_level(self.graphics_level);
+            std::task::Poll::Ready(Box::new(demo))
+         }
+      }
+   }
+}
+
 impl TriangleDemo {
-   pub fn new(gl: &GL, graphics_level: GraphicsLevel) -> Self {
+   pub fn start_loading<'a>(gl: Rc<GL>, graphics_level: GraphicsLevel) -> impl SimpleFuture<Output=Box<dyn IDemo>, Context = ()> {
+      DemoLoadingProcess {
+         stage: DemoLoadingStage::CompileShaders,
+         stage_percent: 0.0,
+         graphics_level,
+         main_program: Default::default(),
+         vert_shader: Default::default(),
+         frag_shader: Default::default(),
+         gl,
+      }
+   }
+   pub async fn new(gl_mutex: &Mutex<GL>, graphics_level: GraphicsLevel) -> Self {
       let vertex_shader_source = std::include_str!("shaders/no_vao_triangle.vert");
       let fragment_shader_source = std::include_str!("shaders/vertex_color.frag");
+      let main_program;
+      {
+         let gl = gl_mutex.lock().unwrap();
+         let vertex_shader = gl_utils::compile_shader(
+               &gl, GL::VERTEX_SHADER, vertex_shader_source)
+            .inspect_err(|err| panic!("Vert shader failed to compile {}", err.as_string().unwrap()))
+            .unwrap();
+         let fragment_shader = gl_utils::compile_shader(
+               &gl,GL::FRAGMENT_SHADER, fragment_shader_source)
+            .inspect_err(|err| panic!("Frag shader failed to compile {}", err.as_string().unwrap()))
+            .unwrap();
+         main_program = gl_utils::link_program_vert_frag(
+            &gl, &vertex_shader, &fragment_shader)
+            .inspect_err(|err| panic!("Program failed to link {}", err.as_string().unwrap()))
+            .unwrap();
 
-      let vertex_shader = gl_utils::compile_shader(
-            &gl, GL::VERTEX_SHADER, vertex_shader_source)
-        .inspect_err(|err| panic!("Vert shader failed to compile {}", err.as_string().unwrap()))
-        .unwrap();
-      let fragment_shader = gl_utils::compile_shader(
-            &gl,GL::FRAGMENT_SHADER, fragment_shader_source)
-         .inspect_err(|err| panic!("Frag shader failed to compile {}", err.as_string().unwrap()))
-         .unwrap();
-      let main_program = gl_utils::link_program_vert_frag(
-         gl, &vertex_shader, &fragment_shader)
-         .inspect_err(|err| panic!("Program failed to link {}", err.as_string().unwrap()))
-         .unwrap();
+         gl_utils::delete_program_shaders(&gl, &main_program);
+      }
 
-      gl_utils::delete_program_shaders(gl, &main_program);
-      web_sys::console::log_1(&"Rust loaded TriangleDemo".into());
       let mut me = Self {
          main_program,
          clear_color: [0.0; 4],
@@ -48,7 +160,7 @@ impl IDemo for TriangleDemo {
       // web_sys::console::log_3(&"Rust tick".into(), &mouse_pos.0.into(), &mouse_pos.1.into());
    }
 
-   fn render(&mut self, gl: &mut GL, delta_sec: f32) {
+   fn render(&mut self, gl: &GL, delta_sec: f32) {
       gl.bind_framebuffer(GL::FRAMEBUFFER, None);
       gl_utils::clear_with_color_f32(
          gl, GL::COLOR_ATTACHMENT0, &self.clear_color, 0);
@@ -56,7 +168,7 @@ impl IDemo for TriangleDemo {
       gl.draw_arrays(GL::TRIANGLES, 0, self.num_rendered_vertices);
    }
 
-   fn set_graphics_level(&mut self, level: GraphicsLevel) {
+   fn set_graphics_level(&mut self, level: GraphicsLevel){
       self.num_rendered_vertices = match level {
          GraphicsLevel::Minimal => 0,
          GraphicsLevel::Low => 3,

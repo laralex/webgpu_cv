@@ -21,14 +21,14 @@ pub fn window() -> web_sys::Window {
     web_sys::window().expect("no global `window` exists")
 }
 
-pub fn request_animation_frame(f: &Closure<dyn FnMut()>) {
-    window()
+pub fn request_animation_frame(window: &web_sys::Window, f: &Closure<dyn FnMut()>) {
+    window
         .request_animation_frame(f.as_ref().unchecked_ref())
         .expect("must've registered `requestAnimationFrame`");
 }
 
-pub fn set_frame_timeout(f: &Closure<dyn FnMut()>, timeout_ms: i32) {
-    window()
+pub fn set_frame_timeout(window: &web_sys::Window, f: &Closure<dyn FnMut()>, timeout_ms: i32) {
+    window
         .set_timeout_with_callback_and_timeout_and_arguments_0(
             f.as_ref().unchecked_ref(),
             timeout_ms,

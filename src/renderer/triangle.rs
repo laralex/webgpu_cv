@@ -1,6 +1,6 @@
 use std::{future::Future, rc::Rc, sync::Mutex};
 
-use super::{ExternalState, GraphicsLevel, IDemo, MouseState, SimpleFuture};
+use super::{DemoLoadingFuture, ExternalState, GraphicsLevel, IDemo, MouseState, Progress, SimpleFuture};
 use crate::gl_utils;
 use wasm_bindgen::convert::OptionIntoWasmAbi;
 use web_sys::{WebGl2RenderingContext as GL, WebGlProgram, WebGlShader, WebGlVertexArrayObject};
@@ -41,6 +41,7 @@ struct DemoLoadingProcess {
    vert_shader: Option<WebGlShader>,
    frag_shader: Option<WebGlShader>,
    gl: Rc<GL>,
+   dummy_counter: usize,
 }
 
 impl Drop for DemoLoadingProcess {
@@ -55,6 +56,12 @@ impl Drop for DemoLoadingProcess {
          },
       }
    }
+}
+
+impl Progress for DemoLoadingProcess {
+    fn progress(&self) -> f32 {
+        self.stage_percent
+    }
 }
 
 impl SimpleFuture for DemoLoadingProcess {
@@ -77,7 +84,7 @@ impl SimpleFuture for DemoLoadingProcess {
                .unwrap();
             self.vert_shader = Some(vertex_shader);
             self.frag_shader = Some(fragment_shader);
-            self.stage_percent = 0.6;
+            self.stage_percent = 0.2;
             self.stage = LinkPrograms;
             std::task::Poll::Pending
          },
@@ -90,7 +97,7 @@ impl SimpleFuture for DemoLoadingProcess {
             gl_utils::delete_program_shaders(&self.gl, &self.main_program.as_ref().unwrap());
             self.vert_shader = None;
             self.frag_shader = None;
-            self.stage_percent = 0.8;
+            self.stage_percent = 0.4;
             self.stage = DummyWait;
             std::task::Poll::Pending
          }
@@ -99,10 +106,14 @@ impl SimpleFuture for DemoLoadingProcess {
             for i in 0..100000 {
                x = x.saturating_add(i);
             }
-            self.stage_percent += 0.001;
+            self.stage_percent += 0.005;
+            self.dummy_counter += 1;
             if (self.stage_percent >= 1.0) {
                self.stage_percent = 1.0;
                self.stage = SetGraphicsLevel;
+            }
+            if self.dummy_counter % 500 == 0 {
+               web_sys::console::log_2(&"Rust continue loading: TriangleDemo".into(), &self.stage_percent.into());
             }
             std::task::Poll::Pending
          }
@@ -123,8 +134,10 @@ impl SimpleFuture for DemoLoadingProcess {
    }
 }
 
+impl DemoLoadingFuture for DemoLoadingProcess {}
+
 impl TriangleDemo {
-   pub fn start_loading<'a>(gl: Rc<GL>, graphics_level: GraphicsLevel) -> impl SimpleFuture<Output=Box<dyn IDemo>, Context = ()> + Drop {
+   pub fn start_loading<'a>(gl: Rc<GL>, graphics_level: GraphicsLevel) -> impl DemoLoadingFuture {
       DemoLoadingProcess {
          stage: DemoLoadingStage::CompileShaders,
          stage_percent: 0.0,
@@ -133,6 +146,7 @@ impl TriangleDemo {
          vert_shader: Default::default(),
          frag_shader: Default::default(),
          gl,
+         dummy_counter: 0,
       }
    }
 }

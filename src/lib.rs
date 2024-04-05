@@ -5,7 +5,7 @@ mod gl_utils;
 mod renderer;
 mod simple_async;
 
-use renderer::SimpleFuture;
+use renderer::{DemoLoadingFuture, SimpleFuture};
 use renderer::{GraphicsLevel, MouseState, ExternalState};
 use renderer::{IDemo};
 
@@ -13,6 +13,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 use web_sys::WebGl2RenderingContext;
 use std::cell::Cell;
+use std::pin::Pin;
 use std::{cell::RefCell, ops::Deref, rc::Rc};
 use std::time::{Duration, Instant};
 
@@ -24,16 +25,22 @@ use std::time::{Duration, Instant};
 //     static ref PENDING_FRAMETIME_LIMIT_UPDATE: RwLock<Option<Duration>> = RwLock::new(None);
 //     static ref PENDING_GRAPHICS_LEVEL_UPDATE: RwLock<Option<GraphicsLevel>> = RwLock::new(None);
 //     static ref PENDING_DEMO_SWITCH: RwLock<Option<js_sys::Function>> = RwLock::new(None);
-//     // static ref GAME: Mutex<game_of_life::Grid> = Mutex::new(game_of_life::Grid::new(1, 1));
+//     // static ref GAME: Mutex<game_of_life::Grid> = Mutex::new(game_of_lif);
 //     //static ref CANVAS: RwLock<web_sys::HtmlCanvasElement> = RwLock::default();
 //     //static ref CANVAS_ID: RwLock<String> = RwLock::new("__stub__".to_owned());
 // }
+
+#[wasm_bindgen(raw_module = "../modules/exports_to_wasm.js")]
+extern "C" {
+    fn demo_loading_apply_progress(progress: f32);
+    fn demo_loading_finish();
+}
 
 #[wasm_bindgen]
 pub struct WasmInterface {
     demo_state: Rc<RefCell<ExternalState>>,
     demo: Rc<RefCell<Box<dyn IDemo>>>,
-    pending_loading_demo: Rc<RefCell<Option<renderer::LoadingDemo>>>,
+    pending_loading_demo: Rc<RefCell<Option<Pin<Box<dyn DemoLoadingFuture>>>>>,
     canvas: web_sys::HtmlCanvasElement,
     gl: Rc<web_sys::WebGl2RenderingContext>,
 }
@@ -63,8 +70,7 @@ impl WasmInterface {
         let canvas = webgl::canvas(canvas_dom_id)?;
         let gl = webgl::init_webgl_context(&canvas).expect("Failed to get WebGL2 context");
         let demo_state = Rc::new(RefCell::new(renderer::ExternalState::default()));
-        let mut demo: Rc<RefCell<Box<dyn IDemo>>> = Rc::new(RefCell::new(Box::new(renderer::StubDemo{})));
-        let (executor, spawner) = simple_async::new_executor_and_spawner();
+        let demo: Rc<RefCell<Box<dyn IDemo>>> = Rc::new(RefCell::new(Box::new(renderer::StubDemo{})));
         Ok(Self {
             demo,
             demo_state,
@@ -114,8 +120,9 @@ impl WasmInterface {
         }
         // assign new current loading process
         let pending_loading_demo = self.pending_loading_demo.clone();
-        *pending_loading_demo.borrow_mut() =
-        Some(renderer::start_loading_demo(demo_id, self.gl.clone(), self.demo_state.borrow().graphics_level));
+        *pending_loading_demo.borrow_mut() = Some(
+            renderer::start_loading_demo(demo_id, self.gl.clone(),
+                self.demo_state.borrow().graphics_level));
 
         let gl = self.gl.clone();
         // request to advance the loading proecess once per frame
@@ -124,6 +131,7 @@ impl WasmInterface {
             if let Some(loading_demo) = pending_loading_demo.borrow_mut().as_mut() {
                 match (loading_demo.as_mut()).poll(/*cx*/&mut ()) {
                     std::task::Poll::Pending => {
+                        demo_loading_apply_progress(loading_demo.progress());
                         // poll again on the next frame
                         js_interop::request_animation_frame(&js_interop::window(), loader_callback.borrow().as_ref().unwrap());
                     }
@@ -131,6 +139,7 @@ impl WasmInterface {
                         demo.borrow_mut().drop_demo(gl.as_ref());
                         *demo.borrow_mut() = new_demo;
                         loading_ended = true;
+                        demo_loading_finish();
                     }
                 }
             }

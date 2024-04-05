@@ -118,7 +118,7 @@ pub trait IDemo {
    fn drop_demo(&mut self, gl: &GL);
 }
 
-pub trait SimpleFuture : Drop {
+pub trait SimpleFuture {
    type Output;
    type Context;
    // std::future::Future uses std::task::Context<'_>
@@ -135,8 +135,16 @@ impl<T,C> SimpleFuture for Box<dyn SimpleFuture<Output=T, Context=C>> {
     }
 }
 
-pub type LoadingDemo = Pin<Box<dyn SimpleFuture<Output=Box<dyn IDemo>, Context=()>>>;
-pub fn start_loading_demo<'a>(id: DemoId, gl: Rc<GL>, graphics_level: GraphicsLevel) -> LoadingDemo {
+pub trait Progress {
+   // normalized progress 0.0 - 1.0
+   fn progress(&self) -> f32;
+}
+
+pub trait DemoLoadingFuture : SimpleFuture<Output=Box<dyn IDemo>, Context=()> + Drop + Progress {
+
+}
+
+pub fn start_loading_demo<'a>(id: DemoId, gl: Rc<GL>, graphics_level: GraphicsLevel) -> Pin<Box<dyn DemoLoadingFuture>> {
    Box::pin(match id {
       DemoId::Triangle =>
          TriangleDemo::start_loading(gl, graphics_level),

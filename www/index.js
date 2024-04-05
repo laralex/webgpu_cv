@@ -52,6 +52,7 @@ import init, { WasmInterface, DemoId } from '/wasm/index.js';
 import { UI_STRINGS, CURRENT_LANGUAGE, localizeString, localizeUi, localizeUiPostprocess } from '/modules/localization.js';
 import { Util } from '/modules/util.js';
 import { CvContent } from '/modules/cv.js';
+import { CURRENT_DEMO_LOADING_PROGRESS } from '/modules/exports_to_wasm.js';
 
 function dumpCvCookies() {
    Util.setCookie('mainChapter', CURRENT_CV_PAGE[0].val);
@@ -494,6 +495,15 @@ function ControlsPopup({onclose}) {
    );
 }
 
+function LoadingScreen(progressState) {
+   return () => div({
+         class: "loading-screen " + (progressState.val !== null ? "" : " hide "),
+         style: "background:rgb(0,0,0,"+(1.0 - progressState.val)+");",
+      },
+      span(Math.trunc(progressState.val*100.0) + '%')
+   );
+}
+
 function getFontFamilies(elements){
    let usedFonts = [];
    elements.forEach(function(el,i){
@@ -740,15 +750,16 @@ window.onload = function() {
    van.derive(() => {
       const demoId = getCurrentDemoId();
       if (WASM_INSTANCE) {
-         console.log("Switch demo", demoId);
+         console.log("Start switching demo", demoId);
          WASM_INSTANCE.wasm_start_loading_demo(demoId);
       }
    })
    configureFromFont(CURRENT_FONT_FAMILY.val, CURRENT_LANGUAGE.val); // other elements' relative sizes depend on this configuration
    configureResizingBorder();
    configureFullscreenSwitch();
-   van.add(document.getElementById("canvas-wrapper"), FullscreenButton({extraClasses: "fullscreen-button", height: "80"}));
-   van.add(document.getElementById("canvas-wrapper"), HelpButton({height: "80"}));
+   van.add(document.getElementById("main-content"), FullscreenButton({extraClasses: "fullscreen-button", height: "80"}));
+   van.add(document.getElementById("main-content"), HelpButton({height: "80"}));
+   van.add(document.getElementById("canvas-wrapper"), LoadingScreen(CURRENT_DEMO_LOADING_PROGRESS));
    van.add(document.getElementById("controls_column"), LanguagePicker(CURRENT_LANGUAGE, CURRENT_FONT_FAMILY, /*vertical*/ false));
    van.add(document.getElementById("controls_column"), GraphicsLevelPicker(CURRENT_GRAPHICS_LEVEL, /*vertical*/ false));
    van.add(document.getElementById("controls_column"), FpsLimitPicker(CURRENT_FPS_LIMIT, /*vertical*/ false));

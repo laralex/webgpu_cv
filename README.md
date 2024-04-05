@@ -8,10 +8,9 @@ Known issues:
    - project trees-ruler
 - Demos:
    - fullscreen with F11 is weird (js error in firefox)
-   - release resources of demos
    - concurrent switch of demos
-      - multiple loadings in flight (cancel previous)
       - set graphics level also concurrently
+      - frame delay after loading finished
    - low fps when mouse leaves canvas
 - No demos:
    - job Huawei

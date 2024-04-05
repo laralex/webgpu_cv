@@ -1,5 +1,5 @@
-pub mod first;
-pub use first::StubDemo;
+pub mod stub_demo;
+pub use stub_demo::StubDemo;
 pub mod triangle;
 
 use std::{cell::Cell, pin::Pin, rc::Rc, sync::Mutex};
@@ -115,9 +115,10 @@ pub trait IDemo {
    fn tick(&mut self, state: &ExternalState);
    fn set_graphics_level(&mut self, level: GraphicsLevel);
    fn render(&mut self, gl: &GL, delta_sec: f32);
+   fn drop_demo(&mut self, gl: &GL);
 }
 
-pub trait SimpleFuture {
+pub trait SimpleFuture : Drop {
    type Output;
    type Context;
    // std::future::Future uses std::task::Context<'_>
@@ -134,7 +135,8 @@ impl<T,C> SimpleFuture for Box<dyn SimpleFuture<Output=T, Context=C>> {
     }
 }
 
-pub fn start_loading_demo<'a>(id: DemoId, gl: Rc<GL>, graphics_level: GraphicsLevel) -> Pin<Box<dyn SimpleFuture<Output=Box<dyn IDemo>, Context=()>>> {
+pub type LoadingDemo = Pin<Box<dyn SimpleFuture<Output=Box<dyn IDemo>, Context=()>>>;
+pub fn start_loading_demo<'a>(id: DemoId, gl: Rc<GL>, graphics_level: GraphicsLevel) -> LoadingDemo {
    Box::pin(match id {
       DemoId::Triangle =>
          TriangleDemo::start_loading(gl, graphics_level),

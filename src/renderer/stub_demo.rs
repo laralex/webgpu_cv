@@ -15,4 +15,8 @@ impl IDemo for StubDemo {
    fn set_graphics_level(&mut self, level: GraphicsLevel) {
 
    }
+
+   fn drop_demo(&mut self, gl: &GL) {
+      web_sys::console::log_1(&"Rust demo drop: StubDemo".into());
+   }
 }

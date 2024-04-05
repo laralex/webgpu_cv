@@ -33,8 +33,7 @@ use std::time::{Duration, Instant};
 pub struct WasmInterface {
     demo_state: Rc<RefCell<ExternalState>>,
     demo: Rc<RefCell<Box<dyn IDemo>>>,
-    pending_graphics_level: Rc<RefCell<Option<GraphicsLevel>>>,
-    pending_demo_id: Rc<RefCell<Option<DemoId>>>,
+    pending_loading_demo: Rc<RefCell<Option<renderer::LoadingDemo>>>,
     canvas: web_sys::HtmlCanvasElement,
     gl: Rc<web_sys::WebGl2RenderingContext>,
 }
@@ -69,8 +68,7 @@ impl WasmInterface {
         Ok(Self {
             demo,
             demo_state,
-            pending_graphics_level: Rc::new(RefCell::new(None)),
-            pending_demo_id: Rc::new(RefCell::new(None)),
+            pending_loading_demo: Rc::new(RefCell::new(None)),
             canvas,
             gl: Rc::new(gl),
         })
@@ -101,33 +99,43 @@ impl WasmInterface {
 
     #[wasm_bindgen]
     pub fn wasm_set_graphics_level(&mut self, level_code: u32) {
-        *self.pending_graphics_level.borrow_mut() = Some(GraphicsLevel::from(level_code));
-        // if let Ok(state) = self.demo_state.try_borrow_mut() {
-        //     state.graphics_level = ;
-        // }
+        //*self.pending_graphics_level.borrow_mut() = Some(GraphicsLevel::from(level_code));
     }
 
     #[wasm_bindgen]
     // , progress_callback: &js_sys::Function
     pub fn wasm_start_loading_demo(&mut self, demo_id: DemoId) {
-        //*self.pending_demo_id.borrow_mut() = Some(demo_id);
-        
         let loader_callback = Rc::new(RefCell::new(None));
         let loader_callback2 = loader_callback.clone();
         let demo = self.demo.clone();
+        // cancel current loading process (drop resources it allocated already)
+        if let Some(loading_demo) = self.pending_loading_demo.borrow_mut().as_mut() {
+            std::mem::drop(loading_demo.as_mut());
+        }
+        // assign new current loading process
+        let pending_loading_demo = self.pending_loading_demo.clone();
+        *pending_loading_demo.borrow_mut() =
+        Some(renderer::start_loading_demo(demo_id, self.gl.clone(), self.demo_state.borrow().graphics_level));
+
         let gl = self.gl.clone();
-        let mut demo_loading_future =
-            renderer::start_loading_demo(demo_id, gl, self.demo_state.borrow().graphics_level);
+        // request to advance the loading proecess once per frame
         *loader_callback2.borrow_mut() = Some(Closure::wrap(Box::new(move || {
-            match (demo_loading_future.as_mut()).poll(/*cx*/&mut ()) {
-                std::task::Poll::Pending => {
-                    // poll again on the next frame
-                    js_interop::request_animation_frame(&js_interop::window(), loader_callback.borrow().as_ref().unwrap());
+            let mut loading_ended = false;
+            if let Some(loading_demo) = pending_loading_demo.borrow_mut().as_mut() {
+                match (loading_demo.as_mut()).poll(/*cx*/&mut ()) {
+                    std::task::Poll::Pending => {
+                        // poll again on the next frame
+                        js_interop::request_animation_frame(&js_interop::window(), loader_callback.borrow().as_ref().unwrap());
+                    }
+                    std::task::Poll::Ready(new_demo) => {
+                        demo.borrow_mut().drop_demo(gl.as_ref());
+                        *demo.borrow_mut() = new_demo;
+                        loading_ended = true;
+                    }
                 }
-                std::task::Poll::Ready(new_demo) => {
-                    *demo.borrow_mut() = new_demo;
-                    web_sys::console::log_1(&"Rust ended wasm_start_loading_demo".into());
-                }
+            }
+            if loading_ended {
+                *pending_loading_demo.borrow_mut() = None;
             }
         }) as Box<dyn FnMut()>));
         js_interop::request_animation_frame(&js_interop::window(), loader_callback2.borrow().as_ref().unwrap());
@@ -155,27 +163,9 @@ impl WasmInterface {
         let demo_state = self.demo_state.clone();
         let mut time_then_sec = js_interop::now_sec();
         
-        let pending_graphics_level = self.pending_graphics_level.clone();
-        let pending_demo_id = self.pending_demo_id.clone();
-        // let frametime_limit_ms = demo_state.borrow().deref().d;
-        // self.demo.set_graphics_level(let Ok(graphics_level) = elf.graphics_level)try_;.borrow( {}
-            let demo_clone = self.demo.clone();
-            // let set_demo_running_future: BoxFuture<IDemo> = None;
-            // let set_demo_pending_future = None;
+        let demo_clone = self.demo.clone();
         let window_engine = js_interop::window();
         *engine_first_tick.borrow_mut() = Some(Closure::new(move || {
-            // poll_pending_event(&pending_graphics_level, |&graphics_level| {
-            //     demo.lock().unwrap().set_graphics_level(graphics_level.to_owned());
-            //     demo_state.borrow_mut().graphics_level = graphics_level;
-            // });
-            
-            // let demo_clone2 = demo_clone.clone();
-            // poll_pending_event(&pending_demo_id, |&demo_id| {
-            //     spawner.borrow().spawn(async {
-                    
-            //         *demo_clone2.lock().unwrap() = make_demo_future.into_future().await;
-            //     });
-
             let time_now_sec = js_interop::now_sec();
             let elapsed_sec = time_now_sec - time_then_sec;
             time_then_sec = time_now_sec;
@@ -247,14 +237,4 @@ fn configure_mouseup(mouse_state: Rc<Cell<renderer::MouseState>>) -> Result<(), 
     js_interop::window().add_event_listener_with_callback("mouseup", closure.as_ref().unchecked_ref())?;
     closure.forget();
     Ok(())
-}
-
-fn poll_pending_event<T, F: FnMut(&T)>(event: &Rc<RefCell<Option<T>>>, mut handler: F) {
-    if let Ok(reader) = event.try_borrow() {
-        if let Some(v) = reader.as_ref() {
-            handler(&v);
-            std::mem::drop(reader);
-            *event.borrow_mut() = None;
-        }
-    }
 }

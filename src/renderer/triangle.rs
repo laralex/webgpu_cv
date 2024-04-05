@@ -30,6 +30,7 @@ enum DemoLoadingStage {
    LinkPrograms,
    DummyWait,
    SetGraphicsLevel,
+   Ready,
 }
 
 struct DemoLoadingProcess {
@@ -40,6 +41,20 @@ struct DemoLoadingProcess {
    vert_shader: Option<WebGlShader>,
    frag_shader: Option<WebGlShader>,
    gl: Rc<GL>,
+}
+
+impl Drop for DemoLoadingProcess {
+   fn drop(&mut self) {
+      match self.stage {
+         DemoLoadingStage::Ready => {},
+         _ => {
+            self.gl.delete_shader(self.vert_shader.as_ref());
+            self.gl.delete_shader(self.frag_shader.as_ref());
+            self.gl.delete_program(self.main_program.as_ref());
+            web_sys::console::log_2(&"Rust loading drop: TriangleDemo".into(), &self.stage_percent.into());
+         },
+      }
+   }
 }
 
 impl SimpleFuture for DemoLoadingProcess {
@@ -84,30 +99,32 @@ impl SimpleFuture for DemoLoadingProcess {
             for i in 0..100000 {
                x = x.saturating_add(i);
             }
-            self.stage_percent += 0.01;
+            self.stage_percent += 0.001;
             if (self.stage_percent >= 1.0) {
                self.stage_percent = 1.0;
                self.stage = SetGraphicsLevel;
             }
-            web_sys::console::log_2(&"Rust loading".into(), &self.stage_percent.into());
             std::task::Poll::Pending
          }
          SetGraphicsLevel => {
-            self.stage_percent = 1.0;
             let mut demo = TriangleDemo {
                main_program: self.main_program.as_ref().unwrap().clone(),
                clear_color: [0.0; 4],
                num_rendered_vertices: 3,
             };
             demo.set_graphics_level(self.graphics_level);
+            self.stage_percent = 1.0;
+            self.stage = Ready;
+            web_sys::console::log_1(&"Rust loading ready: TriangleDemo".into());
             std::task::Poll::Ready(Box::new(demo))
          }
+         Ready => unreachable!("Should not poll the task again after std::task::Poll::Ready was polled"),
       }
    }
 }
 
 impl TriangleDemo {
-   pub fn start_loading<'a>(gl: Rc<GL>, graphics_level: GraphicsLevel) -> impl SimpleFuture<Output=Box<dyn IDemo>, Context = ()> {
+   pub fn start_loading<'a>(gl: Rc<GL>, graphics_level: GraphicsLevel) -> impl SimpleFuture<Output=Box<dyn IDemo>, Context = ()> + Drop {
       DemoLoadingProcess {
          stage: DemoLoadingStage::CompileShaders,
          stage_percent: 0.0,
@@ -117,36 +134,6 @@ impl TriangleDemo {
          frag_shader: Default::default(),
          gl,
       }
-   }
-   pub async fn new(gl_mutex: &Mutex<GL>, graphics_level: GraphicsLevel) -> Self {
-      let vertex_shader_source = std::include_str!("shaders/no_vao_triangle.vert");
-      let fragment_shader_source = std::include_str!("shaders/vertex_color.frag");
-      let main_program;
-      {
-         let gl = gl_mutex.lock().unwrap();
-         let vertex_shader = gl_utils::compile_shader(
-               &gl, GL::VERTEX_SHADER, vertex_shader_source)
-            .inspect_err(|err| panic!("Vert shader failed to compile {}", err.as_string().unwrap()))
-            .unwrap();
-         let fragment_shader = gl_utils::compile_shader(
-               &gl,GL::FRAGMENT_SHADER, fragment_shader_source)
-            .inspect_err(|err| panic!("Frag shader failed to compile {}", err.as_string().unwrap()))
-            .unwrap();
-         main_program = gl_utils::link_program_vert_frag(
-            &gl, &vertex_shader, &fragment_shader)
-            .inspect_err(|err| panic!("Program failed to link {}", err.as_string().unwrap()))
-            .unwrap();
-
-         gl_utils::delete_program_shaders(&gl, &main_program);
-      }
-
-      let mut me = Self {
-         main_program,
-         clear_color: [0.0; 4],
-         num_rendered_vertices: 0,
-      };
-      me.set_graphics_level(graphics_level);
-      me
    }
 }
 
@@ -178,4 +165,8 @@ impl IDemo for TriangleDemo {
       };
    }
 
+   fn drop_demo(&mut self, gl: &GL) {
+      gl.delete_program(Some(&self.main_program));
+      web_sys::console::log_1(&"Rust demo drop: TriangleDemo".into());
+   }
 }

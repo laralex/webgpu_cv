@@ -137,12 +137,15 @@ impl WasmInterface {
                 self.demo_state.borrow().graphics_level));
 
         let gl_ref = self.gl.clone();
-        let loader_finished_callback = Rc::new(RefCell::new(Closure::new(move |_| {
-            // NOTE: since render loop and loading are not in sync
-            // after loading is done there maybe a blank frame
-            // thus signal loading finish only on the next frame
-            demo_loading_finish();
-        })));
+
+        // NOTE: since render loop and loading are not in sync
+        // after loading is done there maybe a blank frame
+        // thus run finish callback only 2 frames later
+        let finish = Closure::new(move |_| demo_loading_finish());
+        let finish_after_1_frame = Closure::new(move |_| {
+            // wait +1 frame
+            js_interop::request_animation_frame(&js_interop::window(), &finish);
+        });
         // request to advance the loading proecess once per frame
         *loader_callback2.borrow_mut() = Some(Closure::new(move |_: usize| {
             if let Ok(mut loading_demo_ref) = pending_loading_demo_ref.try_borrow_mut() {
@@ -160,7 +163,9 @@ impl WasmInterface {
                             *demo_ref.borrow_mut() = new_demo;
                             *demo_id_ref.borrow_mut() = demo_id;
                             *loading_demo_ref = None;
-                            js_interop::request_animation_frame(&js_interop::window(), &loader_finished_callback.borrow());
+
+                            // wait +1 frame
+                            js_interop::request_animation_frame(&js_interop::window(), &finish_after_1_frame);
                         }
                     }
                 } else {
@@ -182,8 +187,10 @@ impl WasmInterface {
         // timeout callback will schedule engine callback (to render the next frame)
         let engine_tick = Rc::new(RefCell::new(None));
         let engine_first_tick = engine_tick.clone(); // to have a separate object, which is not owned by tick closure
-        let timeout_tick = Rc::new(RefCell::new(None));
-        let timout_into_engine_tick = timeout_tick.clone();
+        let window_timeout = js_interop::window();
+        let timeout_tick = Closure::wrap(Box::new(move || {
+            js_interop::request_animation_frame(&window_timeout, engine_tick.borrow().as_ref().unwrap());
+        }) as Box<dyn FnMut()>);
 
         {
             let mut demo_state_mut = self.demo_state.borrow_mut();
@@ -196,19 +203,23 @@ impl WasmInterface {
         let mut gl = self.gl.clone();
         let demo_state = self.demo_state.clone();
         let mut time_then_sec = 0.0;
+        let mut time_then_ms = 0;
         
         let demo_clone = self.demo.clone();
         let window_engine = js_interop::window();
-        *engine_first_tick.borrow_mut() = Some(Closure::new(move |timestamp: usize| {
-            let time_now_sec = timestamp as f32 * 0.001;
-            let elapsed_sec = (time_now_sec - time_then_sec).min(0.5);
+        *engine_first_tick.borrow_mut() = Some(Closure::new(move |time: usize| {
+            let time_now_ms  = time;
+            let time_now_sec = time as f32 * 0.001;
+            let elapsed_ms  = (time_then_ms - time_then_ms);
+            let elapsed_sec = (time_now_sec - time_then_sec).min(5.0);
+            time_then_ms  = time_now_ms;
             time_then_sec = time_now_sec;
             // engine step
             // gl.clear(GL::COLOR_BUFFER_BIT);
             let mut demo_state = demo_state.borrow_mut();
             if let Ok(mut demo) = demo_clone.try_borrow_mut() {
                 demo_state.begin_frame(elapsed_sec as f32);
-                //web_sys::console::log_2(&"FPS".into(), &demo_state.frame_rate.into());
+               
                 demo.tick(&demo_state);
                 {
                     gl.viewport(0, 0, demo_state.screen_size.0 as i32, demo_state.screen_size.1 as i32);
@@ -216,14 +227,13 @@ impl WasmInterface {
                 }
                 demo_state.end_frame();
             }
-
-            js_interop::set_frame_timeout(&window_engine, timeout_tick.borrow().as_ref().unwrap(), demo_state.time_delta_limit_ms);
+            // setTimeout may overshoot the requested timeout, so compensate it by requesting less 
+            const TIMEOUT_CORRECTION_FACTOR: f32 = 0.85;
+            let mut request_timeout = demo_state.time_delta_limit_ms - elapsed_ms as i32;
+            request_timeout = (TIMEOUT_CORRECTION_FACTOR * (request_timeout as f32)) as i32;
+            //web_sys::console::log_4(&"FPS".into(), &demo_state.frame_rate.into(), &elapsed_ms.into(), &request_timeout.into());
+            js_interop::set_frame_timeout(&window_engine, &timeout_tick, request_timeout);
         }));
-
-        let window_timeout = js_interop::window();
-        *timout_into_engine_tick.borrow_mut() = Some(Closure::wrap(Box::new(move || {
-            js_interop::request_animation_frame(&window_timeout, engine_tick.borrow().as_ref().unwrap());
-        }) as Box<dyn FnMut()>));
 
         let window_first_tick = js_interop::window();
         js_interop::request_animation_frame(&window_first_tick, engine_first_tick.borrow().as_ref().unwrap());

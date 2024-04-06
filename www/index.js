@@ -499,7 +499,7 @@ function ControlsPopup({onclose}) {
 function LoadingScreen(progressState) {
    return () => div({
          class: "loading-screen " + (progressState.val !== null ? "" : " hide "),
-         style: "background:rgb(0,0,0,"+(progressState.val)+");",
+         style: "background:rgb(0,0,0,"+(0.3 + 0.7 * progressState.val)+");",
       },
       span(Math.trunc(progressState.val*100.0) + '%'),
       div({class: "bubble bar-container"},

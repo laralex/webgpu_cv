@@ -12,19 +12,6 @@ pub struct TriangleDemo {
    num_rendered_vertices: i32,
 }
 
-struct InstantiateDemoFuture;
-impl Future for InstantiateDemoFuture {
-   type Output = ();
-
-   fn poll(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
-      let mut x = 0_u32;
-      for i in 0..200000 {
-         x = x.saturating_add(i);
-      }
-      std::task::Poll::Ready(())
-   }
-}
-
 #[derive(Default)]
 enum DemoLoadingStage {
    Ready = 0,
@@ -164,11 +151,10 @@ impl TriangleDemo {
 impl IDemo for TriangleDemo {
    fn tick(&mut self, input: &ExternalState) {
       let mouse_pos = input.mouse_unit_position();
-      self.clear_color[0] = mouse_pos.0;
-      self.clear_color[1] = mouse_pos.1;
+      self.clear_color[0] = input.time_sec.sin() * 0.5 + 0.5;
+      self.clear_color[1] = (input.time_sec * 1.2).sin() * 0.5 + 0.5;
       self.clear_color[2] = input.mouse.get().left;
       self.clear_color[3] = 1.0;
-      // web_sys::console::log_3(&"Rust tick".into(), &mouse_pos.0.into(), &mouse_pos.1.into());
    }
 
    fn render(&mut self, gl: &GL, delta_sec: f32) {

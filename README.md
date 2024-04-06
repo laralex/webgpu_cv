@@ -10,8 +10,6 @@ Known issues:
    - fullscreen with F11 is weird (js error in firefox)
    - concurrent switch of demos
       - set graphics level also concurrently
-      - frame delay after loading finished
-   - low fps when mouse leaves canvas (causes aforementioned delay of demo switch)
 - No demos:
    - job Huawei
    - job Samsung

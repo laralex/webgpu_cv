@@ -498,7 +498,7 @@ function ControlsPopup({onclose}) {
 function LoadingScreen(progressState) {
    return () => div({
          class: "loading-screen " + (progressState.val !== null ? "" : " hide "),
-         style: "background:rgb(0,0,0,"+(1.0 - progressState.val)+");",
+         style: "background:rgb(0,0,0,"+(progressState.val)+");",
       },
       span(Math.trunc(progressState.val*100.0) + '%')
    );
@@ -714,6 +714,7 @@ DEBUG: ${BUILD_DATA["debug"]}`;
 
 function getCurrentDemoId() {
    const remap = {
+      "__stub__": DemoId.Stub,
       "career_huawei": DemoId.CareerHuawei,
       "career_samsung": DemoId.CareerSamsung,
       "publications_wacv_2024": DemoId.PublicationWacv2024,
@@ -851,7 +852,7 @@ window.onload = function() {
       configureCanvas();
       WASM_INSTANCE.wasm_set_fps_limit(CURRENT_FPS_LIMIT.val);
       WASM_INSTANCE.wasm_set_graphics_level(CURRENT_GRAPHICS_LEVEL.val);
-      WASM_INSTANCE.wasm_start_loading_demo(getCurrentDemoId);
+      WASM_INSTANCE.wasm_start_loading_demo(getCurrentDemoId());
       WASM_INSTANCE.wasm_loop();
    })();
 }

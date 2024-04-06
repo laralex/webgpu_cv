@@ -140,7 +140,11 @@ pub trait Progress {
    fn progress(&self) -> f32;
 }
 
-pub trait DemoLoadingFuture : SimpleFuture<Output=Box<dyn IDemo>, Context=()> + Drop + Progress {
+pub trait Dispose {
+   fn dispose(&mut self);
+}
+
+pub trait DemoLoadingFuture : SimpleFuture<Output=Box<dyn IDemo>, Context=()> + Dispose + Progress {
 
 }
 

@@ -1,6 +1,6 @@
 use std::{future::Future, rc::Rc, sync::Mutex};
 
-use super::{DemoLoadingFuture, ExternalState, GraphicsLevel, IDemo, MouseState, Progress, SimpleFuture};
+use super::{DemoLoadingFuture, Dispose, ExternalState, GraphicsLevel, IDemo, MouseState, Progress, SimpleFuture};
 use crate::gl_utils;
 use wasm_bindgen::convert::OptionIntoWasmAbi;
 use web_sys::{WebGl2RenderingContext as GL, WebGlProgram, WebGlShader, WebGlVertexArrayObject};
@@ -44,17 +44,27 @@ struct DemoLoadingProcess {
    dummy_counter: usize,
 }
 
-impl Drop for DemoLoadingProcess {
-   fn drop(&mut self) {
+impl Dispose for DemoLoadingProcess {
+   fn dispose(&mut self) {
       match self.stage {
-         DemoLoadingStage::Ready => {},
+         DemoLoadingStage::Ready => {
+            // demo is fully loaded, its lifetime is now separate, 
+            // shouldn't free its resources
+         },
          _ => {
             self.gl.delete_shader(self.vert_shader.as_ref());
             self.gl.delete_shader(self.frag_shader.as_ref());
             self.gl.delete_program(self.main_program.as_ref());
+            self.stage = DemoLoadingStage::Ready;
             web_sys::console::log_2(&"Rust loading drop: TriangleDemo".into(), &self.stage_percent.into());
          },
       }
+   }
+}
+
+impl Drop for DemoLoadingProcess {
+   fn drop(&mut self) {
+      self.dispose();
    }
 }
 

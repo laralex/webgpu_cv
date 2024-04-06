@@ -73,15 +73,8 @@
 .bubble {
    position: relative;
    display: inline-block;
-   margin-left: 2em;
-   top: 20%;
-   text-align: center;
-   background-color: var(--color-theme-normal);
-   padding: 12px;
    box-shadow: 0 -4px var(--color-theme-accent), 0 -8px var(--color-theme-bold), 4px 0 var(--color-theme-accent), 4px -4px var(--color-theme-bold), 8px 0 var(--color-theme-bold), 0 4px var(--color-theme-accent), 0 8px var(--color-theme-bold), -4px 0 var(--color-theme-accent), -4px 4px var(--color-theme-bold), -8px 0 var(--color-theme-bold), -4px -4px var(--color-theme-bold), 4px 4px var(--color-theme-bold);
    box-sizing: border-box;
-   min-width: 200px;
-   width: initial;
 }
 .bubble::after {
    content: "";
@@ -100,4 +93,14 @@
    left: -8px;
    background: var(--color-theme-normal);
    box-shadow: -4px -4px var(--color-theme-accent), -4px 0 var(--color-theme-accent), -8px 0 var(--color-theme-accent), 0 -8px var(--color-theme-accent), -4px 4px var(--color-theme-bold), -8px 4px var(--color-theme-bold), -12px 4px var(--color-theme-bold), -16px 4px var(--color-theme-bold), -12px 0 var(--color-theme-bold), -8px -4px var(--color-theme-bold), -4px -8px var(--color-theme-bold), 0 -4px var(--color-theme-accent);
+}
+
+.resize-tooltip {
+   background-color: var(--color-theme-normal);
+   top: 20%;
+   padding: 12px;
+   text-align: center;
+   width: initial;
+   min-width: 200px;
+   margin-left: 2em;
 }

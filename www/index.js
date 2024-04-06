@@ -349,7 +349,8 @@ function ResizeTooltip({timeoutMillisec, onclose = () => {}}) {
       onclose();
    }, timeoutMillisec);
 
-   return () => BUILD_DATA.debug || shouldHide.val ? null : div({class: "bubble shadow left", 
+   return () => BUILD_DATA.debug || shouldHide.val ? null : div({
+      class: "resize-tooltip bubble shadow left zmax",
       onclick: (e) => shouldHide.val = true, onclose: onclose
    }, localizeUi("resize_tooltip"));
 }
@@ -500,7 +501,12 @@ function LoadingScreen(progressState) {
          class: "loading-screen " + (progressState.val !== null ? "" : " hide "),
          style: "background:rgb(0,0,0,"+(progressState.val)+");",
       },
-      span(Math.trunc(progressState.val*100.0) + '%')
+      span(Math.trunc(progressState.val*100.0) + '%'),
+      div({class: "bubble bar-container"},
+         div({class: "bar-cutout", style: () => 'width:' + progressState.val*100.0 + '%'},
+            div({class: "bubble bar-progress"})
+         ),
+      )
    );
 }
 

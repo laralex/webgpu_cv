@@ -461,7 +461,9 @@ select option {
 
 .loading-screen {
    display: flex;
+   flex-direction: column;
    justify-content: center;
+   gap: 0;
    align-items: center;
    position: absolute;
    top: 0px;
@@ -471,7 +473,7 @@ select option {
 }
 
 .loading-screen span {
-   font-size:100pt;
+   font-size: 3rem;
    color: white;
    mix-blend-mode: difference;
    /* filter: invert(1.0); */
@@ -480,6 +482,26 @@ select option {
 .loading-screen.hide {
    z-index: -100;
    width: 0;
+}
+
+.bar-container {
+   width: 300px;
+   background-color: var(--color-theme-bold);
+}
+
+.bar-cutout {
+   height: 100%;
+   overflow:hidden;
+}
+
+.bar-progress {
+   background-color: var(--color-theme-normal);
+   width: 300px;
+   height: 100%;
+   position:absolute;
+   top:0; /* always declare both X & Y */
+   left:0;
+   filter: brightness(1.0);
 }
 
 .canvas-button img:hover {

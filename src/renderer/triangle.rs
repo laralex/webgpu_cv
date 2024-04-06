@@ -25,12 +25,13 @@ impl Future for InstantiateDemoFuture {
    }
 }
 
+#[derive(Default)]
 enum DemoLoadingStage {
-   CompileShaders = 0,
+   Ready = 0,
+   CompileShaders,
    LinkPrograms,
-   DummyWait,
+   #[default] DummyWait,
    SetGraphicsLevel,
-   Ready,
 }
 
 struct DemoLoadingProcess {
@@ -81,6 +82,21 @@ impl SimpleFuture for DemoLoadingProcess {
    fn poll(mut self: std::pin::Pin<&mut Self>, cx: &mut Self::Context) -> std::task::Poll<Self::Output> {
       use DemoLoadingStage::*;
       match self.stage {
+         DummyWait => {
+            let mut x = 0_i32;
+            for i in 0..100000 {
+               x = x.saturating_add(i);
+            }
+            self.stage_percent += 0.005;
+            self.dummy_counter += 1;
+            if (self.stage_percent >= 0.5) {
+               self.stage = CompileShaders;
+            }
+            if self.dummy_counter % 500 == 0 {
+               web_sys::console::log_2(&"Rust continue loading: TriangleDemo".into(), &self.stage_percent.into());
+            }
+            std::task::Poll::Pending
+         }
          CompileShaders => {
             let vertex_shader_source = std::include_str!("shaders/no_vao_triangle.vert");
             let fragment_shader_source = std::include_str!("shaders/vertex_color.frag");
@@ -94,7 +110,7 @@ impl SimpleFuture for DemoLoadingProcess {
                .unwrap();
             self.vert_shader = Some(vertex_shader);
             self.frag_shader = Some(fragment_shader);
-            self.stage_percent = 0.2;
+            self.stage_percent = 0.6;
             self.stage = LinkPrograms;
             std::task::Poll::Pending
          },
@@ -107,24 +123,8 @@ impl SimpleFuture for DemoLoadingProcess {
             gl_utils::delete_program_shaders(&self.gl, &self.main_program.as_ref().unwrap());
             self.vert_shader = None;
             self.frag_shader = None;
-            self.stage_percent = 0.4;
-            self.stage = DummyWait;
-            std::task::Poll::Pending
-         }
-         DummyWait => {
-            let mut x = 0_i32;
-            for i in 0..100000 {
-               x = x.saturating_add(i);
-            }
-            self.stage_percent += 0.005;
-            self.dummy_counter += 1;
-            if (self.stage_percent >= 1.0) {
-               self.stage_percent = 1.0;
-               self.stage = SetGraphicsLevel;
-            }
-            if self.dummy_counter % 500 == 0 {
-               web_sys::console::log_2(&"Rust continue loading: TriangleDemo".into(), &self.stage_percent.into());
-            }
+            self.stage_percent = 0.8;
+            self.stage = SetGraphicsLevel;
             std::task::Poll::Pending
          }
          SetGraphicsLevel => {
@@ -149,7 +149,7 @@ impl DemoLoadingFuture for DemoLoadingProcess {}
 impl TriangleDemo {
    pub fn start_loading<'a>(gl: Rc<GL>, graphics_level: GraphicsLevel) -> impl DemoLoadingFuture {
       DemoLoadingProcess {
-         stage: DemoLoadingStage::CompileShaders,
+         stage: Default::default(),
          stage_percent: 0.0,
          graphics_level,
          main_program: Default::default(),

@@ -11,7 +11,7 @@ use renderer::{IDemo};
 
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
-use web_sys::WebGl2RenderingContext;
+use web_sys::WebGl2RenderingContext as GL;
 use std::cell::Cell;
 use std::pin::Pin;
 use std::{cell::RefCell, ops::Deref, rc::Rc};
@@ -117,6 +117,7 @@ impl WasmInterface {
     pub fn wasm_start_loading_demo(&mut self, demo_id: DemoId) {
         let loader_callback = Rc::new(RefCell::new(None));
         let loader_callback2 = loader_callback.clone();
+        
         let demo_ref = self.demo.clone();
         let demo_id_ref = self.demo_id.clone();
 
@@ -124,7 +125,6 @@ impl WasmInterface {
         demo_loading_finish();
         self.pending_loading_demo.borrow_mut().take();
 
-        web_sys::console::log_3(&"====".into(), &demo_id.into(), &(*self.demo_id.borrow()).into());
         if demo_id == *self.demo_id.borrow() {
             // this demo is already fully loaded, don't need to load again
             return;
@@ -137,8 +137,14 @@ impl WasmInterface {
                 self.demo_state.borrow().graphics_level));
 
         let gl_ref = self.gl.clone();
+        let loader_finished_callback = Rc::new(RefCell::new(Closure::new(move |_| {
+            // NOTE: since render loop and loading are not in sync
+            // after loading is done there maybe a blank frame
+            // thus signal loading finish only on the next frame
+            demo_loading_finish();
+        })));
         // request to advance the loading proecess once per frame
-        *loader_callback2.borrow_mut() = Some(Closure::wrap(Box::new(move || {
+        *loader_callback2.borrow_mut() = Some(Closure::new(move |_: usize| {
             if let Ok(mut loading_demo_ref) = pending_loading_demo_ref.try_borrow_mut() {
                 if let Some(loading_demo) = loading_demo_ref.as_mut() {
                     match loading_demo.as_mut().poll(/*cx*/&mut ()) {
@@ -149,11 +155,12 @@ impl WasmInterface {
                         }
                         std::task::Poll::Ready(new_demo) => {
                             // finished loading, assign the global state to new demo
+                            demo_loading_apply_progress(loading_demo.progress());
                             demo_ref.borrow_mut().drop_demo(gl_ref.as_ref());
                             *demo_ref.borrow_mut() = new_demo;
                             *demo_id_ref.borrow_mut() = demo_id;
                             *loading_demo_ref = None;
-                            demo_loading_finish();
+                            js_interop::request_animation_frame(&js_interop::window(), &loader_finished_callback.borrow());
                         }
                     }
                 } else {
@@ -164,7 +171,7 @@ impl WasmInterface {
                 // failed to check if loading exists, wait until next frame to try again
                 js_interop::request_animation_frame(&js_interop::window(), loader_callback.borrow().as_ref().unwrap());
             }
-        }) as Box<dyn FnMut()>));
+        }));
         js_interop::request_animation_frame(&js_interop::window(), loader_callback2.borrow().as_ref().unwrap());
     }
 
@@ -188,19 +195,20 @@ impl WasmInterface {
         }
         let mut gl = self.gl.clone();
         let demo_state = self.demo_state.clone();
-        let mut time_then_sec = js_interop::now_sec();
+        let mut time_then_sec = 0.0;
         
         let demo_clone = self.demo.clone();
         let window_engine = js_interop::window();
-        *engine_first_tick.borrow_mut() = Some(Closure::new(move || {
-            let time_now_sec = js_interop::now_sec();
-            let elapsed_sec = time_now_sec - time_then_sec;
+        *engine_first_tick.borrow_mut() = Some(Closure::new(move |timestamp: usize| {
+            let time_now_sec = timestamp as f32 * 0.001;
+            let elapsed_sec = (time_now_sec - time_then_sec).min(0.5);
             time_then_sec = time_now_sec;
-
             // engine step
+            // gl.clear(GL::COLOR_BUFFER_BIT);
             let mut demo_state = demo_state.borrow_mut();
             if let Ok(mut demo) = demo_clone.try_borrow_mut() {
                 demo_state.begin_frame(elapsed_sec as f32);
+                //web_sys::console::log_2(&"FPS".into(), &demo_state.frame_rate.into());
                 demo.tick(&demo_state);
                 {
                     gl.viewport(0, 0, demo_state.screen_size.0 as i32, demo_state.screen_size.1 as i32);

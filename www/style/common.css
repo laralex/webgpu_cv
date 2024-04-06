@@ -449,14 +449,14 @@ select option {
    position: absolute;
    left: calc(100% - 80px);
    top: 0%;
-   /* z-index: -10; */
+   z-index: 75;
 }
 
 .help-button {
    position: absolute;
    left: calc(100% - 80px);
    top: 100px;
-   /* z-index: -10; */
+   z-index: 75;
 }
 
 .loading-screen {

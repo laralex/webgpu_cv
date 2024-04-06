@@ -758,8 +758,8 @@ window.onload = function() {
    configureFromFont(CURRENT_FONT_FAMILY.val, CURRENT_LANGUAGE.val); // other elements' relative sizes depend on this configuration
    configureResizingBorder();
    configureFullscreenSwitch();
-   van.add(document.getElementById("main-content"), FullscreenButton({extraClasses: "fullscreen-button", height: "80"}));
-   van.add(document.getElementById("main-content"), HelpButton({height: "80"}));
+   van.add(document.getElementById("canvas-controls"), FullscreenButton({extraClasses: "fullscreen-button", height: "80"}));
+   van.add(document.getElementById("canvas-controls"), HelpButton({height: "80"}));
    van.add(document.getElementById("canvas-wrapper"), LoadingScreen(CURRENT_DEMO_LOADING_PROGRESS));
    van.add(document.getElementById("controls_column"), LanguagePicker(CURRENT_LANGUAGE, CURRENT_FONT_FAMILY, /*vertical*/ false));
    van.add(document.getElementById("controls_column"), GraphicsLevelPicker(CURRENT_GRAPHICS_LEVEL, /*vertical*/ false));

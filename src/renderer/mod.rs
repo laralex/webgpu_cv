@@ -105,6 +105,7 @@ pub trait IDemo : Drop {
    fn tick(&mut self, state: &ExternalState);
    fn start_switching_graphics_level(&mut self, gl: &GL, level: GraphicsLevel);
    fn poll_switching_graphics_level(&mut self, gl: &GL) -> std::task::Poll<()>;
+   fn progress_switching_graphics_level(&self) -> f32;
    fn render(&mut self, gl: &GL, delta_sec: f32);
    fn drop_demo(&mut self, gl: &GL);
 }

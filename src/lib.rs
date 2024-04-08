@@ -137,13 +137,14 @@ impl WasmInterface {
 
         // request to advance the loading process once per frame
         *switcher_callback.borrow_mut() = Some(Closure::new(move |_: usize| {
-            match demo_ref.borrow_mut().poll_switching_graphics_level(gl_ref.as_ref()) {
+            let poll = demo_ref.borrow_mut().poll_switching_graphics_level(gl_ref.as_ref());
+            match poll {
                 std::task::Poll::Pending => {
-                    graphics_switching_apply_progress(0.0);
+                    graphics_switching_apply_progress(demo_ref.borrow().progress_switching_graphics_level());
                     // run next loading step on the next frame
                     js_interop::request_animation_frame(&js_interop::window(), switcher_callback2.borrow().as_ref().unwrap());
                 },
-                std::task::Poll::Ready(new_demo) => {
+                std::task::Poll::Ready(()) => {
                     graphics_switching_apply_progress(1.0);
                     // finished switching
                     // don't request another `request_animation_frame`

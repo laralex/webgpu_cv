@@ -69,7 +69,7 @@ impl SimpleFuture for DemoLoadingProcess {
             for i in 0..100000 {
                x = x.saturating_add(i);
             }
-            self.stage_percent += 0.005;
+            self.stage_percent += 0.007;
             self.dummy_counter += 1;
             if self.stage_percent >= 0.5 {
                self.stage = CompileShaders;
@@ -129,7 +129,7 @@ impl SimpleFuture for DemoLoadingProcess {
             let gl = self.gl.clone();
             match self.loaded_demo.as_mut().unwrap().poll_switching_graphics_level(gl.as_ref()) {
                std::task::Poll::Pending  => {
-                  self.stage_percent = 0.75;
+                  self.stage_percent = 0.75 + 0.25 * self.loaded_demo.as_ref().unwrap().progress_switching_graphics_level();
                   self.stage = SwitchGraphicsLevel;
                   std::task::Poll::Pending
                }
@@ -215,6 +215,13 @@ impl IDemo for TriangleDemo {
       }
    }
 
+   fn progress_switching_graphics_level(&self) -> f32 {
+      self.pending_graphics_level_switch
+         .as_ref()
+         .map(|s| s.progress())
+         .unwrap_or_default()
+   }
+
    fn drop_demo(&mut self, gl: &GL) {
       gl.delete_program(Some(&self.main_program));
       web_sys::console::log_1(&"Rust demo drop: TriangleDemo".into());
@@ -251,10 +258,10 @@ impl GraphicsSwitchingProcess {
       }
       let self_ = demo.pending_graphics_level_switch.as_mut().unwrap();
       let mut x = 0_i32;
-      for i in 0..500000 {
+      for i in 0..100000 {
          x = x.saturating_add(i);
       }
-      self_.progress += 0.01;
+      self_.progress += 0.005;
       if self_.progress >= 1.0 {
          demo.num_rendered_vertices = match self_.graphics_level {
             GraphicsLevel::Minimal => 0,

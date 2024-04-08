@@ -24,6 +24,10 @@ impl IDemo for StubDemo {
       std::task::Poll::Ready(())
    }
 
+   fn progress_switching_graphics_level(&self) -> f32 {
+      0.0
+   }
+
    fn drop_demo(&mut self, _gl: &GL) {
       web_sys::console::log_1(&"Rust demo drop: StubDemo".into());
    }

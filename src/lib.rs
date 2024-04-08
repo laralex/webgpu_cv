@@ -5,15 +5,13 @@ mod gl_utils;
 mod renderer;
 mod simple_async;
 
-use renderer::{DemoLoadingFuture};
-use renderer::{MouseState, ExternalState};
-use renderer::{IDemo};
+use renderer::{DemoLoadingFuture, ExternalState, IDemo, MouseState};
 
 use wasm_bindgen::prelude::*;
-use web_sys::WebGl2RenderingContext as GL;
+type GL = web_sys::WebGl2RenderingContext;
 use std::cell::Cell;
-use std::pin::{pin, Pin};
-use std::{cell::RefCell, ops::Deref, rc::Rc};
+use std::pin::Pin;
+use std::{cell::RefCell, rc::Rc};
 
 // static CELL: Lazy<Box<&dyn renderer::IDemo>> = Lazy::new(|| Box::default());
 // static DEMO: &mut dyn renderer::IDemo = Default::default();
@@ -104,7 +102,7 @@ impl WasmInterface {
     }
 
     #[wasm_bindgen]
-    pub fn wasm_resize(&mut self, gl: *mut web_sys::WebGl2RenderingContext, width: u32, height: u32) {
+    pub fn wasm_resize(&mut self, width: u32, height: u32) {
         if let Ok(mut state) = self.demo_state.try_borrow_mut() {
             state.screen_size = (width, height);
             web_sys::console::log_3(&"Rust resize".into(), &width.into(), &height.into());
@@ -120,38 +118,33 @@ impl WasmInterface {
 
     #[wasm_bindgen]
     pub fn wasm_set_graphics_level(&mut self, level: GraphicsLevel) {
-        // NOTE: If another request to this function is given prior to completion of previous request,
-        // then only the first one is run to completion, other are discarded
-        // NOTE: If the current demo is switched prior to completion of graphics level switch,
-        // then the graphics level is switched for the current demo ,
-        // and the new demo will be initialized with new graphics level,
-        // NOTE: If the request to swtich graphics level is issued,
+        // NOTE: If the request to switch graphics level is issued,
         // prior to completion of loading of a new demo,
-        // then the result is UNDEFINED (probabaly the new demo will be initialized with previous graphics level)
+        // then the result is UNDEFINED (probably the new demo will be initialized with previous graphics level)
+        // NOTE: If another request to this function is given before
+        // `poll_switching_graphics_level` returns Ready enum, 
+        // then the current request is aborted and deallocated, and a new one is started
+        // NOTE: If the current demo is switched prior to completion of graphics level switch,
+        // then the graphics level is switched for the PREVIOUS demo ,
+        // and the new demo will be initialized with new graphics level,
 
         self.demo_state.borrow_mut().graphics_level = level;
         let switcher_callback = Rc::new(RefCell::new(None));
         let switcher_callback2 = switcher_callback.clone();
-        // let mut switcher_process = pin!(.borrow_mut().as_mut()
-        // let mut demo_pin = Box::into_pin(*self.demo.borrow_mut());
-        let switcher_process = Box::into_pin(
-            self.demo.borrow_mut().as_mut().start_switching_graphics_level(self.gl.clone(), level)
-        );
+        self.demo.borrow_mut().as_mut().start_switching_graphics_level(self.gl.as_ref(), level);
         let demo_ref = self.demo.clone();
         let gl_ref = self.gl.clone();
 
         // request to advance the loading process once per frame
         *switcher_callback.borrow_mut() = Some(Closure::new(move |_: usize| {
-            match switcher_process.as_mut().simple_poll(/*cx*/&mut ()) {
+            match demo_ref.borrow_mut().poll_switching_graphics_level(gl_ref.as_ref()) {
                 std::task::Poll::Pending => {
-                    graphics_switching_apply_progress(switcher_process.progress());
+                    graphics_switching_apply_progress(0.0);
                     // run next loading step on the next frame
                     js_interop::request_animation_frame(&js_interop::window(), switcher_callback2.borrow().as_ref().unwrap());
                 },
                 std::task::Poll::Ready(new_demo) => {
-                    graphics_switching_apply_progress(switcher_process.progress());
-                    demo_ref.borrow_mut().drop_demo(gl_ref.as_ref());
-                            *demo_ref.borrow_mut() = new_demo;
+                    graphics_switching_apply_progress(1.0);
                     // finished switching
                     // don't request another `request_animation_frame`
                     web_sys::console::log_1(&"Rust graphics_switching_finish".into());
@@ -250,7 +243,7 @@ impl WasmInterface {
             configure_mouseup(demo_state_mut.mouse.clone())?;
             configure_mousemove(&self.canvas, demo_state_mut.mouse.clone())?;
         }
-        let mut gl = self.gl.clone();
+        let gl = self.gl.clone();
         let demo_state = self.demo_state.clone();
         let mut time_then_sec = 0.0;
         let mut time_then_ms = 0;

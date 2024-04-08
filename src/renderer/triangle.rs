@@ -1,34 +1,8 @@
-use std::{cell::RefCell, pin::Pin, rc::{Rc, Weak}};
+use std::{rc::Rc};
 
-use super::{DemoLoadingFuture, Dispose, ExternalState, GraphicsLevel, GraphicsSwitchingFuture, IDemo, MouseState, Progress, SimpleFuture};
+use super::{DemoLoadingFuture, Dispose, ExternalState, GraphicsLevel, IDemo, Progress, SimpleFuture};
 use crate::gl_utils;
 use web_sys::{WebGl2RenderingContext as GL, WebGlProgram, WebGlShader};
-
-pub struct TriangleDemo {
-   gl: Rc<GL>,
-   main_program: WebGlProgram,
-   clear_color: [f32; 4],
-   num_rendered_vertices: i32,
-}
-
-impl Drop for TriangleDemo {
-   fn drop(&mut self) {
-      // if Rc::strong_count(&self.main_program) == 1 {
-         self.gl.delete_program(Some(&self.main_program));
-      // }
-   }
-}
-
-impl Clone for TriangleDemo {
-    fn clone(&self) -> Self {
-        Self {
-         gl: self.gl.clone(),
-         main_program: self.main_program.clone(),
-         clear_color: self.clear_color.clone(),
-         num_rendered_vertices: self.num_rendered_vertices.clone(),
-        }
-    }
-}
 
 #[derive(Default)]
 enum DemoLoadingStage {
@@ -49,7 +23,6 @@ struct DemoLoadingProcess {
    frag_shader: Option<WebGlShader>,
    gl: Rc<GL>,
    dummy_counter: usize,
-   graphics_switching: Option<Pin<Box<dyn GraphicsSwitchingFuture>>>,
    loaded_demo: Option<TriangleDemo>,
 }
 
@@ -65,7 +38,6 @@ impl Dispose for DemoLoadingProcess {
             self.gl.delete_shader(self.frag_shader.as_ref());
             self.gl.delete_program(self.main_program.as_ref());
             self.stage = DemoLoadingStage::Ready;
-            self.graphics_switching.take();
             self.loaded_demo.take();
             web_sys::console::log_2(&"Rust loading drop: TriangleDemo".into(), &self.stage_percent.into());
          },
@@ -89,7 +61,7 @@ impl SimpleFuture for DemoLoadingProcess {
    type Output = Box<dyn IDemo>;
    type Context = ();
 
-   fn simple_poll(mut self: std::pin::Pin<&mut Self>, cx: &mut Self::Context) -> std::task::Poll<Self::Output> {
+   fn simple_poll(mut self: std::pin::Pin<&mut Self>, _cx: &mut Self::Context) -> std::task::Poll<Self::Output> {
       use DemoLoadingStage::*;
       match self.stage {
          DummyWait => {
@@ -143,42 +115,32 @@ impl SimpleFuture for DemoLoadingProcess {
                main_program: self.main_program.as_ref().unwrap().clone(),
                clear_color: [0.0; 4],
                num_rendered_vertices: 3,
+               pending_graphics_level_switch: None,
             });
             let graphics_level = self.graphics_level;
             let gl = self.gl.clone();
-            self.graphics_switching = Some(
-               Box::into_pin(self.loaded_demo.as_mut().unwrap()
-                  .start_switching_graphics_level(gl, graphics_level))
-            );
+            self.loaded_demo.as_mut().unwrap()
+                  .start_switching_graphics_level(gl.as_ref(), graphics_level);
             self.stage_percent = 0.75;
             self.stage = SwitchGraphicsLevel;
             std::task::Poll::Pending
          }
          SwitchGraphicsLevel => {
-            let mut still_switching = false;
-            let mut switching_progress = 0.0;
-            if let Some(switching_process) = &mut self.graphics_switching {
-               match switching_process.as_mut().simple_poll(/*cx*/&mut ()) {
-                  std::task::Poll::Pending  => {
-                     still_switching = true;
-                     switching_progress = switching_process.progress();
-                  }
-                  std::task::Poll::Ready(new_demo) => {
-                     self.loaded_demo = Some(new_demo);
-                  }
+            let gl = self.gl.clone();
+            match self.loaded_demo.as_mut().unwrap().poll_switching_graphics_level(gl.as_ref()) {
+               std::task::Poll::Pending  => {
+                  self.stage_percent = 0.75;
+                  self.stage = SwitchGraphicsLevel;
+                  std::task::Poll::Pending
                }
-            }
-            if still_switching {
-               self.stage_percent = 0.75 + 0.25*switching_progress;
-               self.stage = SwitchGraphicsLevel;
-               std::task::Poll::Pending
-            } else {
-               web_sys::console::log_1(&"Rust loading ready: TriangleDemo".into());
-               self.stage_percent = 1.0;
-               self.stage = Ready;
-               std::task::Poll::Ready(Box::new(
-                  self.loaded_demo.take().unwrap()
-               ))
+               std::task::Poll::Ready(()) => {
+                  web_sys::console::log_1(&"Rust loading ready: TriangleDemo".into());
+                  self.stage_percent = 1.0;
+                  self.stage = Ready;
+                  std::task::Poll::Ready(Box::new(
+                     self.loaded_demo.take().unwrap()
+                  ))
+               },
             }
          }
          Ready => unreachable!("Should not poll the task again after std::task::Poll::Ready was polled"),
@@ -187,6 +149,20 @@ impl SimpleFuture for DemoLoadingProcess {
 }
 
 impl DemoLoadingFuture for DemoLoadingProcess {}
+
+pub struct TriangleDemo {
+   gl: Rc<GL>,
+   main_program: WebGlProgram,
+   clear_color: [f32; 4],
+   num_rendered_vertices: i32,
+   pending_graphics_level_switch: Option<GraphicsSwitchingProcess>,
+}
+
+impl Drop for TriangleDemo {
+   fn drop(&mut self) {
+      self.gl.delete_program(Some(&self.main_program));
+   }
+}
 
 impl TriangleDemo {
    pub fn start_loading<'a>(gl: Rc<GL>, graphics_level: GraphicsLevel) -> impl DemoLoadingFuture {
@@ -197,7 +173,6 @@ impl TriangleDemo {
          main_program: Default::default(),
          vert_shader: Default::default(),
          frag_shader: Default::default(),
-         graphics_switching: Default::default(),
          loaded_demo: Default::default(),
          gl,
          dummy_counter: 0,
@@ -209,13 +184,13 @@ impl TriangleDemo {
 impl IDemo for TriangleDemo {
    fn tick(&mut self, input: &ExternalState) {
       let mouse_pos = input.mouse_unit_position();
-      self.clear_color[0] = input.time_sec.sin() * 0.5 + 0.5;
+      self.clear_color[0] = input.time_sec.sin() * 0.5 + 0.5 * mouse_pos.0;
       self.clear_color[1] = (input.time_sec * 1.2).sin() * 0.5 + 0.5;
       self.clear_color[2] = input.mouse.get().left;
       self.clear_color[3] = 1.0;
    }
 
-   fn render(&mut self, gl: &GL, delta_sec: f32) {
+   fn render(&mut self, gl: &GL, _delta_sec: f32) {
       gl.bind_framebuffer(GL::FRAMEBUFFER, None);
       gl_utils::clear_with_color_f32(
          gl, GL::COLOR_ATTACHMENT0, &self.clear_color, 0);
@@ -223,23 +198,22 @@ impl IDemo for TriangleDemo {
       gl.draw_arrays(GL::TRIANGLES, 0, self.num_rendered_vertices);
    }
 
-   fn start_switching_graphics_level(&mut self, gl: Rc<GL>, graphics_level: GraphicsLevel) -> Box<dyn GraphicsSwitchingFuture> {
+   fn start_switching_graphics_level(&mut self, _gl: &GL, graphics_level: GraphicsLevel) {
       web_sys::console::log_1(&"Rust start_switching_graphics_level: TriangleDemo".into());
-      Box::new(GraphicsSwitchingProcess{
+      self.pending_graphics_level_switch = Some(GraphicsSwitchingProcess{
          progress: 0.0,
-         demo: self.clone(),
          graphics_level,
-      })
+      });
    }
 
-   // fn start_switching_graphics_level_static(mut this: std::pin::Pin<Box<&mut Self>>, gl: Rc<GL>, graphics_level: GraphicsLevel) -> Pin<Box<dyn GraphicsSwitchingFuture>> {
-   //    web_sys::console::log_1(&"Rust start_switching_graphics_level_static: TriangleDemo".into());
-   //    Box::pin(GraphicsSwitchingProcess{
-   //       progress: 0.0,
-   //       demo: Pin::new(this.as_mut().deref_mut()),
-   //       graphics_level,
-   //    })
-   // }
+   fn poll_switching_graphics_level(&mut self, gl: &GL) -> std::task::Poll<()> {
+      if self.pending_graphics_level_switch.is_some() {
+         GraphicsSwitchingProcess::poll(self, gl)
+      } else {
+         self.pending_graphics_level_switch.take();
+         std::task::Poll::Ready(())
+      }
+   }
 
    fn drop_demo(&mut self, gl: &GL) {
       gl.delete_program(Some(&self.main_program));
@@ -250,48 +224,48 @@ impl IDemo for TriangleDemo {
 pub struct GraphicsSwitchingProcess {
    progress: f32,
    graphics_level: GraphicsLevel,
-   demo: TriangleDemo,
 }
 
-impl<'a> Dispose for GraphicsSwitchingProcess {
-   fn dispose(&mut self) { }
+impl Dispose for GraphicsSwitchingProcess {
+   fn dispose(&mut self) {
+      web_sys::console::log_1(&"Rust graphics switching drop: TriangleDemo".into());
+   }
 }
 
-impl<'a> Drop for GraphicsSwitchingProcess {
+impl Drop for GraphicsSwitchingProcess {
    fn drop(&mut self) {
       self.dispose();
    }
 }
 
-impl<'a> Progress for GraphicsSwitchingProcess {
+impl Progress for GraphicsSwitchingProcess {
     fn progress(&self) -> f32 {
       self.progress
    }
 }
 
-impl<'a> SimpleFuture for GraphicsSwitchingProcess {
-   type Output = Box<dyn IDemo>;
-   type Context = ();
-
-   fn simple_poll(mut self: std::pin::Pin<&mut Self>, cx: &mut Self::Context) -> std::task::Poll<Self::Output> {
+impl GraphicsSwitchingProcess {
+   pub fn poll(demo: &mut TriangleDemo, _gl: &GL) -> std::task::Poll<()> {
+      if demo.pending_graphics_level_switch.is_none() {
+         return std::task::Poll::Ready(());
+      }
+      let self_ = demo.pending_graphics_level_switch.as_mut().unwrap();
       let mut x = 0_i32;
-      for i in 0..200000 {
+      for i in 0..500000 {
          x = x.saturating_add(i);
       }
-      self.progress += 0.01;
-      if self.progress >= 1.0 {
-         self.demo.num_rendered_vertices = match self.graphics_level {
+      self_.progress += 0.01;
+      if self_.progress >= 1.0 {
+         demo.num_rendered_vertices = match self_.graphics_level {
             GraphicsLevel::Minimal => 0,
             GraphicsLevel::Low => 3,
             GraphicsLevel::Medium => 6,
             GraphicsLevel::High => 9,
             GraphicsLevel::Ultra => 12,
          };
-         std::task::Poll::Ready(Box::new(self.demo))
+         std::task::Poll::Ready(())
       } else {
          std::task::Poll::Pending
       }
    }
 }
-
-impl<'a> GraphicsSwitchingFuture for GraphicsSwitchingProcess {}

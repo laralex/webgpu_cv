@@ -1,7 +1,7 @@
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::Element;
-use web_sys::{WebGl2RenderingContext, WebGlShader, WebGlProgram};
+use web_sys::{WebGl2RenderingContext};
 use std::convert::TryInto;
 
 pub fn canvas(canvas_dom_id: &str) -> Result<web_sys::HtmlCanvasElement, Element> {

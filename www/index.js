@@ -491,18 +491,23 @@ function ControlsPopup({onclose}) {
    );
 }
 
-function LoadingScreen(progressState) {
-   return () => progressState.val === null ? div() : div({
-         class: "loading-screen " + (progressState.val !== null ? "" : " hide "),
-         style: "background:rgb(0,0,0,"+(0.3 + 0.7 * progressState.val)+");",
-      },
-      span(Math.trunc(Math.floor(progressState.val*20)*5) + '%'),
-      div({class: "bubble bar-container"},
-         div({class: "bar-cutout", style: () => 'width:' + progressState.val*100.0 + '%'},
-            div({class: "bubble bar-progress"})
-         ),
-      )
-   );
+function LoadingScreen() {
+   return () => {
+      const progress = CURRENT_GRAPHICS_SWITCHING_PROGRESS.val != null
+         ? CURRENT_GRAPHICS_SWITCHING_PROGRESS.val
+         : CURRENT_DEMO_LOADING_PROGRESS.val;
+      return progress === null ? div() : div({
+            class: "loading-screen " + (progress !== null ? "" : " hide "),
+            style: "background:rgb(0,0,0,"+(0.3 + 0.7 * progress)+");",
+         },
+         span(Math.trunc(Math.floor(progress*20)*5) + '%'),
+         div({class: "bubble bar-container"},
+            div({class: "bar-cutout", style: () => 'width:' + progress*100.0 + '%'},
+               div({class: "bubble bar-progress"})
+            ),
+         )
+      );
+   }
 }
 
 function getFontFamilies(elements){
@@ -639,7 +644,7 @@ function getCanvasConvigurationFunc(canvas_id) {
       console.log(canvas.width, canvas.height);
       if (WASM_INSTANCE) {
          let gl = canvas.getContext("webgl2");
-         WASM_INSTANCE.wasm_resize(gl, canvas.width, canvas.height);
+         WASM_INSTANCE.wasm_resize(canvas.width, canvas.height);
       }
    }
    document.addEventListener("visibilitychange", resizeCanvas, false);
@@ -774,7 +779,7 @@ window.onload = function() {
    configureCanvas();
    van.add(document.getElementById("canvas-controls"), FullscreenButton({extraClasses: "fullscreen-button", height: "80"}));
    van.add(document.getElementById("canvas-controls"), HelpButton({height: "80"}));
-   van.add(document.getElementById("canvas-wrapper"), LoadingScreen(CURRENT_DEMO_LOADING_PROGRESS));
+   van.add(document.getElementById("canvas-wrapper"), LoadingScreen());
    van.add(document.getElementById("controls_column"), LanguagePicker(CURRENT_LANGUAGE, CURRENT_FONT_FAMILY, /*vertical*/ false));
    van.add(document.getElementById("controls_column"), GraphicsLevelPicker(CURRENT_GRAPHICS_LEVEL, /*vertical*/ false));
    van.add(document.getElementById("controls_column"), FpsLimitPicker(CURRENT_FPS_LIMIT, /*vertical*/ false));

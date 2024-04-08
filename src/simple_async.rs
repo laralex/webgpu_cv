@@ -7,7 +7,6 @@ use std::{
    sync::mpsc::{sync_channel, Receiver, SyncSender},
    sync::{Arc, Mutex},
    task::Context,
-   time::Duration,
 };
 
 /// Task executor that receives tasks off of a channel and runs them.

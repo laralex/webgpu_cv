@@ -2,7 +2,7 @@ pub mod stub_demo;
 pub use stub_demo::StubDemo;
 pub mod triangle;
 
-use std::{cell::{Cell, RefCell}, pin::Pin, rc::Rc};
+use std::{cell::{Cell}, pin::Pin, rc::Rc};
 use web_sys::WebGl2RenderingContext as GL;
 
 use crate::{DemoId, GraphicsLevel};
@@ -103,8 +103,8 @@ impl ExternalState {
 
 pub trait IDemo : Drop {
    fn tick(&mut self, state: &ExternalState);
-   fn start_switching_graphics_level(&mut self, gl: Rc<GL>, level: GraphicsLevel) -> Box<dyn GraphicsSwitchingFuture>;
-   //fn start_switching_graphics_level_static(this: std::pin::Pin<Box<&mut Self>>, gl: Rc<GL>, level: GraphicsLevel) -> Pin<Box<dyn GraphicsSwitchingFuture>>;
+   fn start_switching_graphics_level(&mut self, gl: &GL, level: GraphicsLevel);
+   fn poll_switching_graphics_level(&mut self, gl: &GL) -> std::task::Poll<()>;
    fn render(&mut self, gl: &GL, delta_sec: f32);
    fn drop_demo(&mut self, gl: &GL);
 }
@@ -126,15 +126,6 @@ impl<T,C> SimpleFuture for Box<dyn SimpleFuture<Output=T, Context=C>> {
     }
 }
 
-impl<T,C> SimpleFuture for &mut Box<dyn SimpleFuture<Output=T, Context=C>> {
-   type Output=T;
-   type Context=C;
-
-   fn simple_poll(mut self: Pin<&mut Self>, cx: &mut Self::Context) -> std::task::Poll<Self::Output> {
-       self.as_mut().simple_poll(cx)
-   }
-}
-
 pub trait Progress {
    // normalized progress 0.0 - 1.0
    fn progress(&self) -> f32;
@@ -145,16 +136,16 @@ pub trait Dispose {
 }
 
 pub trait DemoLoadingFuture : SimpleFuture<Output=Box<dyn IDemo>, Context=()> + Dispose + Progress {}
-pub trait GraphicsSwitchingFuture : SimpleFuture<Output=Box<dyn IDemo>, Context=()> + Dispose + Progress {}
+// pub trait GraphicsSwitchingFuture : SimpleFuture<Output=Box<dyn IDemo>, Context=()> + Dispose + Progress {}
 
 pub fn start_loading_demo<'a>(id: DemoId, gl: Rc<GL>, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture> {
    Box::new(match id {
       DemoId::Triangle =>
          TriangleDemo::start_loading(gl, graphics_level),
       DemoId::CareerHuawei =>
-         TriangleDemo::start_loading(gl, GraphicsLevel::Low),
+         TriangleDemo::start_loading(gl, graphics_level),
       DemoId::CareerSamsung =>
-         TriangleDemo::start_loading(gl, GraphicsLevel::Medium),
+         TriangleDemo::start_loading(gl, graphics_level),
       DemoId::PublicationWacv2024 =>
          TriangleDemo::start_loading(gl, GraphicsLevel::High),
       DemoId::ProjectTreesRuler =>

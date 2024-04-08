@@ -474,9 +474,9 @@ select option {
 
 .loading-screen span {
    font-size: 3rem;
-   color: white;
+   color: var(--color-theme-accent);
    mix-blend-mode: difference;
-   /* filter: invert(1.0); */
+   /* filter: invert(0.5); */
 }
 
 .loading-screen.hide {

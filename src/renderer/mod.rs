@@ -2,22 +2,12 @@ pub mod stub_demo;
 pub use stub_demo::StubDemo;
 pub mod triangle;
 
-use std::{cell::Cell, pin::Pin, rc::Rc, sync::Mutex};
-use futures::future::BoxFuture;
+use std::{cell::{Cell, RefCell}, pin::Pin, rc::Rc};
 use web_sys::WebGl2RenderingContext as GL;
 
-use crate::DemoId;
+use crate::{DemoId, GraphicsLevel};
 
 use self::triangle::TriangleDemo;
-
-#[derive(Default, Clone, Copy)]
-pub enum GraphicsLevel {
-   Minimal = 0x00,
-   Low = 0x10,
-   #[default] Medium = 0x20,
-   High = 0x30,
-   Ultra = 0xFF,
-}
 
 impl From<u32> for GraphicsLevel {
     fn from(level_code: u32) -> Self {
@@ -111,9 +101,10 @@ impl ExternalState {
    }
 }
 
-pub trait IDemo {
+pub trait IDemo : Drop {
    fn tick(&mut self, state: &ExternalState);
-   fn set_graphics_level(&mut self, level: GraphicsLevel);
+   fn start_switching_graphics_level(&mut self, gl: Rc<GL>, level: GraphicsLevel) -> Box<dyn GraphicsSwitchingFuture>;
+   //fn start_switching_graphics_level_static(this: std::pin::Pin<Box<&mut Self>>, gl: Rc<GL>, level: GraphicsLevel) -> Pin<Box<dyn GraphicsSwitchingFuture>>;
    fn render(&mut self, gl: &GL, delta_sec: f32);
    fn drop_demo(&mut self, gl: &GL);
 }
@@ -123,16 +114,25 @@ pub trait SimpleFuture {
    type Context;
    // std::future::Future uses std::task::Context<'_>
    // we use a mock argument        Self::Context
-   fn poll(self: std::pin::Pin<&mut Self>, cx: &mut Self::Context) -> std::task::Poll<Self::Output>;
+   fn simple_poll(self: Pin<&mut Self>, cx: &mut Self::Context) -> std::task::Poll<Self::Output>;
 }
 
 impl<T,C> SimpleFuture for Box<dyn SimpleFuture<Output=T, Context=C>> {
     type Output=T;
     type Context=C;
 
-    fn poll(mut self: std::pin::Pin<&mut Self>, cx: &mut Self::Context) -> std::task::Poll<Self::Output> {
-        self.as_mut().poll(cx)
+    fn simple_poll(mut self: Pin<&mut Self>, cx: &mut Self::Context) -> std::task::Poll<Self::Output> {
+        self.as_mut().simple_poll(cx)
     }
+}
+
+impl<T,C> SimpleFuture for &mut Box<dyn SimpleFuture<Output=T, Context=C>> {
+   type Output=T;
+   type Context=C;
+
+   fn simple_poll(mut self: Pin<&mut Self>, cx: &mut Self::Context) -> std::task::Poll<Self::Output> {
+       self.as_mut().simple_poll(cx)
+   }
 }
 
 pub trait Progress {
@@ -144,12 +144,11 @@ pub trait Dispose {
    fn dispose(&mut self);
 }
 
-pub trait DemoLoadingFuture : SimpleFuture<Output=Box<dyn IDemo>, Context=()> + Dispose + Progress {
+pub trait DemoLoadingFuture : SimpleFuture<Output=Box<dyn IDemo>, Context=()> + Dispose + Progress {}
+pub trait GraphicsSwitchingFuture : SimpleFuture<Output=Box<dyn IDemo>, Context=()> + Dispose + Progress {}
 
-}
-
-pub fn start_loading_demo<'a>(id: DemoId, gl: Rc<GL>, graphics_level: GraphicsLevel) -> Pin<Box<dyn DemoLoadingFuture>> {
-   Box::pin(match id {
+pub fn start_loading_demo<'a>(id: DemoId, gl: Rc<GL>, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture> {
+   Box::new(match id {
       DemoId::Triangle =>
          TriangleDemo::start_loading(gl, graphics_level),
       DemoId::CareerHuawei =>

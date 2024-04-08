@@ -5,17 +5,15 @@ mod gl_utils;
 mod renderer;
 mod simple_async;
 
-use renderer::{DemoLoadingFuture, SimpleFuture};
-use renderer::{GraphicsLevel, MouseState, ExternalState};
+use renderer::{DemoLoadingFuture};
+use renderer::{MouseState, ExternalState};
 use renderer::{IDemo};
 
 use wasm_bindgen::prelude::*;
-use wasm_bindgen_futures::spawn_local;
 use web_sys::WebGl2RenderingContext as GL;
 use std::cell::Cell;
-use std::pin::Pin;
+use std::pin::{pin, Pin};
 use std::{cell::RefCell, ops::Deref, rc::Rc};
-use std::time::{Duration, Instant};
 
 // static CELL: Lazy<Box<&dyn renderer::IDemo>> = Lazy::new(|| Box::default());
 // static DEMO: &mut dyn renderer::IDemo = Default::default();
@@ -34,6 +32,8 @@ use std::time::{Duration, Instant};
 extern "C" {
     fn demo_loading_apply_progress(progress: f32);
     fn demo_loading_finish();
+    fn graphics_switching_apply_progress(progress: f32);
+    fn graphics_switching_finish();
 }
 
 #[wasm_bindgen]
@@ -61,6 +61,16 @@ pub enum DemoId {
 }
 
 #[wasm_bindgen]
+#[derive(Default, Clone, Copy)]
+pub enum GraphicsLevel {
+   Minimal = 0x00,
+   Low = 0x10,
+   #[default] Medium = 0x20,
+   High = 0x30,
+   Ultra = 0xFF,
+}
+
+#[wasm_bindgen]
 impl WasmInterface {
 
     #[wasm_bindgen(constructor)]
@@ -71,11 +81,12 @@ impl WasmInterface {
 
         let canvas = webgl::canvas(canvas_dom_id)?;
         let gl = webgl::init_webgl_context(&canvas).expect("Failed to get WebGL2 context");
-        let demo: Rc<RefCell<Box<dyn IDemo>>> = Rc::new(RefCell::new(Box::new(renderer::StubDemo{})));
         let demo_id = Rc::new(RefCell::new(DemoId::Stub));
         let demo_state = Rc::new(RefCell::new(renderer::ExternalState::default()));
         Ok(Self {
-            demo,
+            demo: Rc::new(RefCell::new(
+                Box::new(renderer::StubDemo{})
+            )),
             demo_state,
             demo_id,
             pending_loading_demo: Rc::new(RefCell::new(None)),
@@ -108,8 +119,47 @@ impl WasmInterface {
     }
 
     #[wasm_bindgen]
-    pub fn wasm_set_graphics_level(&mut self, level_code: u32) {
-        //*self.pending_graphics_level.borrow_mut() = Some(GraphicsLevel::from(level_code));
+    pub fn wasm_set_graphics_level(&mut self, level: GraphicsLevel) {
+        // NOTE: If another request to this function is given prior to completion of previous request,
+        // then only the first one is run to completion, other are discarded
+        // NOTE: If the current demo is switched prior to completion of graphics level switch,
+        // then the graphics level is switched for the current demo ,
+        // and the new demo will be initialized with new graphics level,
+        // NOTE: If the request to swtich graphics level is issued,
+        // prior to completion of loading of a new demo,
+        // then the result is UNDEFINED (probabaly the new demo will be initialized with previous graphics level)
+
+        self.demo_state.borrow_mut().graphics_level = level;
+        let switcher_callback = Rc::new(RefCell::new(None));
+        let switcher_callback2 = switcher_callback.clone();
+        // let mut switcher_process = pin!(.borrow_mut().as_mut()
+        // let mut demo_pin = Box::into_pin(*self.demo.borrow_mut());
+        let switcher_process = Box::into_pin(
+            self.demo.borrow_mut().as_mut().start_switching_graphics_level(self.gl.clone(), level)
+        );
+        let demo_ref = self.demo.clone();
+        let gl_ref = self.gl.clone();
+
+        // request to advance the loading process once per frame
+        *switcher_callback.borrow_mut() = Some(Closure::new(move |_: usize| {
+            match switcher_process.as_mut().simple_poll(/*cx*/&mut ()) {
+                std::task::Poll::Pending => {
+                    graphics_switching_apply_progress(switcher_process.progress());
+                    // run next loading step on the next frame
+                    js_interop::request_animation_frame(&js_interop::window(), switcher_callback2.borrow().as_ref().unwrap());
+                },
+                std::task::Poll::Ready(new_demo) => {
+                    graphics_switching_apply_progress(switcher_process.progress());
+                    demo_ref.borrow_mut().drop_demo(gl_ref.as_ref());
+                            *demo_ref.borrow_mut() = new_demo;
+                    // finished switching
+                    // don't request another `request_animation_frame`
+                    web_sys::console::log_1(&"Rust graphics_switching_finish".into());
+                    graphics_switching_finish();
+                }
+            }
+        }));
+        js_interop::request_animation_frame(&js_interop::window(), switcher_callback.borrow().as_ref().unwrap());
     }
 
     #[wasm_bindgen]
@@ -133,8 +183,8 @@ impl WasmInterface {
         // assign new current loading process
         let pending_loading_demo_ref = self.pending_loading_demo.clone();
         *pending_loading_demo_ref.borrow_mut() = Some(
-            renderer::start_loading_demo(demo_id, self.gl.clone(),
-                self.demo_state.borrow().graphics_level));
+            Box::into_pin(renderer::start_loading_demo(demo_id, self.gl.clone(),
+                self.demo_state.borrow().graphics_level)));
 
         let gl_ref = self.gl.clone();
 
@@ -147,22 +197,22 @@ impl WasmInterface {
             js_interop::request_animation_frame(&js_interop::window(), &finish);
         });
         // request to advance the loading proecess once per frame
-        *loader_callback2.borrow_mut() = Some(Closure::new(move |_: usize| {
-            if let Ok(mut loading_demo_ref) = pending_loading_demo_ref.try_borrow_mut() {
-                if let Some(loading_demo) = loading_demo_ref.as_mut() {
-                    match loading_demo.as_mut().poll(/*cx*/&mut ()) {
+        *loader_callback.borrow_mut() = Some(Closure::new(move |_: usize| {
+            if let Ok(mut loading_process_ref) = pending_loading_demo_ref.try_borrow_mut() {
+                if let Some(loading_process) = loading_process_ref.as_mut() {
+                    match loading_process.as_mut().simple_poll(/*cx*/&mut ()) {
                         std::task::Poll::Pending => {
-                            demo_loading_apply_progress(loading_demo.progress());
+                            demo_loading_apply_progress(loading_process.progress());
                             // run next loading step on the next frame
-                            js_interop::request_animation_frame(&js_interop::window(), loader_callback.borrow().as_ref().unwrap());
+                            js_interop::request_animation_frame(&js_interop::window(), loader_callback2.borrow().as_ref().unwrap());
                         }
                         std::task::Poll::Ready(new_demo) => {
                             // finished loading, assign the global state to new demo
-                            demo_loading_apply_progress(loading_demo.progress());
+                            demo_loading_apply_progress(loading_process.progress());
                             demo_ref.borrow_mut().drop_demo(gl_ref.as_ref());
                             *demo_ref.borrow_mut() = new_demo;
                             *demo_id_ref.borrow_mut() = demo_id;
-                            *loading_demo_ref = None;
+                            *loading_process_ref = None;
 
                             // wait +1 frame
                             js_interop::request_animation_frame(&js_interop::window(), &finish_after_1_frame);
@@ -174,10 +224,10 @@ impl WasmInterface {
                 }
             } else {
                 // failed to check if loading exists, wait until next frame to try again
-                js_interop::request_animation_frame(&js_interop::window(), loader_callback.borrow().as_ref().unwrap());
+                js_interop::request_animation_frame(&js_interop::window(), loader_callback2.borrow().as_ref().unwrap());
             }
         }));
-        js_interop::request_animation_frame(&js_interop::window(), loader_callback2.borrow().as_ref().unwrap());
+        js_interop::request_animation_frame(&js_interop::window(), loader_callback.borrow().as_ref().unwrap());
     }
 
     #[wasm_bindgen]
@@ -210,7 +260,7 @@ impl WasmInterface {
         *engine_first_tick.borrow_mut() = Some(Closure::new(move |time: usize| {
             let time_now_ms  = time;
             let time_now_sec = time as f32 * 0.001;
-            let elapsed_ms  = (time_then_ms - time_then_ms);
+            let elapsed_ms  = time_then_ms - time_then_ms;
             let elapsed_sec = (time_now_sec - time_then_sec).min(5.0);
             time_then_ms  = time_now_ms;
             time_then_sec = time_now_sec;

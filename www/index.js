@@ -6,13 +6,7 @@ const CANVAS_ID = "main-canvas";
 
 const SIDEBAR_WIDTH_OVERRIDE_PX = van.state(0);
 const SIDEBAR_WIDTH_FONT_PX = van.state(0);
-const GRAPHICS_LEVELS = {
-   low:    0x10,
-   medium: 0x20,
-   high:   0x30,
-   ultra:  0xFF,
-}
-const CURRENT_GRAPHICS_LEVEL = van.state(GRAPHICS_LEVELS.low);
+const CURRENT_GRAPHICS_LEVEL = van.state(GraphicsLevel.Low);
 const CURRENT_FPS_LIMIT = van.state(45);
 const CURRENT_FONT_FAMILY = van.state("\"Share Tech\"");
 const DEFAULT_MAIN_CHAPTER = "chapter_career";
@@ -48,11 +42,11 @@ export const BUILD_DATA = {
 
 // import mywasm from 'my-wasm';
 // import init, { wasm_loop, wasm_resize, wasm_startup, wasm_set_fps_limit, wasm_set_graphics_level } from '/wasm/index.js';
-import init, { WasmInterface, DemoId } from '/wasm/index.js';
+import init, { WasmInterface, DemoId, GraphicsLevel } from '/wasm/index.js';
 import { UI_STRINGS, CURRENT_LANGUAGE, localizeString, localizeUi, localizeUiPostprocess } from '/modules/localization.js';
 import { Util } from '/modules/util.js';
 import { CvContent } from '/modules/cv.js';
-import { CURRENT_DEMO_LOADING_PROGRESS } from '/modules/exports_to_wasm.js';
+import { CURRENT_DEMO_LOADING_PROGRESS, CURRENT_GRAPHICS_SWITCHING_PROGRESS } from '/modules/exports_to_wasm.js';
 
 function dumpCvCookies() {
    Util.setCookie('mainChapter', CURRENT_CV_PAGE[0].val);
@@ -267,18 +261,18 @@ function LanguagePicker(currentLanguage, currentFont, isVertical, tooltipLanguag
 
 function GraphicsLevelPicker(currentGraphicsLevel, isVertical) {
    const meta = {};
-   meta[GRAPHICS_LEVELS.low] = {labelId: 'graphics_low', emoji: "✰✰✰"};
-   meta[GRAPHICS_LEVELS.medium] = {labelId: 'graphics_medium', emoji: "★✰✰"};
-   meta[GRAPHICS_LEVELS.high] = {labelId: 'graphics_high', emoji: "★★✰"};
-   meta[GRAPHICS_LEVELS.ultra] = {labelId: 'graphics_ultra', emoji: "★★★"};
+   meta[GraphicsLevel.Low] = {labelId: 'graphics_low', emoji: "✰✰✰"};
+   meta[GraphicsLevel.Medium] = {labelId: 'graphics_medium', emoji: "★✰✰"};
+   meta[GraphicsLevel.High] = {labelId: 'graphics_high', emoji: "★★✰"};
+   meta[GraphicsLevel.Ultra] = {labelId: 'graphics_ultra', emoji: "★★★"};
    const options = Object.entries(meta).map(([level, meta]) =>
       option({ value: level, selected: () => level == currentGraphicsLevel.val},
          () => localizeString(meta.labelId)().text + " " +  meta.emoji));
    van.derive(() => {
+      console.log("Set graphics_level="+currentGraphicsLevel.val)
       if (WASM_INSTANCE) {
          WASM_INSTANCE.wasm_set_graphics_level(currentGraphicsLevel.val)
       }
-      console.log("Set graphics_level="+currentGraphicsLevel.val)
    });
    const labelBefore = isVertical ? span(localizeUi('graphics_levels')) : null;
    const labelAfter = !isVertical ? span(localizeUi('graphics_levels')) : null;
@@ -289,6 +283,7 @@ function GraphicsLevelPicker(currentGraphicsLevel, isVertical) {
          class: 'interactive btn',
          oninput: e => currentGraphicsLevel.val = e.target.value,
          value: currentGraphicsLevel,
+         disabled: () => CURRENT_DEMO_LOADING_PROGRESS.val != null || CURRENT_GRAPHICS_SWITCHING_PROGRESS.val != null,
       }, options,),
       labelAfter,
    );
@@ -497,11 +492,11 @@ function ControlsPopup({onclose}) {
 }
 
 function LoadingScreen(progressState) {
-   return () => div({
+   return () => progressState.val === null ? div() : div({
          class: "loading-screen " + (progressState.val !== null ? "" : " hide "),
          style: "background:rgb(0,0,0,"+(0.3 + 0.7 * progressState.val)+");",
       },
-      span(Math.trunc(progressState.val*100.0) + '%'),
+      span(Math.trunc(Math.floor(progressState.val*20)*5) + '%'),
       div({class: "bubble bar-container"},
          div({class: "bar-cutout", style: () => 'width:' + progressState.val*100.0 + '%'},
             div({class: "bubble bar-progress"})
@@ -635,22 +630,22 @@ function addParallax({element, sensitivityXY, parallaxes, centers}) {
    }
 }
 
-function configureCanvas() {
-   let canvas = document.getElementById(CANVAS_ID);
-   let gl = canvas.getContext("webgl2");
-
+function getCanvasConvigurationFunc(canvas_id) {
+   let canvas = document.getElementById(canvas_id);
+   
    function resizeCanvas() {
       canvas.width = canvas.clientWidth;
       canvas.height = window.innerHeight;
       console.log(canvas.width, canvas.height);
       if (WASM_INSTANCE) {
+         let gl = canvas.getContext("webgl2");
          WASM_INSTANCE.wasm_resize(gl, canvas.width, canvas.height);
       }
    }
    document.addEventListener("visibilitychange", resizeCanvas, false);
    window.addEventListener('resize', resizeCanvas, false);
    window.addEventListener('focus', resizeCanvas, false);
-   resizeCanvas();
+   return resizeCanvas;
 }
 
 function getScrollCallback({chapterBorderStickiness, chapterAfterBorderStickiness}) {
@@ -733,6 +728,17 @@ function getCurrentDemoId() {
    return remap[CURRENT_CV_PAGE[1].val];
 }
 
+function getGraphicsLevel() {
+   const remap = {
+      0: GraphicsLevel.Minimal,
+      0: GraphicsLevel.Low,
+      0: GraphicsLevel.Medium,
+      0: GraphicsLevel.High,
+      0: GraphicsLevel.Ultra,
+   }
+   return remap[CURRENT_CV_PAGE[1].val];
+}
+
 window.onload = function() {
    van.derive(() => {
       sidebar.style.flexBasis = Math.max(SIDEBAR_WIDTH_OVERRIDE_PX.val || 0, SIDEBAR_WIDTH_FONT_PX.val || 0) + "px";
@@ -764,6 +770,8 @@ window.onload = function() {
    configureFromFont(CURRENT_FONT_FAMILY.val, CURRENT_LANGUAGE.val); // other elements' relative sizes depend on this configuration
    configureResizingBorder();
    configureFullscreenSwitch();
+   const configureCanvas = getCanvasConvigurationFunc(CANVAS_ID);
+   configureCanvas();
    van.add(document.getElementById("canvas-controls"), FullscreenButton({extraClasses: "fullscreen-button", height: "80"}));
    van.add(document.getElementById("canvas-controls"), HelpButton({height: "80"}));
    van.add(document.getElementById("canvas-wrapper"), LoadingScreen(CURRENT_DEMO_LOADING_PROGRESS));

@@ -10,6 +10,7 @@ Known issues:
    - fullscreen with F11 is weird (js error in firefox)
    - concurrent switch of demos
       - set graphics level also concurrently
+      - block graphics level switch
 - No demos:
    - job Huawei
    - job Samsung

@@ -106,6 +106,7 @@ Util.monthDiff = function(d1, d2){
   months = (d2.getFullYear() - d1.getFullYear()) * 12;
   months -= d1.getMonth();
   months += d2.getMonth();
+  months -= (d2.getDate() - d1.getDate()) >= 0 ? 0 : 1;
   const monthDiff = months <= 0 ? 0 : months;
   //console.log("%%%%", d1, d2);
   return monthDiff;

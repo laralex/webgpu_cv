@@ -312,14 +312,13 @@ function CvEducation(currentCvPage, chapterConnections, chapterId, chapterArgs) 
 }
 
 function CvHuawei(chapterArgs) {
-   
    chapterArgs.insideConstructor = () => {
       return div({class: "font-normalsize"},
          div({class: "flex-row flex-center", style: "margin-bottom: 0.5rem;"},
             YearsBlock(Util.getYearsSpan(huaweiSeniorEmploymentDate, currentDate).concat(["Current"])),
             div({class: "flex-column header"},
-               div({class: "flex-row", style: "gap:1rem;"},
-                  img({id: "cv-samsung-logo", src: "../assets/huawei-small.svg"}),
+               div({class: "flex-row", style: "gap:0.9rem;margin-bottom: 0.5rem;"},
+                  img({id: "cv-huawei-logo", src: "../assets/huawei-small.svg"}),
                   p({class: "font-Large bold"}, "Frame prediction SDK for mobile games"),
                ),
                LeftRightAlignedList({
@@ -331,15 +330,15 @@ function CvHuawei(chapterArgs) {
                }),
             )
          ),
-         div({class: "icons"},
-            img({class: "huge", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/opengl/opengl-original.svg" }),
-            img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-plain.svg" }),
-            img({class: "huge", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/unity/unity-original-wordmark.svg" }),
-         ),
+         // div({class: "icons"},
+         //    img({class: "huge", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/opengl/opengl-original.svg" }),
+         //    img({src: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-plain.svg" }),
+         //    img({class: "huge", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/unity/unity-original-wordmark.svg" }),
+         // ),
          ul(
-            li("Researched OpenGL hook-based rendering speed up in \"Genshin Impact\" game"),
-            li("Integrated in-house frame prediction SDK as a Unity plugin (URP pipeline)"),
-            li("Proudly helped to develop the next generation mobile operating system OpenHarmony"),
+            li(Highlight("OpenGL C++: "), "Experimented to speed up rendering of \"Genshin Impact\" game, via hooks of OpenGL commands"),
+            li(Highlight("Unity C#: "), "Integrated in-house frame prediction SDK as a Unity plugin (URP pipeline)"),
+            li("Overall, assisted to develop the ecosystem of the mobile operating system OpenHarmony"),
          ),
        )
    }
@@ -352,7 +351,7 @@ function CvSamsung(chapterArgs) {
          div({class: "flex-row flex-center", style: "margin-bottom: 0.5rem;"},
          YearsBlock(Util.getYearsSpan(samsungInternEmploymentDate, samsungResignationDate)),
          div({class: "flex-column header"},
-            div({class: "flex-row", style: "gap:1rem;"},
+            div({class: "flex-row", style: "gap:1rem;margin-bottom: 0.5rem;"},
                img({id: "cv-samsung-logo", src: "../assets/samsung.svg"}),
                p({class: "font-Large bold"}, "Neural Networks R&D"),
             ),
@@ -396,9 +395,9 @@ function CvSamsung(chapterArgs) {
                 li("my animation system and mesh skinning"),
                 li("augmented reality via ARCore"),
                 )),
-            li(Highlight("Unity: "), "Ported the techdemo as a Unity AR application"),
+            li(Highlight("Unity C#: "), "Ported the techdemo as a Unity AR application"),
             li(Highlight("Python PyTorch: "), "Researched and published a paper on neural networks, at WACV 2024 conference: ", a({"href": "https://openaccess.thecvf.com/content/WACV2024/html/Bashirov_MoRF_Mobile_Realistic_Fullbody_Avatars_From_a_Monocular_Video_WACV_2024_paper.html"}, "Link")),
-            li("Completed a crucial yearly KPI as a solo developer among research scientists"),
+            li("Completed a crucial yearly KPI of another team, being a solo developer among research scientists"),
          )
       );
    };

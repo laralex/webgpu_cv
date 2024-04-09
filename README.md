@@ -6,12 +6,9 @@ Known issues:
    - publication WACV 2024
    - project web-site
    - project trees-ruler
-- Demos:
+- Demos overall:
    - fullscreen with F11 is weird (js error in firefox)
-   - concurrent switch of demos
-      - set graphics level also concurrently
-      - block graphics level switch
-- No demos:
+- Demos:
    - job Huawei
    - job Samsung
    - publication WACV 2024
@@ -20,3 +17,4 @@ Known issues:
    - education skoltech
    - education polytech
 - Mobile layout
+- Sometimes English font is not loaded

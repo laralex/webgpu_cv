@@ -327,7 +327,7 @@
 }
 
 #cv-huawei-logo {
-   height: calc(var(--size-normalsize) * 2.0);
+   height: calc(var(--size-normalsize) * 1.6);
 }
 
 #cv-polytech-logo {

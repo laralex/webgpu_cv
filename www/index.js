@@ -300,6 +300,19 @@ function ResumePdfLink() {
       ));
 }
 
+function configureTextDeselection() {
+   window.addEventListener("mousedown", () => {
+      if (window.getSelection) {
+         window.getSelection().removeAllRanges();
+         console.log("Deselect window");
+      }
+      if (document.selection) {
+         document.selection.empty();
+         console.log("Deselect document");
+      }
+   });
+}
+
 function configureResizingBorder() {
    const resizeElement = document.getElementById("resize-border");
    const sidebar = document.getElementById("sidebar");
@@ -775,6 +788,7 @@ window.onload = function() {
    configureFromFont(CURRENT_FONT_FAMILY.val, CURRENT_LANGUAGE.val); // other elements' relative sizes depend on this configuration
    configureResizingBorder();
    configureFullscreenSwitch();
+   // configureTextDeselection();
    const configureCanvas = getCanvasConvigurationFunc(CANVAS_ID);
    configureCanvas();
    van.add(document.getElementById("canvas-controls"), FullscreenButton({extraClasses: "fullscreen-button", height: "80"}));

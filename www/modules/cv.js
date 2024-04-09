@@ -232,7 +232,7 @@ function CvCareer(currentCvPage, chapterConnections, chapterId, chapterArgs) {
 
 function CvPublications(currentCvPage, chapterConnections, chapterId, chapterArgs) {
    const data = [
-      { id: "publications_wacv_2024", color: SUBCHAPTER_COLOR[0], borderColor: SUBCHAPTER_BORDER_COLOR[0], constructor: CvSamsung },
+      { id: "publications_wacv_2024", color: SUBCHAPTER_COLOR[0], borderColor: SUBCHAPTER_BORDER_COLOR[0], constructor: CvWacv2024 },
       // #71BC8E #428D61 #428D61
    ];
    populateConnections(chapterConnections, chapterId, data.map(x => x.id));
@@ -336,8 +336,8 @@ function CvHuawei(chapterArgs) {
          //    img({class: "huge", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/unity/unity-original-wordmark.svg" }),
          // ),
          ul(
-            li(Highlight("OpenGL C++: "), "Experimented to speed up rendering of \"Genshin Impact\" game, via hooks of OpenGL commands"),
-            li(Highlight("Unity C#: "), "Integrated in-house frame prediction SDK as a Unity plugin (URP pipeline)"),
+            li(Highlight("OpenGL / C++: "), "Experimented to speed up rendering of \"Genshin Impact\" game, via hooks of OpenGL commands"),
+            li(Highlight("Unity / C#: "), "Integrated in-house frame prediction SDK as a Unity plugin (URP pipeline)"),
             li("Overall, assisted to develop the ecosystem of the mobile operating system OpenHarmony"),
          ),
        )
@@ -390,16 +390,71 @@ function CvSamsung(chapterArgs) {
          //    // img({class: "large", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/unity/unity-original-wordmark.svg" }),
          // ),
          ul(
-            li(Highlight("OpenGL Java Android: "), "Solely created a techdemo to render realistic human avatars, with:", ul(
+            li(Highlight("OpenGL / Java / Android: "), "Solely created a techdemo to render realistic human avatars, with:", ul(
                 li("rendering by neural networks, running 60 FPS in resolution 512x512px on Qualcomm NPU"),
                 li("my animation system and mesh skinning"),
                 li("augmented reality via ARCore"),
                 )),
-            li(Highlight("Unity C#: "), "Ported the techdemo as a Unity AR application"),
-            li(Highlight("Python PyTorch: "), "Researched and published a paper on neural networks, at WACV 2024 conference: ", a({"href": "https://openaccess.thecvf.com/content/WACV2024/html/Bashirov_MoRF_Mobile_Realistic_Fullbody_Avatars_From_a_Monocular_Video_WACV_2024_paper.html"}, "Link")),
+            li(Highlight("Unity / C#: "), "Ported the techdemo as a Unity AR application"),
+            li(Highlight("Python / PyTorch: "), "Researched and published a paper on neural networks, at WACV 2024 conference: ", a({"href": "https://openaccess.thecvf.com/content/WACV2024/html/Bashirov_MoRF_Mobile_Realistic_Fullbody_Avatars_From_a_Monocular_Video_WACV_2024_paper.html"}, "Link")),
             li("Completed a crucial yearly KPI of another team, being a solo developer among research scientists"),
          )
       );
+   };
+   return CvChapter(chapterArgs);
+}
+
+function CvWacv2024(chapterArgs) {
+   chapterArgs.insideConstructor = () => {
+      return div({class: "font-normalsize"},
+         div({class: "flex-column flex-center header", style: "margin-bottom:0.5rem;gap:0.5rem"},
+            p({class: "italic"}, "2024 Winter Conference on Applications of Computer Vision"),
+            p({class: "font-Large bold"}, "MoRF: Mobile Realistic Fullbody Avatars From a Monocular Video"),
+            // div({class: "flex-row flex-wrap flex-center", style: "gap: 0 1rem;"},
+            //    span("Renat Bashirov"),
+            //    span({class: "bold"}, "*Alexey Larionov*"),
+            //    span("Evgeniya Ustinova"),
+            //    span("Mikhail Sidorenko"),
+            //    span("David Svitov"),
+            //    span("Ilya Zakharkin"),
+            //    span("Victor Lempitsky"),
+            // ),
+         ),
+
+         div({class: "flex-row flex-center", style: "margin-bottom:0.5rem;gap:1rem;"},
+            span(
+               span("Project page"), ": ",
+               a({"href": "https://samsunglabs.github.io/MoRF-project-page/"}, "link")
+            ),
+            span(
+               span("Proceedings"), ": ",
+               a({"href": "https://openaccess.thecvf.com/content/WACV2024/html/Bashirov_MoRF_Mobile_Realistic_Fullbody_Avatars_From_a_Monocular_Video_WACV_2024_paper.html"}, "link")
+            ),
+            span(
+               span("arXiv"), ": ",
+               a({"href": "https://arxiv.org/abs/2303.10275"}, "link")
+            ),
+         ),
+         // LeftRightAlignedList({
+         //       leftItems: [
+         //          () => p("Project page"),
+         //          () => p("Proceedings"),
+         //          () => p("Arxiv"),
+         //       ],
+         //       rightItems: [
+         //          () => a({"href": "https://samsunglabs.github.io/MoRF-project-page/"}, "samsunglabs.github.io/MoRF-project-page"),
+         //          () => a({"href": "https://openaccess.thecvf.com/content/WACV2024/html/Bashirov_MoRF_Mobile_Realistic_Fullbody_Avatars_From_a_Monocular_Video_WACV_2024_paper.html"}, "link"),
+         //          () => a({"href": "https://arxiv.org/abs/2303.10275"}, "link"),
+         //       ],
+         // }),
+         p(Highlight("Abstract: "), "The paper improves \"Deferred Neural Rendering\" approach, reducing overfitting to inconsistent training data, by learning offsets to neural texture coordinates for each training image, then discarding them to preserve real-time inference on mobile hardware"),
+         ul({style: "margin-top:0.5rem;"},
+            li("I'm the second author of the paper"),
+            li("Researched the \"morphing\" idea of the paper"),
+            li("Developed the mobile phone demo that computes avatar images on mobile GPU and Qualcomm NPU in 30-60 FPS"),
+            li("Prepared a big part of the paper's text and all illustrations"),
+         ),
+      )
    };
    return CvChapter(chapterArgs);
 }

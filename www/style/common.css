@@ -10,7 +10,7 @@
    --size-normalsize: 1.0rem;
    --size-small: calc(var(--size-normalsize)*0.9);
    --size-large: calc(var(--size-normalsize)*1.1);
-   --size-Large: calc(var(--size-normalsize)*1.2);
+   --size-Large: calc(var(--size-normalsize)*1.25);
    --size-LARGE: calc(var(--size-normalsize)*1.4);
    --size-huge: calc(var(--size-normalsize)*1.6);
    --size-Huge: calc(var(--size-normalsize)*1.8);
@@ -195,6 +195,10 @@ a:active, a:visited, a:link {
    align-items: center;
    justify-content: center;
    text-align: center;
+}
+
+.flex-wrap {
+   flex-wrap: wrap;
 }
 
 
@@ -424,6 +428,10 @@ select option {
 
 .bold {
    font-weight: 600;
+}
+
+.italic {
+   font-style: italic;
 }
 
 /* [lang] {

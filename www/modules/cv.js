@@ -260,7 +260,7 @@ function CvProjects(currentCvPage, chapterConnections, chapterId, chapterArgs) {
    const data = [
       { id: "project_this_cv"                     , color: SUBCHAPTER_COLOR[0], borderColor: SUBCHAPTER_BORDER_COLOR[0], constructor: CvProjectWebcv },
       // { id: "project_unity_4X_strategy_volunteer" , color: SUBCHAPTER_COLOR[1], borderColor: SUBCHAPTER_BORDER_COLOR[1], constructor: CvChapter },
-      { id: "project_image_processing_tool"       , color: SUBCHAPTER_COLOR[1], borderColor: SUBCHAPTER_BORDER_COLOR[1], constructor: CvChapter },
+      { id: "project_image_processing_tool"       , color: SUBCHAPTER_COLOR[1], borderColor: SUBCHAPTER_BORDER_COLOR[1], constructor: CvProjectTreesRuler },
       { id: "project_infinite_fractal"       , color: SUBCHAPTER_COLOR[2], borderColor: SUBCHAPTER_BORDER_COLOR[2], constructor: CvChapter },
       // #FFB993
    ];
@@ -468,7 +468,7 @@ function CvProjectWebcv(chapterArgs) {
             div({class: "flex-column"},
                "By Aleksei Larionov",
                
-               a({href: "https://creativecommons.org/publicdomain/zero/1.0?ref=chooser-v1", target:"_blank", rel:"license noopener noreferrer", style: "display:inline-block;"}, "License: CC0 v1.0"),
+               a({href: "https://creativecommons.org/licenses/by/4.0/legalcode.en", target:"_blank", rel:"license noopener noreferrer", style: "display:inline-block;"}, "License: CC BY 4.0"),
                // div({class: "flex-row"},
                // img({style:"height:22px!important;margin-left:3px;vertical-align:text-bottom;", src:"https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1"}),
                // img({style:"height:22px!important;margin-left:3px;vertical-align:text-bottom;", src:"https://mirrors.creativecommons.org/presskit/icons/zero.svg?ref=chooser-v1"}),
@@ -534,6 +534,64 @@ function CvProjectWebcv(chapterArgs) {
    }
    return CvChapter(chapterArgs);
 }
+
+function CvProjectTreesRuler(chapterArgs) {
+   chapterArgs.insideConstructor = () => {
+      return div({class: "font-normalsize"},
+         div({class: "flex-row flex-center", style: "margin-bottom:0.5rem;gap:1.0rem;"},
+            YearsBlock(["3 weeks", "2023"]),
+            div({class: "flex-column"},
+               "By Aleksei Larionov",
+               
+               a({href: "https://github.com/laralex/TreesRuler?tab=MIT-1-ov-file", target:"_blank", rel:"license noopener noreferrer", style: "display:inline-block;"}, "License: MIT"),
+            ),
+            div({class: "flex-column"},
+               img({
+                  src: "third_party/boxicons-2.1.4/svg/logos/bxl-github.svg",
+                  style: "filter: var(--filter-github);",
+                  width: "40",
+               }),
+               div(
+                  // span("Source code"), ": ",
+                  a({"href": "https://github.com/laralex/TreesRuler"}, "Source code")
+               ),
+            ),
+            div({class: "flex-column"},
+               img({
+                  src: "./third_party/boxicons-2.1.4/svg/",
+                  style: "filter: var(--filter-gmail)",
+                  width: "40",
+               }),
+               div(
+                  // span("PDF CV"), ": ",
+                  a({"href": localizeUi("pdf_cv_href")}, "PDF CV")
+               ),
+            ),
+            
+         ),
+         // Highlight("Features: "),
+         ul(li("Everything is designed and programmed from scratch"),
+            li("Deployed via GitHub CI/CD on my web-server (lighttpd)"),
+            li(Highlight("Graphics demos: "),
+               ul(
+                  li("All made with: ", Highlight("Rust, WebAssembly, WebGL2")),
+                  li("My implementation of non-blocking demo loading via ", a({href: "https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame"}, "requestAnimationFrame"), " API")
+               ),
+            ),
+            li(Highlight("Web UI: "),
+               ul(
+                  li("Plain", Highlight(" JS, HTML, CSS "), "and tiny library VanJS for reactive UI"),
+                  li("The navigation over CV chapters supports mouse wheel scrolling, with transition animations in plain CSS"),
+                  li("Easy deployment, no complexity of NodeJS, no webpack"),
+               )
+            ),
+
+         ),
+      )
+   }
+   return CvChapter(chapterArgs);
+}
+
 function CvMaster(chapterArgs) {
    chapterArgs.insideConstructor = () => {
       return div({class: "font-normalsize"},

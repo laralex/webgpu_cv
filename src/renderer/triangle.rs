@@ -165,8 +165,8 @@ impl Drop for TriangleDemo {
 }
 
 impl TriangleDemo {
-   pub fn start_loading<'a>(gl: Rc<GL>, graphics_level: GraphicsLevel) -> impl DemoLoadingFuture {
-      DemoLoadingProcess {
+   pub fn start_loading<'a>(gl: Rc<GL>, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture> {
+      Box::new(DemoLoadingProcess {
          stage: Default::default(),
          stage_percent: 0.0,
          graphics_level,
@@ -176,7 +176,7 @@ impl TriangleDemo {
          loaded_demo: Default::default(),
          gl,
          dummy_counter: 0,
-      }
+      })
    }
 }
 

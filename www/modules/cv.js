@@ -21,12 +21,12 @@ const SUBCHAPTER_COLOR = ["#b0deff", "#b6d7f4", "#bbd0e8", "#bdcadc", "#bec4d0"]
 const SUBCHAPTER_BORDER_COLOR = ["#b6d7f4", "#bbd0e8", "#bdcadc", "#bec4d0", "#bec4d0"];
 
 const currentDate = new Date();
-const huaweiSeniorEmploymentDate = new Date(2023, 12 - 1, 7);
-const samsungResignationDate = new Date(2023, 11 - 1, 31);
-const samsungMiddleEmploymentDate = new Date(2022, 4 - 1, 26);
-const samsungJuniorEmploymentDate = new Date(2021, 9 - 1, 1);
-const samsungInternResignationDate = new Date(2021, 8 - 1, 1);
-const samsungInternEmploymentDate = new Date(2021, 6 - 1, 1);
+const huaweiSeniorEmploymentDate    = new Date(2023, 12 - 1, 7);
+const samsungResignationDate        = new Date(2023, 11 - 1, 31);
+const samsungMiddleEmploymentDate   = new Date(2022,  4 - 1, 26);
+const samsungJuniorEmploymentDate   = new Date(2021,  9 - 1, 1);
+const samsungInternResignationDate  = new Date(2021,  8 - 1, 1);
+const samsungInternEmploymentDate   = new Date(2021,  6 - 1, 1);
 
 function getCssColor(colorString) {
    if (!colorString) {
@@ -258,9 +258,10 @@ function CvPublications(currentCvPage, chapterConnections, chapterId, chapterArg
 
 function CvProjects(currentCvPage, chapterConnections, chapterId, chapterArgs) {
    const data = [
-      { id: "project_this_cv"                     , color: SUBCHAPTER_COLOR[0], borderColor: SUBCHAPTER_BORDER_COLOR[0], constructor: CvSamsung },
-      { id: "project_unity_4X_strategy_volunteer" , color: SUBCHAPTER_COLOR[1], borderColor: SUBCHAPTER_BORDER_COLOR[1], constructor: CvChapter },
-      { id: "project_image_processing_tool"       , color: SUBCHAPTER_COLOR[2], borderColor: SUBCHAPTER_BORDER_COLOR[2], constructor: CvChapter },
+      { id: "project_this_cv"                     , color: SUBCHAPTER_COLOR[0], borderColor: SUBCHAPTER_BORDER_COLOR[0], constructor: CvProjectWebcv },
+      // { id: "project_unity_4X_strategy_volunteer" , color: SUBCHAPTER_COLOR[1], borderColor: SUBCHAPTER_BORDER_COLOR[1], constructor: CvChapter },
+      { id: "project_image_processing_tool"       , color: SUBCHAPTER_COLOR[1], borderColor: SUBCHAPTER_BORDER_COLOR[1], constructor: CvChapter },
+      { id: "project_infinite_fractal"       , color: SUBCHAPTER_COLOR[2], borderColor: SUBCHAPTER_BORDER_COLOR[2], constructor: CvChapter },
       // #FFB993
    ];
    populateConnections(chapterConnections, chapterId, data.map(x => x.id));
@@ -337,7 +338,7 @@ function CvHuawei(chapterArgs) {
          // ),
          ul(
             li(Highlight("OpenGL / C++: "), "Experimented to speed up rendering of \"Genshin Impact\" game, via hooks of OpenGL commands"),
-            li(Highlight("Unity / C#: "), "Integrated in-house frame prediction SDK as a Unity plugin (URP pipeline)"),
+            li(Highlight("Unity / C#: "), "Integrated an in-house frame prediction SDK as a Unity plugin (URP pipeline)"),
             li("Overall, assisted to develop the ecosystem of the mobile operating system OpenHarmony"),
          ),
        )
@@ -459,6 +460,78 @@ function CvWacv2024(chapterArgs) {
    return CvChapter(chapterArgs);
 }
 
+function CvProjectWebcv(chapterArgs) {
+   chapterArgs.insideConstructor = () => {
+      return div({class: "font-normalsize"},
+         div({class: "flex-row flex-center", style: "margin-bottom:0.5rem;gap:1.0rem;"},
+            YearsBlock(["6 months", "2024"]),
+            div({class: "flex-column"},
+               "By Aleksei Larionov",
+               div({class: "flex-row"},
+               img({style:"height:22px!important;margin-left:3px;vertical-align:text-bottom;", src:"https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1"}),
+               img({style:"height:22px!important;margin-left:3px;vertical-align:text-bottom;", src:"https://mirrors.creativecommons.org/presskit/icons/zero.svg?ref=chooser-v1"}),
+               ),
+               a({href: "https://creativecommons.org/publicdomain/zero/1.0?ref=chooser-v1", target:"_blank", rel:"license noopener noreferrer", style: "display:inline-block;"}, "CC0 1.0"),
+               // Universal
+            ),
+            div({class: "flex-column"},
+               img({
+                  src: "third_party/boxicons-2.1.4/svg/logos/bxl-github.svg",
+                  style: "filter: var(--filter-github);",
+                  width: "40",
+               }),
+               div(
+                  // span("Source code"), ": ",
+                  a({"href": "https://github.com/laralex/my_web_cv"}, "Source code")
+               ),
+            ),
+            div({class: "flex-column"},
+               img({
+                  src: "./third_party/boxicons-2.1.4/svg/solid/bxs-file-pdf.svg",
+                  style: "filter: var(--filter-gmail)",
+                  width: "40",
+               }),
+               div(
+                  // span("PDF CV"), ": ",
+                  a({"href": localizeUi("pdf_cv_href")}, "PDF CV")
+               ),
+            ),
+            
+         ),
+         // LeftRightAlignedList({
+         //       leftItems: [
+         //          () => p("Project page"),
+         //          () => p("Proceedings"),
+         //          () => p("Arxiv"),
+         //       ],
+         //       rightItems: [
+         //          () => a({"href": "https://samsunglabs.github.io/MoRF-project-page/"}, "samsunglabs.github.io/MoRF-project-page"),
+         //          () => a({"href": "https://openaccess.thecvf.com/content/WACV2024/html/Bashirov_MoRF_Mobile_Realistic_Fullbody_Avatars_From_a_Monocular_Video_WACV_2024_paper.html"}, "link"),
+         //          () => a({"href": "https://arxiv.org/abs/2303.10275"}, "link"),
+         //       ],
+         // }),
+         // Highlight("Features: "),
+         ul(li("Everything is designed and programmed from scratch"),
+            li("Deployed via GitHub CI/CD on my web-server (lighttpd)"),
+            li(Highlight("Graphics demos: "),
+               ul(
+                  li("All made with: ", Highlight("Rust, WebAssembly, WebGL2")),
+                  li("My implementation of non-blocking demo loading via ", a({href: "https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame"}, "requestAnimationFrame"), " API")
+               ),
+            ),
+            li(Highlight("Web UI: "),
+               ul(
+                  li("Plain", Highlight(" JS, HTML, CSS "), "and tiny library VanJS for reactive UI"),
+                  li("The left sidebar is controlled by mouse wheel scrolling, with transition animations in plain CSS"),
+                  li("Easy deployment, no complexity of NodeJS, no webpack"),
+               )
+            ),
+
+         ),
+      )
+   }
+   return CvChapter(chapterArgs);
+}
 function CvMaster(chapterArgs) {
    chapterArgs.insideConstructor = () => {
       return div({class: "font-normalsize"},

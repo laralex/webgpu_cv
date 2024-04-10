@@ -743,7 +743,7 @@ function getCurrentDemoId() {
       "education_master": DemoId.EducationMasters,
       "education_bachelor": DemoId.EducationBachelor,
    }
-   return remap[CURRENT_CV_PAGE[1].val];
+   return remap[CURRENT_CV_PAGE[1].val] || remap["__stub__"];
 }
 
 function getGraphicsLevel() {

@@ -1,5 +1,7 @@
 type GL = web_sys::WebGl2RenderingContext;
-use super::{Dispose, ExternalState, GraphicsLevel, IDemo};
+use std::task::Poll;
+
+use super::{DemoLoadingFuture, Dispose, ExternalState, GraphicsLevel, IDemo, Progress, SimpleFuture};
 
 pub struct StubDemo;
 
@@ -30,5 +32,36 @@ impl IDemo for StubDemo {
 
    fn drop_demo(&mut self, _gl: &GL) {
       web_sys::console::log_1(&"Rust demo drop: StubDemo".into());
+   }
+}
+
+struct DemoLoadingProcess { }
+
+impl Dispose for DemoLoadingProcess {
+   fn dispose(&mut self) { }
+}
+
+impl Drop for DemoLoadingProcess {
+   fn drop(&mut self) { self.dispose(); }
+}
+
+impl Progress for DemoLoadingProcess {
+    fn progress(&self) -> f32 { 1.0 }
+}
+
+impl SimpleFuture for DemoLoadingProcess {
+   type Output = Box<dyn IDemo>;
+   type Context = ();
+
+   fn simple_poll(mut self: std::pin::Pin<&mut Self>, _cx: &mut Self::Context) -> Poll<Self::Output> {
+      Poll::Ready(Box::new(StubDemo{}))
+   }
+}
+
+impl DemoLoadingFuture for DemoLoadingProcess {}
+
+impl StubDemo {
+   pub fn start_loading() -> Box<dyn DemoLoadingFuture> {
+      Box::new(DemoLoadingProcess{})
    }
 }

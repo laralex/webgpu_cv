@@ -140,7 +140,7 @@ pub trait DemoLoadingFuture : SimpleFuture<Output=Box<dyn IDemo>, Context=()> + 
 // pub trait GraphicsSwitchingFuture : SimpleFuture<Output=Box<dyn IDemo>, Context=()> + Dispose + Progress {}
 
 pub fn start_loading_demo<'a>(id: DemoId, gl: Rc<GL>, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture> {
-   Box::new(match id {
+   match id {
       DemoId::Triangle =>
          TriangleDemo::start_loading(gl, graphics_level),
       DemoId::CareerHuawei =>
@@ -157,6 +157,6 @@ pub fn start_loading_demo<'a>(id: DemoId, gl: Rc<GL>, graphics_level: GraphicsLe
          TriangleDemo::start_loading(gl, GraphicsLevel::Medium),
       DemoId::EducationBachelor =>
          TriangleDemo::start_loading(gl, GraphicsLevel::High),
-      _ => TriangleDemo::start_loading(gl, GraphicsLevel::Minimal),
-   })
+      _ => StubDemo::start_loading(),
+   }
 }

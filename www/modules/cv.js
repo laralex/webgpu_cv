@@ -467,11 +467,13 @@ function CvProjectWebcv(chapterArgs) {
             YearsBlock(["6 months", "2024"]),
             div({class: "flex-column"},
                "By Aleksei Larionov",
-               div({class: "flex-row"},
-               img({style:"height:22px!important;margin-left:3px;vertical-align:text-bottom;", src:"https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1"}),
-               img({style:"height:22px!important;margin-left:3px;vertical-align:text-bottom;", src:"https://mirrors.creativecommons.org/presskit/icons/zero.svg?ref=chooser-v1"}),
-               ),
-               a({href: "https://creativecommons.org/publicdomain/zero/1.0?ref=chooser-v1", target:"_blank", rel:"license noopener noreferrer", style: "display:inline-block;"}, "CC0 1.0"),
+               
+               a({href: "https://creativecommons.org/publicdomain/zero/1.0?ref=chooser-v1", target:"_blank", rel:"license noopener noreferrer", style: "display:inline-block;"}, "License: CC0 v1.0"),
+               // div({class: "flex-row"},
+               // img({style:"height:22px!important;margin-left:3px;vertical-align:text-bottom;", src:"https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1"}),
+               // img({style:"height:22px!important;margin-left:3px;vertical-align:text-bottom;", src:"https://mirrors.creativecommons.org/presskit/icons/zero.svg?ref=chooser-v1"}),
+               // ),
+               // a({href: "https://creativecommons.org/publicdomain/zero/1.0?ref=chooser-v1", target:"_blank", rel:"license noopener noreferrer", style: "display:inline-block;"}, "Zero "),
                // Universal
             ),
             div({class: "flex-column"},
@@ -522,7 +524,7 @@ function CvProjectWebcv(chapterArgs) {
             li(Highlight("Web UI: "),
                ul(
                   li("Plain", Highlight(" JS, HTML, CSS "), "and tiny library VanJS for reactive UI"),
-                  li("The left sidebar is controlled by mouse wheel scrolling, with transition animations in plain CSS"),
+                  li("The navigation over CV chapters supports mouse wheel scrolling, with transition animations in plain CSS"),
                   li("Easy deployment, no complexity of NodeJS, no webpack"),
                )
             ),

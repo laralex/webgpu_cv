@@ -258,10 +258,10 @@ function CvPublications(currentCvPage, chapterConnections, chapterId, chapterArg
 
 function CvProjects(currentCvPage, chapterConnections, chapterId, chapterArgs) {
    const data = [
-      { id: "project_this_cv"                     , color: SUBCHAPTER_COLOR[0], borderColor: SUBCHAPTER_BORDER_COLOR[0], constructor: CvProjectWebcv },
-      // { id: "project_unity_4X_strategy_volunteer" , color: SUBCHAPTER_COLOR[1], borderColor: SUBCHAPTER_BORDER_COLOR[1], constructor: CvChapter },
-      { id: "project_image_processing_tool"       , color: SUBCHAPTER_COLOR[1], borderColor: SUBCHAPTER_BORDER_COLOR[1], constructor: CvProjectTreesRuler },
-      { id: "project_infinite_fractal"       , color: SUBCHAPTER_COLOR[2], borderColor: SUBCHAPTER_BORDER_COLOR[2], constructor: CvChapter },
+      { id: "project_this_cv", color: SUBCHAPTER_COLOR[0], borderColor: SUBCHAPTER_BORDER_COLOR[0], constructor: CvProjectWebcv },
+      { id: "project_image_processing_tool", color: SUBCHAPTER_COLOR[1], borderColor: SUBCHAPTER_BORDER_COLOR[1], constructor: CvProjectTreesRuler },
+      { id: "project_will_and_reason", color: SUBCHAPTER_COLOR[2], borderColor: SUBCHAPTER_BORDER_COLOR[2], constructor: CvProjectWillAndReason },
+      // { id: "project_infinite_fractal"       , color: SUBCHAPTER_COLOR[2], borderColor: SUBCHAPTER_BORDER_COLOR[2], constructor: CvChapter },
       // #FFB993
    ];
    populateConnections(chapterConnections, chapterId, data.map(x => x.id));
@@ -578,6 +578,52 @@ function CvProjectTreesRuler(chapterArgs) {
             li("Adjusting visualization and localization"),
          ),
          p({style: "margin-top:0.5rem;"}, "Made with: ", Highlight("JavaScript / p5.js"))
+      )
+   }
+   return CvChapter(chapterArgs);
+}
+
+function CvProjectWillAndReason(chapterArgs) {
+   chapterArgs.insideConstructor = () => {
+      return div({class: "font-normalsize"},
+         div({class: "flex-row flex-center", style: "margin-bottom:0.5rem;gap:0.8rem;"},
+            YearsBlock(["4 months", "2017"]),
+            // div({class: "flex-column"},
+            //    "Volunteering",
+            //    // a({href: "https://github.com/laralex/TreesRuler?tab=MIT-1-ov-file", target:"_blank", rel:"license noopener noreferrer", style: "display:inline-block;"}, "License: MIT"),
+            // ),
+            div({class: "flex-column"},
+               img({
+                  src: "./third_party/boxicons-2.1.4/svg/regular/bx-link.svg",
+                  style: "filter: var(--filter-gmail)",
+                  width: "40",
+               }),
+               div(
+                  // span("Source code"), ": ",
+                  a({"href": "https://vk.com/willreason"}, "Project page")
+               ),
+            ),
+            div({class: "flex-column"},
+               img({
+                  src: "./third_party/boxicons-2.1.4/svg/solid/bxs-video.svg",
+                  style: "filter: var(--filter-gmail)",
+                  width: "40",
+               }),
+               div(
+                  a({"href": "https://vk.com/video/@willreason"}, "Demo videos")
+               )
+            ),
+         ),
+         // Highlight("Description: "),
+         p({class: "flex-row flex-center font-Large bold"}, "Will & Reason, 4X strategy"),
+         p({class: "flex-row flex-center font-large italic"}, "(unreleased)"),
+         p({style: "margin-top:0.5rem;"}, "I volunteered during inception of the project:"),
+         ul(
+            li("Implemented pathfinding prototype (A* algorithm)"),
+            li("Developed parts of HUD and game logic of units"),
+            li("Engaged in game design process"),
+         ),
+         p({style: "margin-top:0.5rem;"}, "Made with: ", Highlight("Unity / C#"))
       )
    }
    return CvChapter(chapterArgs);

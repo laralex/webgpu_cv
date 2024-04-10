@@ -21,6 +21,7 @@ export const UI_STRINGS = (function getLocalization() {
       cv: {en: "CV", ru: "CV", kr: "이력서"},
       pdf: {en: "in PDF", ru: "в PDF", kr: "PDF"},
       pdf_cv_href: {en: "./assets/__softlink_cv_eng.pdf", ru: "./assets/__softlink_cv_rus.pdf", kr: "./assets/__softlink_cv_eng.pdf"},
+      trees_ruler_href: {en: "./trees_ruler/eng", ru: "./trees_ruler/rus", kr: "./trees_ruler/eng"},
       web_cv_github: {en: "Source code", ru: "Исходный код", kr: "데모 소스 코드"},
       clear_cookies_button: {en: "Reload CV", ru: "Сбросить сайт", kr: "설정을 초기화"},
       skills_title: {en: "Extra skills", ru: "Прочие компетенции", kr: "다른 기술들"},

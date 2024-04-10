@@ -538,7 +538,7 @@ function CvProjectWebcv(chapterArgs) {
 function CvProjectTreesRuler(chapterArgs) {
    chapterArgs.insideConstructor = () => {
       return div({class: "font-normalsize"},
-         div({class: "flex-row flex-center", style: "margin-bottom:0.5rem;gap:1.0rem;"},
+         div({class: "flex-row flex-center", style: "margin-bottom:0.5rem;gap:0.8rem;"},
             YearsBlock(["3 weeks", "2023"]),
             div({class: "flex-column"},
                "By Aleksei Larionov",
@@ -558,35 +558,26 @@ function CvProjectTreesRuler(chapterArgs) {
             ),
             div({class: "flex-column"},
                img({
-                  src: "./third_party/boxicons-2.1.4/svg/",
+                  src: "./third_party/boxicons-2.1.4/svg/regular/bx-link.svg",
                   style: "filter: var(--filter-gmail)",
                   width: "40",
                }),
                div(
                   // span("PDF CV"), ": ",
-                  a({"href": localizeUi("pdf_cv_href")}, "PDF CV")
+                  a({"href": localizeUi("trees_ruler_href")}, "Link")
                ),
             ),
-            
          ),
-         // Highlight("Features: "),
-         ul(li("Everything is designed and programmed from scratch"),
-            li("Deployed via GitHub CI/CD on my web-server (lighttpd)"),
-            li(Highlight("Graphics demos: "),
-               ul(
-                  li("All made with: ", Highlight("Rust, WebAssembly, WebGL2")),
-                  li("My implementation of non-blocking demo loading via ", a({href: "https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame"}, "requestAnimationFrame"), " API")
-               ),
-            ),
-            li(Highlight("Web UI: "),
-               ul(
-                  li("Plain", Highlight(" JS, HTML, CSS "), "and tiny library VanJS for reactive UI"),
-                  li("The navigation over CV chapters supports mouse wheel scrolling, with transition animations in plain CSS"),
-                  li("Easy deployment, no complexity of NodeJS, no webpack"),
-               )
-            ),
-
+         // Highlight("Description: "),
+         p({style: "margin-bottom:0.5rem;"}, "The tool allows to", " ", span({class:"bold"}, "collect measurements of trees from photos")),
+         p("I designed it for forest scientists. It allows to:"),
+         ul(
+            li("Freely adjust measurements by mouse, snap them to a grid, or set precisely in UI"),
+            li("Export or import the measurements from a local YAML file"),
+            li("Add, delete, duplicate, group measurements"),
+            li("Adjusting visualization and localization"),
          ),
+         p({style: "margin-top:0.5rem;"}, "Made with: ", Highlight("JavaScript / p5.js"))
       )
    }
    return CvChapter(chapterArgs);

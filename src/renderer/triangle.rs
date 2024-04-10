@@ -7,9 +7,8 @@ use web_sys::{WebGl2RenderingContext as GL, WebGlProgram, WebGlShader};
 #[derive(Default)]
 enum DemoLoadingStage {
    Ready = 0,
-   CompileShaders,
+   #[default] CompileShaders,
    LinkPrograms,
-   #[default] DummyWait,
    StartSwitchingGraphicsLevel,
    SwitchGraphicsLevel,
 }
@@ -22,7 +21,6 @@ struct DemoLoadingProcess {
    vert_shader: Option<WebGlShader>,
    frag_shader: Option<WebGlShader>,
    gl: Rc<GL>,
-   dummy_counter: usize,
    loaded_demo: Option<TriangleDemo>,
 }
 
@@ -64,21 +62,6 @@ impl SimpleFuture for DemoLoadingProcess {
    fn simple_poll(mut self: std::pin::Pin<&mut Self>, _cx: &mut Self::Context) -> std::task::Poll<Self::Output> {
       use DemoLoadingStage::*;
       match self.stage {
-         DummyWait => {
-            let mut x = 0_i32;
-            for i in 0..100000 {
-               x = x.saturating_add(i);
-            }
-            self.stage_percent += 0.007;
-            self.dummy_counter += 1;
-            if self.stage_percent >= 0.5 {
-               self.stage = CompileShaders;
-            }
-            if self.dummy_counter % 500 == 0 {
-               web_sys::console::log_2(&"Rust continue loading: TriangleDemo".into(), &self.stage_percent.into());
-            }
-            std::task::Poll::Pending
-         }
          CompileShaders => {
             let vertex_shader_source = std::include_str!("shaders/no_vao_triangle.vert");
             let fragment_shader_source = std::include_str!("shaders/vertex_color.frag");
@@ -175,7 +158,6 @@ impl TriangleDemo {
          frag_shader: Default::default(),
          loaded_demo: Default::default(),
          gl,
-         dummy_counter: 0,
       })
    }
 }
@@ -253,26 +235,15 @@ impl Progress for GraphicsSwitchingProcess {
 
 impl GraphicsSwitchingProcess {
    pub fn poll(demo: &mut TriangleDemo, _gl: &GL) -> std::task::Poll<()> {
-      if demo.pending_graphics_level_switch.is_none() {
-         return std::task::Poll::Ready(());
-      }
       let self_ = demo.pending_graphics_level_switch.as_mut().unwrap();
-      let mut x = 0_i32;
-      for i in 0..100000 {
-         x = x.saturating_add(i);
-      }
-      self_.progress += 0.005;
-      if self_.progress >= 1.0 {
-         demo.num_rendered_vertices = match self_.graphics_level {
-            GraphicsLevel::Minimal => 0,
-            GraphicsLevel::Low => 3,
-            GraphicsLevel::Medium => 6,
-            GraphicsLevel::High => 9,
-            GraphicsLevel::Ultra => 12,
-         };
-         std::task::Poll::Ready(())
-      } else {
-         std::task::Poll::Pending
-      }
+      demo.num_rendered_vertices = match self_.graphics_level {
+         GraphicsLevel::Minimal => 0,
+         GraphicsLevel::Low => 3,
+         GraphicsLevel::Medium => 6,
+         GraphicsLevel::High => 9,
+         GraphicsLevel::Ultra => 12,
+      };
+      self_.progress = 1.0;
+      std::task::Poll::Ready(())
    }
 }

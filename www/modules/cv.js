@@ -32,29 +32,27 @@ const samsungInternEmploymentDate   = new Date(2021,  6 - 1, 1);
 
 const CHAPTERS_DEMOS = {
    "__stub__":                         DemoId.Stub,
-   "career_huawei":                    DemoId.CareerHuawei,
-   "career_samsung":                   DemoId.CareerSamsung,
-   "publications_wacv_2024":           DemoId.PublicationWacv2024,
-   "project_this_cv":                  DemoId.ProjectThisCv,
+   "career_huawei":                    DemoId.FrameGeneration,
+   "career_samsung":                   DemoId.HeadAvatar,
+   "publications_wacv_2024":           DemoId.FullBodyAvatar,
+   "project_this_cv":                  DemoId.Fractal,
    "project_will_and_reason":          DemoId.Stub,
-   "project_image_processing_tool":    DemoId.ProjectTreesRuler,
-   "education_master":                 DemoId.EducationMasters,
-   "education_bachelor":               DemoId.EducationBachelor,
+   "project_image_processing_tool":    DemoId.Stub,
+   "education_master":                 DemoId.Stub,
+   "education_bachelor":               DemoId.ProceduralGeneration,
 }
 
 const DEMOS_DATA = {};
 DEMOS_DATA[DemoId.Stub] = {description_id: "demo_STUB" };
 DEMOS_DATA[DemoId.Triangle] = {description_id: "demo_triangle" };
-DEMOS_DATA[DemoId.CareerHuawei] = {description_id: "demo_frame_generation" };
-DEMOS_DATA[DemoId.CareerSamsung] = {description_id: "demo_head_avatar" };
-DEMOS_DATA[DemoId.PublicationWacv2024] = {description_id: "demo_full_body_avatar"};
-DEMOS_DATA[DemoId.ProjectThisCv] = {description_id: "demo_fractal" };
-DEMOS_DATA[DemoId.ProjectTreesRuler] = {description_id: "demo_STUB" };
-DEMOS_DATA[DemoId.EducationMasters] = {description_id: "demo_STUB" };
-DEMOS_DATA[DemoId.EducationBachelor] = {description_id: "demo_procedural_generation" };
+DEMOS_DATA[DemoId.Fractal] = {description_id: "demo_fractal" };
+DEMOS_DATA[DemoId.FrameGeneration] = {description_id: "demo_frame_generation" };
+DEMOS_DATA[DemoId.HeadAvatar] = {description_id: "demo_head_avatar" };
+DEMOS_DATA[DemoId.FullBodyAvatar] = {description_id: "demo_full_body_avatar"};
+DEMOS_DATA[DemoId.ProceduralGeneration] = {description_id: "demo_procedural_generation" };
 
-export function getDemoId(currentCvPage) {
-   return CHAPTERS_DEMOS[currentCvPage[1].val] || CHAPTERS_DEMOS["__stub__"];
+export function getDemoId(currentCvChapter) {
+   return CHAPTERS_DEMOS[currentCvChapter] || CHAPTERS_DEMOS["__stub__"];
 }
 
 function getCssColor(colorString) {
@@ -116,7 +114,7 @@ function formatDateDiff(d1, d2, {yearsFullWord, monthsFullWord} = { yearsFullWor
 
 export function DemoDescription(currentCvPage) {
    return () => {
-      const demoData = DEMOS_DATA[getDemoId(currentCvPage)];
+      const demoData = DEMOS_DATA[getDemoId(currentCvPage[1].val)];
       const isHidden = CURRENT_GRAPHICS_SWITCHING_PROGRESS.val !== null
          || demoData === undefined || demoData.description_id === undefined;
       return isHidden ? div() : div({

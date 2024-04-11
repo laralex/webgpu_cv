@@ -42,7 +42,7 @@ export const BUILD_DATA = {
 
 // import mywasm from 'my-wasm';
 // import init, { wasm_loop, wasm_resize, wasm_startup, wasm_set_fps_limit, wasm_set_graphics_level } from '/wasm/index.js';
-import init, { WasmInterface, DemoId, GraphicsLevel } from '/wasm/index.js';
+import init, { WasmInterface, GraphicsLevel } from '/wasm/index.js';
 import { UI_STRINGS, CURRENT_LANGUAGE, localizeString, localizeUi, localizeUiPostprocess } from '/modules/localization.js';
 import { Util } from '/modules/util.js';
 import { CvContent, DemoDescription, getDemoId } from '/modules/cv.js';
@@ -764,7 +764,7 @@ window.onload = function() {
       configureFromFont(CURRENT_FONT_FAMILY.val, CURRENT_LANGUAGE.val);
    });
    van.derive(() => {
-      const demoId = getDemoId(CURRENT_CV_PAGE);
+      const demoId = getDemoId(CURRENT_CV_PAGE[1].val);
       if (WASM_INSTANCE) {
          console.log("Start switching demo", demoId);
          WASM_INSTANCE.wasm_start_loading_demo(demoId);
@@ -871,7 +871,7 @@ window.onload = function() {
       configureCanvas();
       WASM_INSTANCE.wasm_set_fps_limit(CURRENT_FPS_LIMIT.val);
       WASM_INSTANCE.wasm_set_graphics_level(CURRENT_GRAPHICS_LEVEL.val);
-      WASM_INSTANCE.wasm_start_loading_demo(getDemoId(CURRENT_CV_PAGE));
+      WASM_INSTANCE.wasm_start_loading_demo(getDemoId(CURRENT_CV_PAGE[1].val));
       WASM_INSTANCE.wasm_loop();
    })();
 }

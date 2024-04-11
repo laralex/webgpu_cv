@@ -49,13 +49,11 @@ pub struct WasmInterface {
 pub enum DemoId {
     Stub,
     Triangle,
-    CareerHuawei,
-    CareerSamsung,
-    PublicationWacv2024,
-    ProjectTreesRuler,
-    ProjectThisCv,
-    EducationMasters,
-    EducationBachelor,
+    Fractal,
+    FrameGeneration,
+    HeadAvatar,
+    FullBodyAvatar,
+    ProceduralGeneration,
 }
 
 #[wasm_bindgen]

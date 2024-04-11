@@ -143,20 +143,16 @@ pub fn start_loading_demo<'a>(id: DemoId, gl: Rc<GL>, graphics_level: GraphicsLe
    match id {
       DemoId::Triangle =>
          TriangleDemo::start_loading(gl, graphics_level),
-      DemoId::CareerHuawei =>
-         TriangleDemo::start_loading(gl, graphics_level),
-      DemoId::CareerSamsung =>
-         TriangleDemo::start_loading(gl, graphics_level),
-      DemoId::PublicationWacv2024 =>
+      DemoId::Fractal =>
          TriangleDemo::start_loading(gl, GraphicsLevel::High),
-      DemoId::ProjectTreesRuler =>
-         TriangleDemo::start_loading(gl, GraphicsLevel::Ultra),
-      DemoId::ProjectThisCv =>
+      DemoId::FrameGeneration =>
          TriangleDemo::start_loading(gl, GraphicsLevel::Low),
-      DemoId::EducationMasters =>
+      DemoId::HeadAvatar =>
          TriangleDemo::start_loading(gl, GraphicsLevel::Medium),
-      DemoId::EducationBachelor =>
-         TriangleDemo::start_loading(gl, GraphicsLevel::High),
+      DemoId::FullBodyAvatar =>
+         TriangleDemo::start_loading(gl, GraphicsLevel::Minimal),
+      DemoId::ProceduralGeneration =>
+         TriangleDemo::start_loading(gl, GraphicsLevel::Ultra),
       _ => StubDemo::start_loading(),
    }
 }

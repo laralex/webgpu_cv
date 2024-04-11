@@ -8,10 +8,13 @@ mod simple_async;
 use renderer::{DemoLoadingFuture, ExternalState, IDemo, MouseState};
 
 use wasm_bindgen::prelude::*;
+use web_sys::HtmlCanvasElement;
 type GL = web_sys::WebGl2RenderingContext;
 use std::cell::Cell;
 use std::pin::Pin;
 use std::{cell::RefCell, rc::Rc};
+
+use wgpu;
 
 // static CELL: Lazy<Box<&dyn renderer::IDemo>> = Lazy::new(|| Box::default());
 // static DEMO: &mut dyn renderer::IDemo = Default::default();
@@ -34,13 +37,133 @@ extern "C" {
     fn graphics_switching_finish();
 }
 
+struct Webgpu<'window> {
+    surface: wgpu::Surface<'window>,
+    device: wgpu::Device,
+    queue: wgpu::Queue,
+    config: wgpu::SurfaceConfiguration,
+}
+
+impl<'window> Webgpu<'window>  {
+    async fn new(canvas: HtmlCanvasElement) -> Self {
+        // The instance is a handle to our GPU
+        // Backends::all => Vulkan + Metal + DX12 + Browser WebGPU
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::all(),
+            ..Default::default()
+        });
+        
+        // # Safety
+        //
+        // The surface needs to live as long as the window that created it.
+        // State owns the window, so this should be safe.
+        let (width, height) = (canvas.width(), canvas.height());
+        let surface = instance.create_surface(wgpu::SurfaceTarget::Canvas(canvas)).unwrap();
+
+        let adapter = instance.request_adapter(
+            &wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::default(),
+                compatible_surface: Some(&surface),
+                force_fallback_adapter: false,
+            },
+        ).await.unwrap();
+
+        let (device, queue) = adapter.request_device(
+            &wgpu::DeviceDescriptor {
+                required_features: wgpu::Features::empty(),
+                // WebGL doesn't support all of wgpu's features, so if
+                // we're building for the web, we'll have to disable some.
+                required_limits: if cfg!(target_arch = "wasm32") {
+                    wgpu::Limits::downlevel_webgl2_defaults()
+                } else {
+                    wgpu::Limits::default()
+                },
+                label: None,
+            },
+            None, // Trace path
+        ).await.unwrap();
+
+        let surface_caps = surface.get_capabilities(&adapter);
+        // Shader code in this tutorial assumes an sRGB surface texture. Using a different
+        // one will result in all the colors coming out darker. If you want to support non
+        // sRGB surfaces, you'll need to account for that when drawing to the frame.
+        let surface_format = surface_caps.formats.iter()
+            .copied()
+            .filter(|f| f.is_srgb())
+            .next()
+            .unwrap_or(surface_caps.formats[0]);
+        let config = wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            format: surface_format,
+            width,
+            height,
+            present_mode: surface_caps.present_modes[0],
+            alpha_mode: surface_caps.alpha_modes[0],
+            view_formats: vec![],
+            desired_maximum_frame_latency: 2,
+        };
+        surface.configure(&device, &config);
+
+        Self {
+            surface,
+            device,
+            queue,
+            config,
+        }
+    }
+
+    fn resize(&mut self, new_width: u32, new_height: u32) {
+        if new_width > 0 && new_height > 0 {
+            self.config.width = new_width;
+            self.config.height = new_height;
+            self.surface.configure(&self.device, &self.config);
+        }
+    }
+
+    fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
+        let output = self.surface.get_current_texture()?;
+        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("Render Encoder"),
+        });
+
+        {
+            let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Render Pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                            r: 0.1,
+                            g: 0.2,
+                            b: 0.3,
+                            a: 1.0,
+                        }),
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                occlusion_query_set: None,
+                timestamp_writes: None,
+            });
+        }
+    
+        // submit will accept anything that implements IntoIter
+        self.queue.submit(std::iter::once(encoder.finish()));
+        output.present();
+    
+        Ok(())
+    }
+}
+
 #[wasm_bindgen]
 pub struct WasmInterface {
     demo: Rc<RefCell<Box<dyn IDemo>>>,
     demo_state: Rc<RefCell<ExternalState>>,
     demo_id: Rc<RefCell<DemoId>>,
     pending_loading_demo: Rc<RefCell<Option<Pin<Box<dyn DemoLoadingFuture>>>>>,
-    canvas: web_sys::HtmlCanvasElement,
+    canvas: Option<web_sys::HtmlCanvasElement>,
     gl: Rc<web_sys::WebGl2RenderingContext>,
 }
 
@@ -86,7 +209,7 @@ impl WasmInterface {
             demo_state,
             demo_id,
             pending_loading_demo: Rc::new(RefCell::new(None)),
-            canvas,
+            canvas: Some(canvas),
             gl: Rc::new(gl),
         })
     }
@@ -223,7 +346,10 @@ impl WasmInterface {
     }
 
     #[wasm_bindgen]
-    pub fn wasm_loop(&mut self) -> Result<(), JsValue> {
+    pub async fn wasm_loop(&mut self) -> Result<(), JsValue> {
+        if self.canvas.is_none() {
+            return Err("No HTML canvas received in WASM".into());
+        }
         // callbacks wired with JS canvas
         // engine callback will schedule timeout callback (to limit fps)
         // timeout callback will schedule engine callback (to render the next frame)
@@ -236,12 +362,14 @@ impl WasmInterface {
 
         {
             let mut demo_state_mut = self.demo_state.borrow_mut();
-            demo_state_mut.date = chrono::Utc::now().date_naive(); /* NOTE: set once */
             demo_state_mut.sound_sample_rate = 44100.0; /* NOTE: set once */
-            configure_mousedown(&self.canvas, demo_state_mut.mouse.clone())?;
+            configure_mousedown(self.canvas.as_ref().unwrap(), demo_state_mut.mouse.clone())?;
             configure_mouseup(demo_state_mut.mouse.clone())?;
-            configure_mousemove(&self.canvas, demo_state_mut.mouse.clone())?;
+            configure_mousemove(self.canvas.as_ref().unwrap(), demo_state_mut.mouse.clone())?;
         }
+
+        let mut wgpu_state = Webgpu::new(self.canvas.take().unwrap()).await;
+
         let gl = self.gl.clone();
         let demo_state = self.demo_state.clone();
         let mut time_then_sec = 0.0;
@@ -264,8 +392,17 @@ impl WasmInterface {
                
                 demo.tick(&demo_state);
                 {
-                    gl.viewport(0, 0, demo_state.screen_size.0 as i32, demo_state.screen_size.1 as i32);
-                    demo.render(&gl, demo_state.time_delta_sec);
+                    match wgpu_state.render() {
+                        Ok(_) => {}
+                        // Reconfigure the surface if lost
+                        Err(wgpu::SurfaceError::Lost) => wgpu_state.resize(wgpu_state.config.width, wgpu_state.config.height),
+                        // The system is out of memory, we should probably quit
+                        Err(wgpu::SurfaceError::OutOfMemory) => return,
+                        // All other errors (Outdated, Timeout) should be resolved by the next frame
+                        Err(e) => eprintln!("{:?}", e),
+                    }
+                    // gl.viewport(0, 0, demo_state.screen_size.0 as i32, demo_state.screen_size.1 as i32);
+                    // demo.render(&gl, demo_state.time_delta_sec);
                 }
                 demo_state.end_frame();
             }

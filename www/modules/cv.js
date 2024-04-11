@@ -553,13 +553,13 @@ function CvProjectWebcv(chapterArgs) {
          // Highlight("Features: "),
          ul(li("Everything is designed and programmed from scratch"),
             li("Deployed via GitHub CI/CD on my web-server (lighttpd)"),
-            li(Highlight("Graphics demos: "),
+            li("Graphics demos:",
                ul(
                   li("All made with: ", Highlight("Rust, WebAssembly, WebGL2")),
                   li("My implementation of non-blocking demo loading via ", a({href: "https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame"}, "requestAnimationFrame"), " API")
                ),
             ),
-            li(Highlight("Web UI: "),
+            li("Web UI:",
                ul(
                   li("Plain", Highlight(" JS, HTML, CSS "), "and tiny library VanJS for reactive UI"),
                   li("The navigation over CV chapters supports mouse wheel scrolling, with transition animations in plain CSS"),

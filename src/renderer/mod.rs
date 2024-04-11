@@ -40,7 +40,6 @@ pub struct ExternalState {
    pub time_delta_limit_ms: i32,
    pub frame_idx: usize,
    pub frame_rate: f32,
-   pub date: chrono::NaiveDate,
    #[allow(unused)] pub sound_sample_rate: f32,
    pub graphics_level: GraphicsLevel,
 }
@@ -71,7 +70,6 @@ impl Default for ExternalState {
          time_sec: Default::default(),
          frame_idx: Default::default(),
          frame_rate: 1.0,
-         date: Default::default(),
          sound_sample_rate: Default::default(),
          graphics_level: Default::default(),
        }

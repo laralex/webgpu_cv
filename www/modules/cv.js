@@ -1,6 +1,8 @@
 import { BUILD_DATA } from '../index.js';
+import { DemoId } from '/wasm/index.js';
 import { localizeString, localizeUi } from '/modules/localization.js';
 import { Util } from '/modules/util.js';
+import { CURRENT_GRAPHICS_SWITCHING_PROGRESS } from '/modules/exports_to_wasm.js';
 
 const {div, button, i, label, img, svg, path, input, details, summary, p, br, li, a, option, select, span, ul, h1, h2, h3} = van.tags
 const SMOOTH = true;
@@ -27,6 +29,33 @@ const samsungMiddleEmploymentDate   = new Date(2022,  4 - 1, 26);
 const samsungJuniorEmploymentDate   = new Date(2021,  9 - 1, 1);
 const samsungInternResignationDate  = new Date(2021,  8 - 1, 1);
 const samsungInternEmploymentDate   = new Date(2021,  6 - 1, 1);
+
+const CHAPTERS_DEMOS = {
+   "__stub__":                         DemoId.Stub,
+   "career_huawei":                    DemoId.CareerHuawei,
+   "career_samsung":                   DemoId.CareerSamsung,
+   "publications_wacv_2024":           DemoId.PublicationWacv2024,
+   "project_this_cv":                  DemoId.ProjectThisCv,
+   "project_will_and_reason":          DemoId.Stub,
+   "project_image_processing_tool":    DemoId.ProjectTreesRuler,
+   "education_master":                 DemoId.EducationMasters,
+   "education_bachelor":               DemoId.EducationBachelor,
+}
+
+const DEMOS_DATA = {};
+DEMOS_DATA[DemoId.Stub] = {description_id: "demo_STUB" };
+DEMOS_DATA[DemoId.Triangle] = {description_id: "demo_triangle" };
+DEMOS_DATA[DemoId.CareerHuawei] = {description_id: "demo_frame_generation" };
+DEMOS_DATA[DemoId.CareerSamsung] = {description_id: "demo_head_avatar" };
+DEMOS_DATA[DemoId.PublicationWacv2024] = {description_id: "demo_full_body_avatar"};
+DEMOS_DATA[DemoId.ProjectThisCv] = {description_id: "demo_fractal" };
+DEMOS_DATA[DemoId.ProjectTreesRuler] = {description_id: "demo_STUB" };
+DEMOS_DATA[DemoId.EducationMasters] = {description_id: "demo_STUB" };
+DEMOS_DATA[DemoId.EducationBachelor] = {description_id: "demo_procedural_generation" };
+
+export function getDemoId(currentCvPage) {
+   return CHAPTERS_DEMOS[currentCvPage[1].val] || CHAPTERS_DEMOS["__stub__"];
+}
 
 function getCssColor(colorString) {
    if (!colorString) {
@@ -83,6 +112,17 @@ function formatDateDiff(d1, d2, {yearsFullWord, monthsFullWord} = { yearsFullWor
      yearsFullWord: yearsFullWord,
      monthsFullWord: monthsFullWord,
    });
+}
+
+export function DemoDescription(currentCvPage) {
+   return () => {
+      const demoData = DEMOS_DATA[getDemoId(currentCvPage)];
+      const isHidden = CURRENT_GRAPHICS_SWITCHING_PROGRESS.val !== null
+         || demoData === undefined || demoData.description_id === undefined;
+      return isHidden ? div() : div({
+         class: "demo-description" /*bubble shadow zmax */
+      }, localizeUi(demoData.description_id));
+   }
 }
 
 function Highlight(text) {
@@ -615,8 +655,8 @@ function CvProjectWillAndReason(chapterArgs) {
             ),
          ),
          // Highlight("Description: "),
-         p({class: "flex-row flex-center font-Large bold"}, "Will & Reason, 4X strategy"),
-         p({class: "flex-row flex-center font-large italic"}, "(unreleased)"),
+         p({class: "flex-row flex-center font-Large bold"}, "Will & Reason"),
+         p({class: "flex-row flex-center font-large italic"}, "(4X strategy game, unreleased)"),
          p({style: "margin-top:0.5rem;"}, "I volunteered during inception of the project:"),
          ul(
             li("Implemented pathfinding prototype (A* algorithm)"),

@@ -1,3 +1,4 @@
+const {span} = van.tags
 export const CURRENT_LANGUAGE = van.state("en");
 export const UI_STRINGS = (function getLocalization() {
    return {
@@ -44,14 +45,21 @@ export const UI_STRINGS = (function getLocalization() {
       years_many_full:  {en: " years"  , ru: " лет"      , kr: "년"},
       career_huawei: {en: "Huawei", ru: "Huawei", kr: "Huawei"},
       career_samsung: {en: "Samsung AI Center", ru: "Samsung AI Center", kr: "삼성 AI 연구센터"},
+      career_samsung: {en: "Samsung AI Center", ru: "Samsung AI Center", kr: "삼성 AI 연구센터"},
       career_freelance: {en: "Freelancing", ru: "Фриланс", kr: "프리랜소"},
       publications_wacv_2024: {en: "Scientific paper, WACV 2024", ru: "Научная статья на WACV 2024", kr: "연구 논문 (WACV 2024)"},
       project_this_cv: {en: "Interactive web-CV, you're here :)", ru: "Интерактивное веб-CV, вы тут :)", kr: "이 이력서"},
       project_image_processing_tool: {en: "Image processing web-tool", ru: "Веб инструмент для фотографий", /*kr: "이 이력서"*/},
-      project_infinite_fractal: {en: "High precision fractal visualization", ru: "Визуализация фракталов высокой точности", /*kr: "이 이력서"*/},
+      // project_infinite_fractal: {en: "High precision fractal visualization", ru: "Визуализация фракталов высокой точности", /*kr: "이 이력서"*/},
       project_will_and_reason: {en: "GameDev volunteering", ru: "Волонтер в GameDev проекте", /*kr: "이 이력서"*/},
       education_master: {en: "Master of Information Science", ru: "Магистратура", kr: "석사"},
       education_bachelor: {en: "Bachelor of Computer Science", ru: "Бакалавриат", kr: "학사"},
+      demo_triangle: {en: "Triangle", ru: "Triangle", /* kr: "Huawei" */},
+      demo_frame_generation: {en: "Frame generation", /* kr: "Huawei" */},
+      demo_head_avatar: {en: "Head avatar animation" },
+      demo_full_body_avatar: {en: "Full-body avatar animation" },
+      demo_fractal: {en: "The fractal zooming has increased precision compared to naive float64, by using Dekker's double-double arithmetic and perturbation theory"/* , ru: "Интерактивное веб-CV, вы тут :)" */, /* kr: "이 이력서" */},
+      demo_procedural_generation: {en: "Procedural mesh generation" },
       intro_hi: {en: "Hi, I'm Alexey :)", ru: "Привет, меня зовут Лёша :)", kr: "안녕하세요! 저는 \"료샤\"라고 합니다 :)"},
       intro_enjoy_resume: {en: "Enjoy my interactive résumé !", ru: "Вы наткнулись на мое интерактивное резюме", kr: "제 이력서를 방문해줘서 반갑습니다!"},
       intro_using: {en: "I made everything from scratch, using", ru: "Все здесь разработано мной с нуля, используя", kr: "여기에 모두 것을 저 스스로 만들었습니다."},
@@ -96,8 +104,8 @@ export function localizeUi(key, nullIfMissing = false) {
   return () => (key in UI_STRINGS
     ? (CURRENT_LANGUAGE.val in UI_STRINGS[key]
       ? UI_STRINGS[key][CURRENT_LANGUAGE.val]
-      : nullIfMissing ? null : key)
-    : key);
+      : nullIfMissing ? null : span({class: "missing"}, key))
+    : span({class: "missing"}, key));
 }
 
 export function localizeUiPostprocess(key, postprocess, nullIfMissing = false) {

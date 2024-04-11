@@ -337,6 +337,10 @@ select option {
    font-size: var(--size-Huge);
 }
 
+.missing {
+   background-color: magenta;
+}
+
 .parallax {
 
 }
@@ -373,6 +377,7 @@ select option {
 .demo-controls {
    position: relative;
    width: fit-content;
+   max-width: 23rem;
    height: 0;
    top: 1rem;
    left: 1rem;
@@ -410,6 +415,12 @@ select option {
 
 .demo-controls > div {
    background-color: var(--color-theme-normal-alpha);
+}
+
+.demo-controls .demo-description {
+   /* background-color: var(--color-theme-normal); */
+   margin-left: 0.5rem;
+   margin-right: 0.5rem;
 }
 
 #main-canvas {

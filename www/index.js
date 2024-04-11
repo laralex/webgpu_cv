@@ -45,7 +45,7 @@ export const BUILD_DATA = {
 import init, { WasmInterface, DemoId, GraphicsLevel } from '/wasm/index.js';
 import { UI_STRINGS, CURRENT_LANGUAGE, localizeString, localizeUi, localizeUiPostprocess } from '/modules/localization.js';
 import { Util } from '/modules/util.js';
-import { CvContent } from '/modules/cv.js';
+import { CvContent, DemoDescription, getDemoId } from '/modules/cv.js';
 import { CURRENT_DEMO_LOADING_PROGRESS, CURRENT_GRAPHICS_SWITCHING_PROGRESS } from '/modules/exports_to_wasm.js';
 
 function dumpCvCookies() {
@@ -731,21 +731,6 @@ Deployed: ${BUILD_DATA["deploy-date"]}\n\
 DEBUG: ${BUILD_DATA["debug"]}`;
 }
 
-function getCurrentDemoId() {
-   const remap = {
-      "__stub__": DemoId.Stub,
-      "career_huawei": DemoId.CareerHuawei,
-      "career_samsung": DemoId.CareerSamsung,
-      "publications_wacv_2024": DemoId.PublicationWacv2024,
-      "project_this_cv": DemoId.ProjectThisCv,
-      "project_unity_4X_strategy_volunteer": DemoId.Triangle,
-      "project_image_processing_tool": DemoId.ProjectTreesRuler,
-      "education_master": DemoId.EducationMasters,
-      "education_bachelor": DemoId.EducationBachelor,
-   }
-   return remap[CURRENT_CV_PAGE[1].val] || remap["__stub__"];
-}
-
 function getGraphicsLevel() {
    const remap = {
       0: GraphicsLevel.Minimal,
@@ -779,7 +764,7 @@ window.onload = function() {
       configureFromFont(CURRENT_FONT_FAMILY.val, CURRENT_LANGUAGE.val);
    });
    van.derive(() => {
-      const demoId = getCurrentDemoId();
+      const demoId = getDemoId(CURRENT_CV_PAGE);
       if (WASM_INSTANCE) {
          console.log("Start switching demo", demoId);
          WASM_INSTANCE.wasm_start_loading_demo(demoId);
@@ -805,6 +790,7 @@ window.onload = function() {
    van.add(document.getElementById("side-card-info"), MoreSkillsButton());
    van.add(document.getElementById("card-links"), ResumePdfLink());
    van.add(document.getElementById("sidebar"), CvContent(CURRENT_CV_PAGE, CV_PAGE_ORDER));
+   van.add(document.getElementById("demo-description"), DemoDescription(CURRENT_CV_PAGE));
    van.derive(() => {
       if (IS_TUTORIAL_SHOWN.val == false) {
          return;
@@ -885,7 +871,7 @@ window.onload = function() {
       configureCanvas();
       WASM_INSTANCE.wasm_set_fps_limit(CURRENT_FPS_LIMIT.val);
       WASM_INSTANCE.wasm_set_graphics_level(CURRENT_GRAPHICS_LEVEL.val);
-      WASM_INSTANCE.wasm_start_loading_demo(getCurrentDemoId());
+      WASM_INSTANCE.wasm_start_loading_demo(getDemoId(CURRENT_CV_PAGE));
       WASM_INSTANCE.wasm_loop();
    })();
 }

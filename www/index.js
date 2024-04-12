@@ -867,7 +867,7 @@ window.onload = function() {
       await init('./wasm/index_bg.wasm');
 
       // And afterwards we can use all the functionality defined in wasm.
-      WASM_INSTANCE = new WasmInterface(CANVAS_ID);
+      WASM_INSTANCE = await new WasmInterface(CANVAS_ID);
       configureCanvas();
       WASM_INSTANCE.wasm_set_fps_limit(CURRENT_FPS_LIMIT.val);
       WASM_INSTANCE.wasm_set_graphics_level(CURRENT_GRAPHICS_LEVEL.val);

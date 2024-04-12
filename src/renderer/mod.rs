@@ -5,7 +5,7 @@ pub mod triangle;
 use std::{cell::{Cell}, pin::Pin, rc::Rc};
 use web_sys::WebGl2RenderingContext as GL;
 
-use crate::{DemoId, GraphicsLevel};
+use crate::{DemoId, GraphicsLevel, Webgpu};
 
 use self::triangle::TriangleDemo;
 
@@ -101,11 +101,11 @@ impl ExternalState {
 
 pub trait IDemo : Drop {
    fn tick(&mut self, state: &ExternalState);
-   fn start_switching_graphics_level(&mut self, gl: &GL, level: GraphicsLevel);
-   fn poll_switching_graphics_level(&mut self, gl: &GL) -> std::task::Poll<()>;
+   fn start_switching_graphics_level(&mut self, webgpu: &Webgpu, level: GraphicsLevel) -> Result<(), wgpu::SurfaceError>;
+   fn poll_switching_graphics_level(&mut self, webgpu: &Webgpu) -> Result<std::task::Poll<()>, wgpu::SurfaceError>;
    fn progress_switching_graphics_level(&self) -> f32;
-   fn render(&mut self, gl: &GL, delta_sec: f32);
-   fn drop_demo(&mut self, gl: &GL);
+   fn render(&mut self, webgpu: &Webgpu, delta_sec: f32) -> Result<(), wgpu::SurfaceError>;
+   fn drop_demo(&mut self, webgpu: &Webgpu);
 }
 
 pub trait SimpleFuture {
@@ -135,22 +135,21 @@ pub trait Dispose {
 }
 
 pub trait DemoLoadingFuture : SimpleFuture<Output=Box<dyn IDemo>, Context=()> + Dispose + Progress {}
-// pub trait GraphicsSwitchingFuture : SimpleFuture<Output=Box<dyn IDemo>, Context=()> + Dispose + Progress {}
 
-pub fn start_loading_demo<'a>(id: DemoId, gl: Rc<GL>, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture> {
+pub fn start_loading_demo<'a>(id: DemoId, webgpu: Rc<Webgpu>, color_target_format: wgpu::TextureFormat, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture> {
    match id {
       DemoId::Triangle =>
-         TriangleDemo::start_loading(gl, graphics_level),
+         TriangleDemo::start_loading(webgpu, color_target_format, graphics_level),
       DemoId::Fractal =>
-         TriangleDemo::start_loading(gl, GraphicsLevel::High),
+         TriangleDemo::start_loading(webgpu, color_target_format, GraphicsLevel::High),
       DemoId::FrameGeneration =>
-         TriangleDemo::start_loading(gl, GraphicsLevel::Low),
+         TriangleDemo::start_loading(webgpu, color_target_format, GraphicsLevel::Low),
       DemoId::HeadAvatar =>
-         TriangleDemo::start_loading(gl, GraphicsLevel::Medium),
+         TriangleDemo::start_loading(webgpu, color_target_format, GraphicsLevel::Medium),
       DemoId::FullBodyAvatar =>
-         TriangleDemo::start_loading(gl, GraphicsLevel::Minimal),
+         TriangleDemo::start_loading(webgpu, color_target_format, GraphicsLevel::Minimal),
       DemoId::ProceduralGeneration =>
-         TriangleDemo::start_loading(gl, GraphicsLevel::Ultra),
+         TriangleDemo::start_loading(webgpu, color_target_format, GraphicsLevel::Ultra),
       _ => StubDemo::start_loading(),
    }
 }

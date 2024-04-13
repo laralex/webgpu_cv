@@ -1,29 +1,41 @@
 pub mod stub_demo;
-pub use stub_demo::StubDemo;
-pub mod triangle;
-pub use triangle::TriangleDemo;
+pub use stub_demo::Demo as StubDemo;
 pub mod webgpu;
 pub use webgpu::Webgpu;
-use wgpu::SurfaceTexture;
 pub mod webgpu_utils;
+mod triangle;
+mod fractal;
+
+use crate::GraphicsLevel;
+use wgpu::SurfaceTexture;
 
 use std::{cell::Cell, pin::Pin, rc::Rc};
 
-use crate::{DemoId, GraphicsLevel};
+#[cfg(feature = "web")]
+pub mod wasm {
 
-impl From<u32> for GraphicsLevel {
-    fn from(level_code: u32) -> Self {
-      match level_code {
-         0x00 => GraphicsLevel::Minimal,
-         0x10 => GraphicsLevel::Low,
-         0x20 => GraphicsLevel::Medium,
-         0x30 => GraphicsLevel::High,
-         0xFF => GraphicsLevel::Ultra,
-         _ => Default::default(),
-      }
-    }
+use super::*;
+use crate::wasm::DemoId;
+
+pub fn start_loading_demo<'a>(id: DemoId, webgpu: Rc<Webgpu>, color_target_format: wgpu::TextureFormat, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture> {
+   match id {
+      DemoId::Triangle =>
+         triangle::Demo::start_loading(webgpu, color_target_format, graphics_level),
+      DemoId::Fractal =>
+         fractal::Demo::start_loading(webgpu, color_target_format, GraphicsLevel::High),
+      DemoId::FrameGeneration =>
+         triangle::Demo::start_loading(webgpu, color_target_format, GraphicsLevel::Low),
+      DemoId::HeadAvatar =>
+         triangle::Demo::start_loading(webgpu, color_target_format, GraphicsLevel::Medium),
+      DemoId::FullBodyAvatar =>
+         triangle::Demo::start_loading(webgpu, color_target_format, GraphicsLevel::Minimal),
+      DemoId::ProceduralGeneration =>
+         triangle::Demo::start_loading(webgpu, color_target_format, GraphicsLevel::Ultra),
+      _ => stub_demo::Demo::start_loading(),
+   }
 }
 
+} // mod wasm
 
 #[derive(Clone, Copy)]
 pub struct MouseState {
@@ -152,21 +164,3 @@ pub trait Dispose {
 }
 
 pub trait DemoLoadingFuture : SimpleFuture<Output=Box<dyn IDemo>, Context=()> + Dispose + Progress {}
-
-pub fn start_loading_demo<'a>(id: DemoId, webgpu: Rc<Webgpu>, color_target_format: wgpu::TextureFormat, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture> {
-   match id {
-      DemoId::Triangle =>
-         TriangleDemo::start_loading(webgpu, color_target_format, graphics_level),
-      DemoId::Fractal =>
-         TriangleDemo::start_loading(webgpu, color_target_format, GraphicsLevel::High),
-      DemoId::FrameGeneration =>
-         TriangleDemo::start_loading(webgpu, color_target_format, GraphicsLevel::Low),
-      DemoId::HeadAvatar =>
-         TriangleDemo::start_loading(webgpu, color_target_format, GraphicsLevel::Medium),
-      DemoId::FullBodyAvatar =>
-         TriangleDemo::start_loading(webgpu, color_target_format, GraphicsLevel::Minimal),
-      DemoId::ProceduralGeneration =>
-         TriangleDemo::start_loading(webgpu, color_target_format, GraphicsLevel::Ultra),
-      _ => StubDemo::start_loading(),
-   }
-}

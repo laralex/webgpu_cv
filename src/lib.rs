@@ -1,10 +1,23 @@
-
-
 mod js_interop;
 mod renderer;
-use renderer::{DemoLoadingFuture, ExternalState, IDemo, MouseState, Webgpu};
 
 use wasm_bindgen::prelude::*;
+
+#[wasm_bindgen]
+#[derive(Default, Clone, Copy)]
+pub enum GraphicsLevel {
+   Minimal = 0x00,
+   Low = 0x10,
+   #[default] Medium = 0x20,
+   High = 0x30,
+   Ultra = 0xFF,
+}
+
+#[cfg(feature = "web")]
+mod wasm {
+
+use super::*;
+use renderer::{wasm::*, DemoLoadingFuture, ExternalState, IDemo, MouseState, Webgpu};
 use web_sys::HtmlCanvasElement;
 use std::pin::Pin;
 use std::{cell::{RefCell, Cell}, rc::Rc};
@@ -41,21 +54,23 @@ pub enum DemoId {
     ProceduralGeneration,
 }
 
-#[wasm_bindgen]
-#[derive(Default, Clone, Copy)]
-pub enum GraphicsLevel {
-   Minimal = 0x00,
-   Low = 0x10,
-   #[default] Medium = 0x20,
-   High = 0x30,
-   Ultra = 0xFF,
+impl From<u32> for GraphicsLevel {
+    fn from(level_code: u32) -> Self {
+      match level_code {
+         0x00 => GraphicsLevel::Minimal,
+         0x10 => GraphicsLevel::Low,
+         0x20 => GraphicsLevel::Medium,
+         0x30 => GraphicsLevel::High,
+         0xFF => GraphicsLevel::Ultra,
+         _ => Default::default(),
+      }
+    }
 }
 
 #[wasm_bindgen]
 impl WasmInterface {
 
     #[wasm_bindgen(constructor)]
-    #[cfg(feature = "web")]
     pub async fn new(canvas_dom_id: &str) -> Result<WasmInterface, JsValue> {
         #[cfg(feature = "console_error_panic_hook")]
         console_error_panic_hook::set_once();
@@ -178,7 +193,7 @@ impl WasmInterface {
         // assign new current loading process
         let pending_loading_demo_ref = self.pending_loading_demo.clone();
         *pending_loading_demo_ref.borrow_mut() = Some(
-            Box::into_pin(renderer::start_loading_demo(demo_id,
+            Box::into_pin(renderer::wasm::start_loading_demo(demo_id,
                 self.webgpu.clone(),
                 self.webgpu_config.borrow().format,
                 self.demo_state.borrow().graphics_level)));
@@ -323,3 +338,5 @@ fn configure_mouseup(mouse_state: Rc<Cell<renderer::MouseState>>) -> Result<(), 
     closure.forget();
     Ok(())
 }
+
+} // mod wasm

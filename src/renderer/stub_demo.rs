@@ -3,17 +3,17 @@ use wgpu::SurfaceTexture;
 
 use super::{webgpu_utils::WebgpuUtils, DemoLoadingFuture, Dispose, ExternalState, GraphicsLevel, IDemo, Progress, SimpleFuture, Webgpu};
 
-pub struct StubDemo;
+pub struct Demo;
 
-impl Drop for StubDemo {
+impl Drop for Demo {
    fn drop(&mut self) { self.dispose(); }
 }
 
-impl Dispose for StubDemo {
+impl Dispose for Demo {
    fn dispose(&mut self) { }
 }
 
-impl IDemo for StubDemo {
+impl IDemo for Demo {
    fn tick(&mut self, _input: &ExternalState) { }
 
    fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, delta_sec: f32) -> Result<(), wgpu::SurfaceError> {
@@ -60,7 +60,7 @@ impl IDemo for StubDemo {
    }
 
    fn drop_demo(&mut self, _webgpu: &Webgpu) {
-      web_sys::console::log_1(&"Rust demo drop: StubDemo".into());
+      web_sys::console::log_2(&"Rust demo drop".into(), &std::module_path!().into());
    }
 }
 
@@ -83,13 +83,13 @@ impl SimpleFuture for DemoLoadingProcess {
    type Context = ();
 
    fn simple_poll(mut self: std::pin::Pin<&mut Self>, _cx: &mut Self::Context) -> Poll<Self::Output> {
-      Poll::Ready(Box::new(StubDemo{}))
+      Poll::Ready(Box::new(Demo{}))
    }
 }
 
 impl DemoLoadingFuture for DemoLoadingProcess {}
 
-impl StubDemo {
+impl Demo {
    pub fn start_loading() -> Box<dyn DemoLoadingFuture> {
       Box::new(DemoLoadingProcess{})
    }

@@ -2,11 +2,12 @@ use std::rc::Rc;
 use wgpu::SurfaceTexture;
 
 use crate::renderer::webgpu_utils::WebgpuUtils;
+use crate::GraphicsLevel;
 
-use super::{DemoLoadingFuture, Dispose, ExternalState, GraphicsLevel, IDemo, Progress, SimpleFuture, Webgpu};
+use super::{DemoLoadingFuture, Dispose, ExternalState, IDemo, Progress, SimpleFuture, Webgpu};
 
-const VERTEX_SHADER_SRC:   &str = include_str!("shaders/triangle_colored.vs.wgsl");
-const FRAGMENT_SHADER_SRC: &str = include_str!("shaders/vertex_color.fs.wgsl");
+const VERTEX_SHADER_SRC:   &str = include_str!("shaders/triangle_fullscreen.vs.wgsl");
+const FRAGMENT_SHADER_SRC: &str = include_str!("shaders/mandelbrot.fs.wgsl");
 
 #[derive(Default)]
 enum DemoLoadingStage {
@@ -42,7 +43,7 @@ impl Dispose for DemoLoadingProcess {
             self.fragment_shader.take();
             self.stage = DemoLoadingStage::Ready;
             self.loaded_demo.take();
-            web_sys::console::log_2(&"Rust loading drop: TriangleDemo".into(), &self.stage_percent.into());
+            web_sys::console::log_3(&"Rust loading drop".into(), &std::module_path!().into(), &self.stage_percent.into());
          },
       }
    }
@@ -68,7 +69,6 @@ impl SimpleFuture for DemoLoadingProcess {
       use DemoLoadingStage::*;
       match self.stage {
          CompileShaders => {
-            
             let device = &self.webgpu.as_ref().device;
             let vertex_shader = WebgpuUtils::make_vertex_shader(device, VERTEX_SHADER_SRC);
             let fragment_shader = WebgpuUtils::make_fragment_shader(device, FRAGMENT_SHADER_SRC);
@@ -122,7 +122,6 @@ impl SimpleFuture for DemoLoadingProcess {
          StartSwitchingGraphicsLevel => {
             self.loaded_demo = Some(Demo {
                render_pipeline: self.render_pipeline.take().unwrap(),
-               clear_color: [0.0; 4],
                num_rendered_vertices: 3,
                pending_graphics_level_switch: None,
             });
@@ -150,7 +149,7 @@ impl SimpleFuture for DemoLoadingProcess {
                   ))
                },
                Err(e) => {
-                  eprintln!("Error when switching graphics level: TriangleDemo: {}", e);
+                  eprintln!("Error when switching graphics level: {}: {}", std::module_path!(), e);
                   std::task::Poll::Pending // hopefully will work next frame
                }
             }
@@ -164,42 +163,14 @@ impl DemoLoadingFuture for DemoLoadingProcess {}
 
 pub struct Demo {
    render_pipeline: wgpu::RenderPipeline,
-   clear_color: [f64; 4],
    num_rendered_vertices: i32,
    pending_graphics_level_switch: Option<GraphicsSwitchingProcess>,
-}
-
-impl Drop for Demo {
-   fn drop(&mut self) {
-      // std::mem::drop(self.render_pipeline);
-      self.pending_graphics_level_switch.take();
-   }
-}
-
-impl Demo {
-   pub fn start_loading<'a>(webgpu: Rc<Webgpu>, color_target_format: wgpu::TextureFormat, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture> {
-      Box::new(DemoLoadingProcess {
-         stage: Default::default(),
-         stage_percent: 0.0,
-         graphics_level,
-         color_target_format,
-         render_pipeline: Default::default(),
-         vertex_shader: Default::default(),
-         fragment_shader: Default::default(),
-         loaded_demo: Default::default(),
-         webgpu,
-      })
-   }
 }
 
 
 impl IDemo for Demo {
    fn tick(&mut self, input: &ExternalState) {
-      let mouse_pos = input.mouse_unit_position();
-      self.clear_color[0] = (input.time_now_sec.sin() * 0.5 + 0.5 * mouse_pos.0) as f64;
-      self.clear_color[1] = ((input.time_now_sec * 1.2).sin() * 0.5 + 0.5) as f64;
-      self.clear_color[2] = input.mouse.get().left as f64;
-      self.clear_color[3] = 1.0;
+
    }
 
    fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, _delta_sec: f32) -> Result<(), wgpu::SurfaceError> {
@@ -209,19 +180,13 @@ impl IDemo for Demo {
       });
 
       {
-         let color = wgpu::Color{
-            r: self.clear_color[0],
-            g: self.clear_color[1],
-            b: self.clear_color[2],
-            a: self.clear_color[3],
-         };
          let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                label: Some("Render Pass"),
                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                   view: &view,
                   resolve_target: None,
                   ops: wgpu::Operations {
-                     load: wgpu::LoadOp::Clear(color),
+                     load: wgpu::LoadOp::Load,
                      store: wgpu::StoreOp::Store,
                   },
                })],
@@ -265,7 +230,32 @@ impl IDemo for Demo {
    }
 
    fn drop_demo(&mut self, webgpu: &Webgpu) {
+      // gl.delete_program(Some(&self.main_program));
       web_sys::console::log_2(&"Rust demo drop".into(), &std::module_path!().into());
+   }
+}
+
+
+impl Drop for Demo {
+   fn drop(&mut self) {
+      //std::mem::drop(self.render_pipeline);
+      self.pending_graphics_level_switch.take();
+   }
+}
+
+impl Demo {
+   pub fn start_loading<'a>(webgpu: Rc<Webgpu>, color_target_format: wgpu::TextureFormat, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture> {
+      Box::new(DemoLoadingProcess {
+         stage: Default::default(),
+         stage_percent: 0.0,
+         graphics_level,
+         color_target_format,
+         render_pipeline: Default::default(),
+         vertex_shader: Default::default(),
+         fragment_shader: Default::default(),
+         loaded_demo: Default::default(),
+         webgpu,
+      })
    }
 }
 
@@ -295,13 +285,6 @@ impl Progress for GraphicsSwitchingProcess {
 impl GraphicsSwitchingProcess {
    pub fn poll(demo: &mut Demo, _webgpu: &Webgpu) -> std::task::Poll<()> {
       let self_ = demo.pending_graphics_level_switch.as_mut().unwrap();
-      demo.num_rendered_vertices = match self_.graphics_level {
-         GraphicsLevel::Minimal => 0,
-         GraphicsLevel::Low => 3,
-         GraphicsLevel::Medium => 6,
-         GraphicsLevel::High => 9,
-         GraphicsLevel::Ultra => 12,
-      };
       self_.progress = 1.0;
       std::task::Poll::Ready(())
    }
@@ -316,13 +299,7 @@ mod tests {
     #[test]
     fn shaders_compile() {
         let (device, _) = futures::executor::block_on(Webgpu::new_offscreen());
-      //   let result = std::panic::catch_unwind(||
         WebgpuUtils::make_vertex_shader(&device, VERTEX_SHADER_SRC);
         WebgpuUtils::make_fragment_shader(&device, FRAGMENT_SHADER_SRC);
-    }
-
-    #[test]
-    fn ok() {
-      assert_eq!(1, 1);
     }
 }

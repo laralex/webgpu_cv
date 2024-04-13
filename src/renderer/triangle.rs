@@ -166,7 +166,7 @@ pub struct TriangleDemo {
    // gl: Rc<GL>,
    // main_program: WebGlProgram,
    render_pipeline: wgpu::RenderPipeline,
-   clear_color: [f32; 4],
+   clear_color: [f64; 4],
    num_rendered_vertices: i32,
    pending_graphics_level_switch: Option<GraphicsSwitchingProcess>,
 }
@@ -197,9 +197,9 @@ impl TriangleDemo {
 impl IDemo for TriangleDemo {
    fn tick(&mut self, input: &ExternalState) {
       let mouse_pos = input.mouse_unit_position();
-      self.clear_color[0] = input.time_now_sec.sin() * 0.5 + 0.5 * mouse_pos.0;
-      self.clear_color[1] = (input.time_now_sec * 1.2).sin() * 0.5 + 0.5;
-      self.clear_color[2] = input.mouse.get().left;
+      self.clear_color[0] = (input.time_now_sec.sin() * 0.5 + 0.5 * mouse_pos.0) as f64;
+      self.clear_color[1] = ((input.time_now_sec * 1.2).sin() * 0.5 + 0.5) as f64;
+      self.clear_color[2] = input.mouse.get().left as f64;
       self.clear_color[3] = 1.0;
    }
 
@@ -210,14 +210,19 @@ impl IDemo for TriangleDemo {
       });
 
       {
+         let color = wgpu::Color{
+            r: self.clear_color[0],
+            g: self.clear_color[1],
+            b: self.clear_color[2],
+            a: self.clear_color[3],
+         };
          let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                label: Some("Render Pass"),
                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                   view: &view,
                   resolve_target: None,
                   ops: wgpu::Operations {
-                     load: wgpu::LoadOp::Clear(
-                        wgpu::Color { r: 0.2, g: 0.5, b: 0.3, a: 1.0 }),
+                     load: wgpu::LoadOp::Clear(color),
                      store: wgpu::StoreOp::Store,
                   },
                })],
@@ -316,5 +321,10 @@ mod tests {
       //   let result = std::panic::catch_unwind(||
         WebgpuUtils::make_vertex_shader(&device, VERTEX_SHADER_SRC);
         WebgpuUtils::make_fragment_shader(&device, FRAGMENT_SHADER_SRC);
+    }
+
+    #[test]
+    fn ok() {
+      assert_eq!(1, 1);
     }
 }

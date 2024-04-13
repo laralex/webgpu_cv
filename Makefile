@@ -14,15 +14,32 @@ install:
 	cargo install -f wasm-bindgen-cli
 	cargo install wasm-opt --locked
 
-.PHONY: wasm_debug
-wasm_debug:
+.PHONY: cargo_debug
+cargo_debug:
 	cargo $(CARGO_TOOLCHAIN) build $(CARGO_FLAGS) --features web
-# --keep-debug
+
+.PHONY: cargo
+cargo:
+	cargo $(CARGO_TOOLCHAIN) build --release $(CARGO_FLAGS) --features web
+
+.PHONY: test_shaders
+test_shaders:
+	cargo $(CARGO_TOOLCHAIN) test shaders --no-fail-fast -j 2 \
+		-- --test-threads=2
+
+.PHONY: test
+test:
+# wasm-pack test --node
+	cargo $(CARGO_TOOLCHAIN) test --lib --no-fail-fast -j 2 \
+		-- --test-threads=2
+
+.PHONY: wasm_debug
+wasm_debug: cargo_debug test_shaders
+#--keep-debug
 	wasm-bindgen $(WASM_BINDGEN_FLAGS) target/${RUST_TARGET}/debug/${WASM_NAME}.wasm
 
 .PHONY: wasm
-wasm:
-	cargo $(CARGO_TOOLCHAIN) build --release $(CARGO_FLAGS) --features web
+wasm: cargo test_shaders
 	wasm-bindgen $(WASM_BINDGEN_FLAGS) target/${RUST_TARGET}/release/${WASM_NAME}.wasm
 
 .PHONY: wasm_ci
@@ -90,11 +107,3 @@ app_debug: build_debug server_py
 
 .PHONY: app
 app: build server_py
-
-.PHONY: test
-test:
-#		--features wgpu/webgl \
-# wasm-pack test --node
-	cargo $(CARGO_TOOLCHAIN) test --lib --no-fail-fast \
-		-j 2 \
-		-- --test-threads=2

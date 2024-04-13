@@ -1,8 +1,7 @@
-use std::{rc::Rc};
+use std::rc::Rc;
+use crate::renderer::webgpu_utils::WebgpuUtils;
 
-use super::{DemoLoadingFuture, Dispose, ExternalState, GraphicsLevel, IDemo, Progress, SimpleFuture};
-use crate::{gl_utils, Webgpu};
-use web_sys::{WebGlProgram, WebGlShader};
+use super::{DemoLoadingFuture, Dispose, ExternalState, GraphicsLevel, IDemo, Progress, SimpleFuture, Webgpu};
 
 #[derive(Default)]
 enum DemoLoadingStage {
@@ -19,8 +18,8 @@ struct DemoLoadingProcess {
    graphics_level: GraphicsLevel,
    color_target_format: wgpu::TextureFormat,
    render_pipeline: Option<wgpu::RenderPipeline>,
-   vert_shader: Option<wgpu::ShaderModule>,
-   frag_shader: Option<wgpu::ShaderModule>,
+   vertex_shader: Option<wgpu::ShaderModule>,
+   fragment_shader: Option<wgpu::ShaderModule>,
    webgpu: Rc<Webgpu>,
    loaded_demo: Option<TriangleDemo>,
 }
@@ -64,86 +63,49 @@ impl SimpleFuture for DemoLoadingProcess {
       use DemoLoadingStage::*;
       match self.stage {
          CompileShaders => {
-            let vertex_shader = self.webgpu.device.create_shader_module(wgpu::ShaderModuleDescriptor {
-               label: Some("Vertex Shader"),
-               source: wgpu::ShaderSource::Wgsl(
-                  include_str!("shaders/no_vao_triangle.vert.wgsl").into()
-               ),
-            });
-            let fragment_shader = self.webgpu.device.create_shader_module(wgpu::ShaderModuleDescriptor {
-               label: Some("Vertex Shader"),
-               source: wgpu::ShaderSource::Wgsl(
-                  include_str!("shaders/vertex_color.frag.wgsl").into()
-               ),
-            });
-            // let vertex_shader_source = std::include_str!("shaders/no_vao_triangle.vert");
-            // let fragment_shader_source = std::include_str!("shaders/vertex_color.frag");
-            // let vertex_shader = gl_utils::compile_shader(
-            //       &self.gl, GL::VERTEX_SHADER, vertex_shader_source)
-            //    .inspect_err(|err| panic!("Vert shader failed to compile {}", err.as_string().unwrap()))
-            //    .unwrap();
-            // let fragment_shader = gl_utils::compile_shader(
-            //       &self.gl,GL::FRAGMENT_SHADER, fragment_shader_source)
-            //    .inspect_err(|err| panic!("Frag shader failed to compile {}", err.as_string().unwrap()))
-            //    .unwrap();
-            self.vert_shader = Some(vertex_shader);
-            self.frag_shader = Some(fragment_shader);
+            self.vertex_shader = Some(WebgpuUtils::make_vertex_shader(self.webgpu.as_ref(),
+               include_str!("shaders/no_vao_triangle.vert.wgsl")));
+            self.fragment_shader = Some(WebgpuUtils::make_fragment_shader(self.webgpu.as_ref(),
+               include_str!("shaders/vertex_color.frag.wgsl")));
             self.stage_percent = 0.6;
             self.stage = LinkPrograms;
             std::task::Poll::Pending
          },
          LinkPrograms => {
-            // let main_program = gl_utils::link_program_vert_frag(
-            //    &self.gl, &self.vert_shader.as_ref().unwrap(), &self.frag_shader.as_ref().unwrap())
-            //    .inspect_err(|err| panic!("Program failed to link {}", err.as_string().unwrap()))
-            //    .unwrap();
-            // self.main_program = Some(main_program);
-            // gl_utils::delete_program_shaders(&self.gl, &self.main_program.as_ref().unwrap());
             let render_pipeline_layout =
                self.webgpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                   label: Some("Render Pipeline Layout"),
                   bind_group_layouts: &[],
                   push_constant_ranges: &[],
                });
-            let vert_shader = self.vert_shader.take().unwrap();
-            let frag_shader = self.frag_shader.take().unwrap();
+            let vs = self.vertex_shader.take().unwrap();
+            let fs = self.fragment_shader.take().unwrap();
             self.render_pipeline = Some(
                self.webgpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                label: Some("Render Pipeline"),
                layout: Some(&render_pipeline_layout),
                vertex: wgpu::VertexState {
-                     module: &vert_shader,
+                     module: &vs,
                      entry_point: "vs_main",
                      buffers: &[],
                },
                fragment: Some(wgpu::FragmentState {
-                     module: &frag_shader,
+                     module: &fs,
                      entry_point: "fs_main",
                      targets: &[Some(wgpu::ColorTargetState {
-                        format: self.color_target_format, // TODO: config.format,
+                        format: self.color_target_format,
                         blend: Some(wgpu::BlendState::REPLACE),
                         write_mask: wgpu::ColorWrites::ALL,
                      })],
                }),
-               primitive: wgpu::PrimitiveState {
-                  topology: wgpu::PrimitiveTopology::TriangleList,
-                  strip_index_format: None,
-                  front_face: wgpu::FrontFace::Ccw,
-                  cull_mode: Some(wgpu::Face::Back),
-                  // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
-                  polygon_mode: wgpu::PolygonMode::Fill,
-                  // Requires Features::DEPTH_CLIP_CONTROL
-                  unclipped_depth: false,
-                  // Requires Features::CONSERVATIVE_RASTERIZATION
-                  conservative: false,
-              },
-              depth_stencil: None, // 1.
-              multisample: wgpu::MultisampleState {
+               primitive: WebgpuUtils::default_primitive_state(),
+               depth_stencil: None, // 1.
+               multisample: wgpu::MultisampleState {
                   count: 1,
                   mask: !0,
                   alpha_to_coverage_enabled: false,
-              },
-              multiview: None,
+               },
+               multiview: None,
             }));
             self.stage_percent = 0.7;
             self.stage = StartSwitchingGraphicsLevel;
@@ -151,7 +113,6 @@ impl SimpleFuture for DemoLoadingProcess {
          }
          StartSwitchingGraphicsLevel => {
             self.loaded_demo = Some(TriangleDemo {
-               // main_program: self.main_program.as_ref().unwrap().clone(),
                render_pipeline: self.render_pipeline.take().unwrap(),
                clear_color: [0.0; 4],
                num_rendered_vertices: 3,
@@ -174,16 +135,15 @@ impl SimpleFuture for DemoLoadingProcess {
                   std::task::Poll::Pending
                }
                Ok(std::task::Poll::Ready(())) => {
-                  web_sys::console::log_1(&"Rust loading ready: TriangleDemo".into());
                   self.stage_percent = 1.0;
                   self.stage = Ready;
                   std::task::Poll::Ready(Box::new(
                      self.loaded_demo.take().unwrap()
                   ))
                },
-               Err(_) => {
-                  panic!("Error when switching graphics level: TriangleDemo");
-                  // std::task::Poll::Pending
+               Err(e) => {
+                  eprintln!("Error when switching graphics level: TriangleDemo: {}", e);
+                  std::task::Poll::Pending // hopefully will work next frame
                }
             }
          }
@@ -217,8 +177,8 @@ impl TriangleDemo {
          graphics_level,
          color_target_format,
          render_pipeline: Default::default(),
-         vert_shader: Default::default(),
-         frag_shader: Default::default(),
+         vertex_shader: Default::default(),
+         fragment_shader: Default::default(),
          loaded_demo: Default::default(),
          webgpu,
       })
@@ -229,8 +189,8 @@ impl TriangleDemo {
 impl IDemo for TriangleDemo {
    fn tick(&mut self, input: &ExternalState) {
       let mouse_pos = input.mouse_unit_position();
-      self.clear_color[0] = input.time_sec.sin() * 0.5 + 0.5 * mouse_pos.0;
-      self.clear_color[1] = (input.time_sec * 1.2).sin() * 0.5 + 0.5;
+      self.clear_color[0] = input.time_now_sec.sin() * 0.5 + 0.5 * mouse_pos.0;
+      self.clear_color[1] = (input.time_now_sec * 1.2).sin() * 0.5 + 0.5;
       self.clear_color[2] = input.mouse.get().left;
       self.clear_color[3] = 1.0;
    }

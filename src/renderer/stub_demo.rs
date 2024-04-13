@@ -1,7 +1,5 @@
 use std::task::Poll;
-use crate::Webgpu;
-
-use super::{DemoLoadingFuture, Dispose, ExternalState, GraphicsLevel, IDemo, Progress, SimpleFuture};
+use super::{DemoLoadingFuture, Dispose, ExternalState, GraphicsLevel, IDemo, Progress, SimpleFuture, Webgpu};
 
 pub struct StubDemo;
 
@@ -49,7 +47,6 @@ impl IDemo for StubDemo {
    }
 
    fn start_switching_graphics_level(&mut self, _webgpu: &Webgpu, _level: GraphicsLevel) -> Result<(), wgpu::SurfaceError> {
-      web_sys::console::log_1(&"Rust start_switching_graphics_level: StubDemo".into());
       Ok(())
    }
 

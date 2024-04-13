@@ -1,13 +1,14 @@
 pub mod stub_demo;
 pub use stub_demo::StubDemo;
 pub mod triangle;
+pub use triangle::TriangleDemo;
+pub mod webgpu;
+pub use webgpu::Webgpu;
+pub mod webgpu_utils;
 
-use std::{cell::{Cell}, pin::Pin, rc::Rc};
-use web_sys::WebGl2RenderingContext as GL;
+use std::{cell::Cell, pin::Pin, rc::Rc};
 
-use crate::{DemoId, GraphicsLevel, Webgpu};
-
-use self::triangle::TriangleDemo;
+use crate::{DemoId, GraphicsLevel};
 
 impl From<u32> for GraphicsLevel {
     fn from(level_code: u32) -> Self {
@@ -35,8 +36,12 @@ pub struct MouseState {
 pub struct ExternalState {
    pub mouse: Rc<Cell<MouseState>>,
    pub screen_size: (u32, u32),
-   pub time_sec: f32,
+   pub time_now_sec:   f32,
+   pub time_now_ms:    u32,
+   time_prev_sec:  f32,
+   time_prev_ms:   u32,
    pub time_delta_sec: f32,
+   pub time_delta_ms:  u32,
    pub time_delta_limit_ms: i32,
    pub frame_idx: usize,
    pub frame_rate: f32,
@@ -66,8 +71,12 @@ impl Default for ExternalState {
          })),
          screen_size: (1, 1),
          time_delta_sec: Default::default(),
+         time_delta_ms: Default::default(),
          time_delta_limit_ms: Default::default(),
-         time_sec: Default::default(),
+         time_now_sec: Default::default(),
+         time_now_ms: Default::default(),
+         time_prev_sec: Default::default(),
+         time_prev_ms: Default::default(),
          frame_idx: Default::default(),
          frame_rate: 1.0,
          sound_sample_rate: Default::default(),
@@ -77,9 +86,16 @@ impl Default for ExternalState {
 }
 
 impl ExternalState {
-   pub fn begin_frame(&mut self, elapsed_sec: f32) {
+   pub fn begin_frame(&mut self, timestamp_ms: usize) {
+      let time_now_ms  = timestamp_ms as u32;
+      let time_now_sec = timestamp_ms as f32 * 0.001;
+      let elapsed_ms  = time_now_ms - self.time_prev_ms;
+      let elapsed_sec = time_now_sec - self.time_prev_sec;
+      self.time_prev_ms  = time_now_ms;
+      self.time_prev_sec = time_now_sec;
+      self.time_delta_ms = elapsed_ms.max(1);
       self.time_delta_sec = elapsed_sec.max(1e-6);
-      self.time_sec += self.time_delta_sec;
+      self.time_now_sec += self.time_delta_sec;
       self.frame_rate = 1.0 / self.time_delta_sec;
    }
 

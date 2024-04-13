@@ -13,7 +13,7 @@ pub struct Webgpu {
 }
 
 impl Webgpu {
-   #[cfg(any(webgpu, webgl))]
+   #[cfg(feature = "web")]
    pub async fn new(canvas: HtmlCanvasElement) -> (Self, wgpu::SurfaceConfiguration) {
        // The instance is a handle to our GPU
        // Backends::all => Vulkan + Metal + DX12 + Browser WebGPU

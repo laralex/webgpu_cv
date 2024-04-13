@@ -16,12 +16,13 @@ install:
 
 .PHONY: wasm_debug
 wasm_debug:
-	cargo $(CARGO_TOOLCHAIN) build $(CARGO_FLAGS)
-	wasm-bindgen --keep-debug $(WASM_BINDGEN_FLAGS) target/${RUST_TARGET}/debug/${WASM_NAME}.wasm 
+	cargo $(CARGO_TOOLCHAIN) build $(CARGO_FLAGS) --features web
+# --keep-debug
+	wasm-bindgen $(WASM_BINDGEN_FLAGS) target/${RUST_TARGET}/debug/${WASM_NAME}.wasm
 
 .PHONY: wasm
 wasm:
-	cargo $(CARGO_TOOLCHAIN) build --release $(CARGO_FLAGS)
+	cargo $(CARGO_TOOLCHAIN) build --release $(CARGO_FLAGS) --features web
 	wasm-bindgen $(WASM_BINDGEN_FLAGS) target/${RUST_TARGET}/release/${WASM_NAME}.wasm
 
 .PHONY: wasm_ci
@@ -55,7 +56,7 @@ codegen_debug:
 	BUILD_TYPE=debug $(MAKE) codegen
 
 .PHONY: build_debug
-build_debug: wasm_debug codegen_debug pdf_link
+build_debug: wasm_debug pdf_link
 
 # no `wasm_opt`
 .PHONY: build_ci

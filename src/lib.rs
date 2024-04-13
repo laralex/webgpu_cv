@@ -104,7 +104,7 @@ impl WasmInterface {
                 webgpu_config.width = width;
                 webgpu_config.height = height;
             }
-            self.webgpu.configure_surface(&self.webgpu_config.borrow());
+            self.webgpu.surface_configure(&self.webgpu_config.borrow());
         }
     }
 
@@ -243,19 +243,24 @@ impl WasmInterface {
         let window_engine = js_interop::window();
         *engine_first_tick.borrow_mut() = Some(Closure::new(move |timestamp_ms: usize| {
             // engine step
-            if let (Ok(mut demo), Ok(mut demo_state)) = (demo_clone.try_borrow_mut(), demo_state.try_borrow_mut()) {
+            let webgpu = webgpu.as_ref();
+            if let (
+                Ok(mut demo), Ok(mut demo_state), Ok(surface_texture)
+            ) = (
+                demo_clone.try_borrow_mut(), demo_state.try_borrow_mut(), webgpu.surface.get_current_texture()
+            ) {
                 demo_state.begin_frame(timestamp_ms);
                 demo.tick(&demo_state);
-                let webgpu = webgpu.as_ref();
-                match demo.render(webgpu, demo_state.time_delta_sec) {
+                match demo.render(webgpu, &surface_texture, demo_state.time_delta_sec) {
                     Ok(_) => {}
                     Err(wgpu::SurfaceError::Lost) => {
                         webgpu_config.try_borrow()
-                            .inspect(|config| webgpu.configure_surface(config));
+                            .inspect(|config| webgpu.surface_configure(config));
                     }
                     Err(wgpu::SurfaceError::OutOfMemory) => return, // just quit rendering
                     Err(e) => eprintln!("{:?}", e), // resolved by the next frame
                 }
+                surface_texture.present();
                 demo_state.end_frame();
             }
             {

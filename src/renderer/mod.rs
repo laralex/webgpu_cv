@@ -4,6 +4,7 @@ pub mod triangle;
 pub use triangle::TriangleDemo;
 pub mod webgpu;
 pub use webgpu::Webgpu;
+use wgpu::SurfaceTexture;
 pub mod webgpu_utils;
 
 use std::{cell::Cell, pin::Pin, rc::Rc};
@@ -120,7 +121,7 @@ pub trait IDemo : Drop {
    fn start_switching_graphics_level(&mut self, webgpu: &Webgpu, level: GraphicsLevel) -> Result<(), wgpu::SurfaceError>;
    fn poll_switching_graphics_level(&mut self, webgpu: &Webgpu) -> Result<std::task::Poll<()>, wgpu::SurfaceError>;
    fn progress_switching_graphics_level(&self) -> f32;
-   fn render(&mut self, webgpu: &Webgpu, delta_sec: f32) -> Result<(), wgpu::SurfaceError>;
+   fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, delta_sec: f32) -> Result<(), wgpu::SurfaceError>;
    fn drop_demo(&mut self, webgpu: &Webgpu);
 }
 

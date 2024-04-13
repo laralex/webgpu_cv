@@ -1,5 +1,11 @@
-use web_sys::HtmlCanvasElement;
+use std::cell::RefCell;
 
+use web_sys::HtmlCanvasElement;
+use wgpu::{SurfaceError, TextureView};
+
+struct SurfaceView {
+   texture: Option<wgpu::SurfaceTexture>,
+}
 pub struct Webgpu {
    pub surface: wgpu::Surface<'static>,
    pub device: wgpu::Device,
@@ -67,7 +73,27 @@ impl Webgpu {
        ( Self { surface, device, queue }, config )
    }
 
-   pub fn configure_surface(&self, config: &wgpu::SurfaceConfiguration) {
-       self.surface.configure(&self.device, config);
+   pub async fn new_offscreen() -> (wgpu::Device, wgpu::Queue) {
+      let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+         backends: wgpu::Backends::GL,
+         ..Default::default()
+      });
+      let adapter = instance
+         .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::default(),
+            compatible_surface: None,
+            force_fallback_adapter: true,
+         })
+         .await
+         .unwrap();
+      let (device, queue) = adapter
+         .request_device(&Default::default(), None)
+         .await
+         .unwrap();
+      (device, queue)
+   }
+
+   pub fn surface_configure(&self, config: &wgpu::SurfaceConfiguration) {
+      self.surface.configure(&self.device, config);
    }
 }

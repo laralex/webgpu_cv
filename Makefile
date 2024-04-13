@@ -89,3 +89,7 @@ app_debug: build_debug server_py
 
 .PHONY: app
 app: build server_py
+
+.PHONY: test
+test:
+	wasm-pack test --node

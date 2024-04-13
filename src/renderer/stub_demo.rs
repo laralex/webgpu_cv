@@ -1,5 +1,7 @@
 use std::task::Poll;
-use super::{DemoLoadingFuture, Dispose, ExternalState, GraphicsLevel, IDemo, Progress, SimpleFuture, Webgpu};
+use wgpu::SurfaceTexture;
+
+use super::{webgpu_utils::WebgpuUtils, DemoLoadingFuture, Dispose, ExternalState, GraphicsLevel, IDemo, Progress, SimpleFuture, Webgpu};
 
 pub struct StubDemo;
 
@@ -14,22 +16,23 @@ impl Dispose for StubDemo {
 impl IDemo for StubDemo {
    fn tick(&mut self, _input: &ExternalState) { }
 
-   fn render(&mut self, webgpu: &Webgpu, delta_sec: f32) -> Result<(), wgpu::SurfaceError> {
-      let output = webgpu.surface.get_current_texture()?;
-      let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
+   fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, delta_sec: f32) -> Result<(), wgpu::SurfaceError> {
+      let view = WebgpuUtils::surface_view(backbuffer);
       let mut encoder = webgpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
          label: Some("Render Encoder"),
       });
 
       {
+         let color = wgpu::Color::WHITE;
+         #[cfg(debug_assertions)]
+         let color = wgpu::Color{r: 0.9, g: 0.0, b: 0.9, a: 1.0};
          let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                label: Some("Render Pass"),
                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                   view: &view,
                   resolve_target: None,
                   ops: wgpu::Operations {
-                     load: wgpu::LoadOp::Clear(
-                        wgpu::Color {r: 0.9, g: 0.0, b: 0.9, a: 1.0,}),
+                     load: wgpu::LoadOp::Clear(color),
                      store: wgpu::StoreOp::Store,
                   },
                })],
@@ -41,8 +44,6 @@ impl IDemo for StubDemo {
 
       // submit will accept anything that implements IntoIter
       webgpu.queue.submit(std::iter::once(encoder.finish()));
-      output.present();
-
       Ok(())
    }
 

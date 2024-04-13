@@ -1,7 +1,12 @@
 use std::rc::Rc;
+use wgpu::SurfaceTexture;
+
 use crate::renderer::webgpu_utils::WebgpuUtils;
 
 use super::{DemoLoadingFuture, Dispose, ExternalState, GraphicsLevel, IDemo, Progress, SimpleFuture, Webgpu};
+
+const VERTEX_SHADER_SRC:   &str = include_str!("shaders/no_vao_triangle.vert.wgsl");
+const FRAGMENT_SHADER_SRC: &str = include_str!("shaders/vertex_color.frag.wgsl");
 
 #[derive(Default)]
 enum DemoLoadingStage {
@@ -63,10 +68,13 @@ impl SimpleFuture for DemoLoadingProcess {
       use DemoLoadingStage::*;
       match self.stage {
          CompileShaders => {
-            self.vertex_shader = Some(WebgpuUtils::make_vertex_shader(self.webgpu.as_ref(),
-               include_str!("shaders/no_vao_triangle.vert.wgsl")));
-            self.fragment_shader = Some(WebgpuUtils::make_fragment_shader(self.webgpu.as_ref(),
-               include_str!("shaders/vertex_color.frag.wgsl")));
+            
+            let device = &self.webgpu.as_ref().device;
+            let vertex_shader = WebgpuUtils::make_vertex_shader(device, VERTEX_SHADER_SRC);
+            let fragment_shader = WebgpuUtils::make_fragment_shader(device, FRAGMENT_SHADER_SRC);
+            std::mem::drop(device);
+            self.vertex_shader = Some(vertex_shader);
+            self.fragment_shader = Some(fragment_shader);
             self.stage_percent = 0.6;
             self.stage = LinkPrograms;
             std::task::Poll::Pending
@@ -195,9 +203,8 @@ impl IDemo for TriangleDemo {
       self.clear_color[3] = 1.0;
    }
 
-   fn render(&mut self, webgpu: &Webgpu, _delta_sec: f32) -> Result<(), wgpu::SurfaceError> {
-      let output = webgpu.surface.get_current_texture()?;
-      let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
+   fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, _delta_sec: f32) -> Result<(), wgpu::SurfaceError> {
+      let view = WebgpuUtils::surface_view(backbuffer);
       let mut encoder = webgpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
          label: Some("Render Encoder"),
       });
@@ -225,8 +232,6 @@ impl IDemo for TriangleDemo {
    
       // submit will accept anything that implements IntoIter
       webgpu.queue.submit(std::iter::once(encoder.finish()));
-      output.present();
-   
       Ok(())
    }
 
@@ -297,4 +302,19 @@ impl GraphicsSwitchingProcess {
       self_.progress = 1.0;
       std::task::Poll::Ready(())
    }
+}
+
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    use wasm_bindgen_test::*;
+
+    #[wasm_bindgen_test]
+    async fn shaders_compile() {
+        let (device, _) = Webgpu::new_offscreen().await;
+      //   let result = std::panic::catch_unwind(||
+        WebgpuUtils::make_vertex_shader(&device, VERTEX_SHADER_SRC);
+        WebgpuUtils::make_fragment_shader(&device, FRAGMENT_SHADER_SRC);
+    }
 }

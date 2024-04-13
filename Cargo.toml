@@ -17,6 +17,7 @@ wasm-bindgen-futures = "0.4.42"
 wgpu = { version = "0.19.3" }
 futures = "0.3.30"
 js-sys = "0.3"
+bytemuck = { version = "1.15.0", features = [ "derive" ] }
 web-sys = { version = "0.3", features = [
   "console",
   "Document", 

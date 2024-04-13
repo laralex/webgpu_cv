@@ -10,6 +10,8 @@ Known issues:
    - fullscreen with F11 is weird (js error in firefox)
    - wgpu instance creation - show progress bar
    - dynamic resolution confgurable per demo / pixel budget of the screen
+   - demo panic - progress bar gets stuck
+   - debug render mode (maybe visualize demo state in JS)
 - Demos:
    - frame prediction
    - fractal with high precision

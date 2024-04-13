@@ -306,13 +306,13 @@ impl GraphicsSwitchingProcess {
 
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use super::*;
-    use wasm_bindgen_test::*;
+    use pretty_assertions::assert_eq;
 
-    #[wasm_bindgen_test]
-    async fn shaders_compile() {
-        let (device, _) = Webgpu::new_offscreen().await;
+    #[test]
+    fn shaders_compile() {
+        let (device, _) = futures::executor::block_on(Webgpu::new_offscreen());
       //   let result = std::panic::catch_unwind(||
         WebgpuUtils::make_vertex_shader(&device, VERTEX_SHADER_SRC);
         WebgpuUtils::make_fragment_shader(&device, FRAGMENT_SHADER_SRC);

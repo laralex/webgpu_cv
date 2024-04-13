@@ -4,7 +4,7 @@ RUST_TARGET?=wasm32-unknown-unknown
 SERVE_DIR?=www
 SERVE_WASM_DIR?=${SERVE_DIR}/wasm
 CARGO_TOOLCHAIN?=+stable
-CARGO_FLAGS?=--target=${RUST_TARGET} --config package.name=\"${WASM_NAME}\"
+CARGO_FLAGS?=--target=${RUST_TARGET}
 WASM_BINDGEN_FLAGS?=--target=web --omit-default-module-path --out-dir ${SERVE_WASM_DIR} --out-name index
 
 .PHONY: install
@@ -92,4 +92,8 @@ app: build server_py
 
 .PHONY: test
 test:
-	wasm-pack test --node
+#		--features wgpu/webgl \
+# wasm-pack test --node
+	cargo $(CARGO_TOOLCHAIN) test --lib --no-fail-fast \
+		-j 2 \
+		-- --test-threads=2

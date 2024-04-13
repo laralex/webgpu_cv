@@ -1,4 +1,5 @@
 
+
 mod js_interop;
 mod renderer;
 use renderer::{DemoLoadingFuture, ExternalState, IDemo, MouseState, Webgpu};
@@ -54,6 +55,7 @@ pub enum GraphicsLevel {
 impl WasmInterface {
 
     #[wasm_bindgen(constructor)]
+    #[cfg(any(webgpu, webgl))]
     pub async fn new(canvas_dom_id: &str) -> Result<WasmInterface, JsValue> {
         #[cfg(feature = "console_error_panic_hook")]
         console_error_panic_hook::set_once();

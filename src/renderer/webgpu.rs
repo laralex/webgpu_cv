@@ -13,6 +13,7 @@ pub struct Webgpu {
 }
 
 impl Webgpu {
+   #[cfg(any(webgpu, webgl))]
    pub async fn new(canvas: HtmlCanvasElement) -> (Self, wgpu::SurfaceConfiguration) {
        // The instance is a handle to our GPU
        // Backends::all => Vulkan + Metal + DX12 + Browser WebGPU
@@ -82,7 +83,7 @@ impl Webgpu {
          .request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::default(),
             compatible_surface: None,
-            force_fallback_adapter: true,
+            force_fallback_adapter: false,
          })
          .await
          .unwrap();

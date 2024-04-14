@@ -1,11 +1,12 @@
+use core::num;
 use std::rc::Rc;
-use wgpu::{util::DeviceExt, SurfaceTexture};
+use wgpu::{util::DeviceExt, BindGroupLayout, PushConstantRange, ShaderStages, SurfaceTexture};
 use bytemuck;
 
 use crate::renderer::webgpu_utils::WebgpuUtils;
 use crate::GraphicsLevel;
 
-use super::{DemoLoadingFuture, Dispose, ExternalState, IDemo, Progress, SimpleFuture, Webgpu};
+use super::{webgpu_utils::{PipelineLayoutBuilder, PushConstantsCompatibility, UniformGroup}, DemoLoadingFuture, Dispose, ExternalState, IDemo, Progress, SimpleFuture, Webgpu};
 
 const VERTEX_SHADER_SRC:   &str = include_str!("shaders/triangle_fullscreen.vs.wgsl");
 const FRAGMENT_SHADER_SRC: &str = include_str!("shaders/mandelbrot.fs.wgsl");
@@ -14,7 +15,7 @@ const FRAGMENT_SHADER_SRC: &str = include_str!("shaders/mandelbrot.fs.wgsl");
 enum DemoLoadingStage {
    Ready = 0,
    #[default] CompileShaders,
-   LinkPrograms,
+   CreatePipelines,
    CreateUniforms,
    StartSwitchingGraphicsLevel,
    SwitchGraphicsLevel,
@@ -28,9 +29,7 @@ struct DemoLoadingProcess {
    render_pipeline: Option<wgpu::RenderPipeline>,
    vertex_shader: Option<wgpu::ShaderModule>,
    fragment_shader: Option<wgpu::ShaderModule>,
-   uniform_buffer: Option<wgpu::Buffer>,
-   uniform_bind_group: Option<wgpu::BindGroup>,
-   uniform_bind_group_layout: Option<wgpu::BindGroupLayout>,
+   uniform: Option<PushConstantsCompatibility>,
    webgpu: Rc<Webgpu>,
    loaded_demo: Option<Demo>,
 }
@@ -43,7 +42,7 @@ impl Dispose for DemoLoadingProcess {
             // shouldn't free its resources
          },
          _ => {
-            self.uniform_bind_group.take();
+            self.uniform.take();
             self.render_pipeline.take();
             self.vertex_shader.take();
             self.fragment_shader.take();
@@ -75,112 +74,25 @@ impl SimpleFuture for DemoLoadingProcess {
       use DemoLoadingStage::*;
       match self.stage {
          CompileShaders => {
-            let device = &self.webgpu.as_ref().device;
-            let vertex_shader = WebgpuUtils::make_vertex_shader(device, VERTEX_SHADER_SRC);
-            let fragment_shader = WebgpuUtils::make_fragment_shader(device, FRAGMENT_SHADER_SRC);
-            std::mem::drop(device);
-            self.vertex_shader = Some(vertex_shader);
-            self.fragment_shader = Some(fragment_shader);
+            self.compile_shaders();
             self.stage_percent += 0.1;
             self.stage = CreateUniforms;
             std::task::Poll::Pending
          },
          CreateUniforms => {
-            let uniform_buffer = self.webgpu.device.create_buffer(
-               &wgpu::BufferDescriptor {
-                   label: Some("uniform_buffer"),
-                   size: std::mem::size_of::<UniformData>() as u64,
-                   mapped_at_creation: false,
-                   usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-               }
-            );
-            self.uniform_bind_group_layout = Some(self.webgpu.device.create_bind_group_layout(
-               &wgpu::BindGroupLayoutDescriptor {
-               label: Some("bind_layout"),
-               entries: &[
-                   wgpu::BindGroupLayoutEntry {
-                       binding: 0,
-                       visibility: wgpu::ShaderStages::FRAGMENT,
-                       ty: wgpu::BindingType::Buffer {
-                           ty: wgpu::BufferBindingType::Uniform,
-                           has_dynamic_offset: false,
-                           min_binding_size: None,
-                       },
-                       count: None,
-                   }
-               ],
-            }));
-            self.uniform_bind_group = Some(self.webgpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
-               label: Some("uniform_bind_group"),
-               layout: &self.uniform_bind_group_layout.as_ref().unwrap(),
-               entries: &[
-                   wgpu::BindGroupEntry {
-                       binding: 0,
-                       resource: uniform_buffer.as_entire_binding(),
-                   }
-               ],
-            }));
-            self.uniform_buffer = Some(uniform_buffer);
+            self.create_uniforms();
             self.stage_percent += 0.1;
-            self.stage = LinkPrograms;
+            self.stage = CreatePipelines;
             std::task::Poll::Pending
          }
-         LinkPrograms => {
-            let render_pipeline_layout =
-               self.webgpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                  label: Some("Render Pipeline Layout"),
-                  bind_group_layouts: &[self.uniform_bind_group_layout.as_ref().unwrap()],
-                  push_constant_ranges: &[],
-               });
-            let vs = self.vertex_shader.take().unwrap();
-            let fs = self.fragment_shader.take().unwrap();
-            self.render_pipeline = Some(
-               self.webgpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-               label: Some("Render Pipeline"),
-               layout: Some(&render_pipeline_layout),
-               vertex: wgpu::VertexState {
-                     module: &vs,
-                     entry_point: "vs_main",
-                     buffers: &[],
-               },
-               fragment: Some(wgpu::FragmentState {
-                     module: &fs,
-                     entry_point: "fs_main",
-                     targets: &[Some(wgpu::ColorTargetState {
-                        format: self.color_target_format,
-                        blend: Some(wgpu::BlendState::REPLACE),
-                        write_mask: wgpu::ColorWrites::ALL,
-                     })],
-               }),
-               primitive: WebgpuUtils::default_primitive_state(),
-               depth_stencil: None, // 1.
-               multisample: wgpu::MultisampleState {
-                  count: 1,
-                  mask: !0,
-                  alpha_to_coverage_enabled: false,
-               },
-               multiview: None,
-            }));
+         CreatePipelines => {
+            self.create_pipelines();
             self.stage_percent += 0.1;
             self.stage = StartSwitchingGraphicsLevel;
             std::task::Poll::Pending
          }
          StartSwitchingGraphicsLevel => {
-            self.loaded_demo = Some(Demo {
-               render_pipeline: self.render_pipeline.take().unwrap(),
-               num_rendered_vertices: 3,
-               pending_graphics_level_switch: None,
-               uniform_data: UniformData {
-                  fractal_center_zoom: [-1.1900443, 0.3043895, 1e-2],
-                  _padding: 0.0,
-               },
-               uniform_buffer: self.uniform_buffer.take().unwrap(),
-               uniform_bind_group: self.uniform_bind_group.take().unwrap(),
-            });
-            let graphics_level = self.graphics_level;
-            let webgpu = self.webgpu.clone();
-            self.loaded_demo.as_mut().unwrap()
-                  .start_switching_graphics_level(webgpu.as_ref(), graphics_level);
+            self.switch_graphics_level();
             self.stage_percent = 0.75;
             self.stage = SwitchGraphicsLevel;
             std::task::Poll::Pending
@@ -213,29 +125,110 @@ impl SimpleFuture for DemoLoadingProcess {
 
 impl DemoLoadingFuture for DemoLoadingProcess {}
 
+impl DemoLoadingProcess {
+   fn compile_shaders(&mut self) {
+      let device = &self.webgpu.as_ref().device;
+      let vertex_shader = WebgpuUtils::make_vertex_shader(device, VERTEX_SHADER_SRC);
+      let fragment_shader = WebgpuUtils::make_fragment_shader(device, FRAGMENT_SHADER_SRC);
+      std::mem::drop(device);
+      self.vertex_shader = Some(vertex_shader);
+      self.fragment_shader = Some(fragment_shader);
+   }
+
+   fn create_uniforms(&mut self) {
+      let uniform_visibility = ShaderStages::FRAGMENT;
+      let num_bytes = std::mem::size_of::<UniformData>() as u32;
+      let mut required_limits = self.webgpu.device.limits();
+      required_limits.max_push_constant_size = num_bytes;
+      self.uniform = Some(if WebgpuUtils::supports_push_constants(&self.webgpu.device, 0..num_bytes) {
+         PushConstantsCompatibility::PushConstant(
+            wgpu::PushConstantRange{stages: uniform_visibility, range: 0..num_bytes})
+      } else {
+         // fallback to uniforms
+         const BIND_GROUP_INDEX: u32 = 0;
+         PushConstantsCompatibility::Uniform(
+            UniformGroup::new(&self.webgpu.device, uniform_visibility, num_bytes as u64,),
+            BIND_GROUP_INDEX)
+      });
+   }
+
+   fn create_pipelines(&mut self) {
+      let render_pipeline_layout = PipelineLayoutBuilder::new()
+         .with(self.uniform.as_ref().unwrap())
+         .build(&self.webgpu.device, Some("Render Pipeline Layout"));
+      let vs = self.vertex_shader.take().unwrap();
+      let fs = self.fragment_shader.take().unwrap();
+      self.render_pipeline = Some(
+         self.webgpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+         label: Some("Render Pipeline"),
+         layout: Some(&render_pipeline_layout),
+         vertex: wgpu::VertexState {
+               module: &vs,
+               entry_point: "vs_main",
+               buffers: &[],
+         },
+         fragment: Some(wgpu::FragmentState {
+               module: &fs,
+               entry_point: "fs_main",
+               targets: &[Some(wgpu::ColorTargetState {
+                  format: self.color_target_format,
+                  blend: Some(wgpu::BlendState::REPLACE),
+                  write_mask: wgpu::ColorWrites::ALL,
+               })],
+         }),
+         primitive: WebgpuUtils::default_primitive_state(),
+         depth_stencil: None, // 1.
+         multisample: wgpu::MultisampleState {
+            count: 1,
+            mask: !0,
+            alpha_to_coverage_enabled: false,
+         },
+         multiview: None,
+      }));
+   }
+
+   fn switch_graphics_level(&mut self) {
+      self.loaded_demo = Some(Demo {
+         render_pipeline: self.render_pipeline.take().unwrap(),
+         num_rendered_vertices: 3,
+         pending_graphics_level_switch: None,
+         uniform_data: UniformData {
+            fractal_center: [-1.1900443, 0.3043895],
+            fractal_zoom: 2.0,
+            aspect_ratio: 1.0,
+         },
+         uniform: self.uniform.take().unwrap(),
+      });
+      let graphics_level = self.graphics_level;
+      let webgpu = self.webgpu.clone();
+      self.loaded_demo.as_mut().unwrap()
+            .start_switching_graphics_level(webgpu.as_ref(), graphics_level);
+   }
+}
+
 pub struct Demo {
    render_pipeline: wgpu::RenderPipeline,
    num_rendered_vertices: i32,
    pending_graphics_level_switch: Option<GraphicsSwitchingProcess>,
    uniform_data: UniformData,
-   uniform_buffer: wgpu::Buffer,
-   uniform_bind_group: wgpu::BindGroup,
+   uniform: PushConstantsCompatibility,
 }
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 struct UniformData {
-   fractal_center_zoom: [f32; 3],
-   _padding: f32,
+   fractal_center: [f32; 2],
+   fractal_zoom: f32,
+   aspect_ratio: f32,
 }
 
 impl IDemo for Demo {
    fn tick(&mut self, input: &ExternalState) {
-      self.uniform_data.fractal_center_zoom[2] -= self.uniform_data.fractal_center_zoom[2] * 0.1 * input.time_delta_sec;
+      self.uniform_data.fractal_zoom -= self.uniform_data.fractal_zoom * 0.25 * input.time_delta_sec;
+      self.uniform_data.aspect_ratio = input.aspect_ratio;
    }
 
    fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, _delta_sec: f32) -> Result<(), wgpu::SurfaceError> {
-      webgpu.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[self.uniform_data]));
       let view = WebgpuUtils::surface_view(backbuffer);
       let mut encoder = webgpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
          label: Some("Render Encoder"),
@@ -258,7 +251,15 @@ impl IDemo for Demo {
          });
 
          render_pass.set_pipeline(&self.render_pipeline);
-         render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
+         match &self.uniform {
+            PushConstantsCompatibility::Uniform(UniformGroup{buffer, bind_group, ..}, bind_group_index) => {
+               webgpu.queue.write_buffer(&buffer, 0, bytemuck::cast_slice(&[self.uniform_data]));
+               render_pass.set_bind_group(*bind_group_index, &bind_group, &[]);
+            }
+            PushConstantsCompatibility::PushConstant(range) => {
+               render_pass.set_push_constants(range.stages, range.range.start, bytemuck::cast_slice(&[self.uniform_data]));
+            }
+         }
          render_pass.draw(0..3, 0..1); // self.num_rendered>vertices
       }
    
@@ -316,9 +317,7 @@ impl Demo {
          render_pipeline: Default::default(),
          vertex_shader: Default::default(),
          fragment_shader: Default::default(),
-         uniform_buffer: Default::default(),
-         uniform_bind_group: Default::default(),
-         uniform_bind_group_layout: Default::default(),
+         uniform: Default::default(),
          loaded_demo: Default::default(),
          webgpu,
       })

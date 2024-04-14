@@ -120,6 +120,7 @@ impl WasmInterface {
     pub fn wasm_resize(&mut self, width: u32, height: u32) {
         if let Ok(mut state) = self.demo_state.try_borrow_mut() {
             state.screen_size = (width, height);
+            state.aspect_ratio = width as f32 / height as f32;
             {
                 let mut webgpu_config = self.webgpu_config.borrow_mut();
                 webgpu_config.width = width;

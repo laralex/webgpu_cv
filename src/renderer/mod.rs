@@ -49,6 +49,7 @@ pub struct MouseState {
 pub struct ExternalState {
    pub mouse: Rc<Cell<MouseState>>,
    pub screen_size: (u32, u32),
+   pub aspect_ratio: f32,
    pub time_now_sec:   f32,
    pub time_now_ms:    u32,
    time_prev_sec:  f32,
@@ -83,6 +84,7 @@ impl Default for ExternalState {
             viewport_position: Default::default(),
          })),
          screen_size: (1, 1),
+         aspect_ratio: 1.0,
          time_delta_sec: Default::default(),
          time_delta_ms: Default::default(),
          time_delta_limit_ms: Default::default(),

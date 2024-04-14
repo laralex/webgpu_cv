@@ -5,18 +5,21 @@ struct VertexOutput {
 
 const NUM_ITERS = 1000;
 
-struct Input {
+struct Settings {
     center: vec2<f32>,
     zoom: f32,
+    aspect_ratio: f32,
 }
 
-@group(0) @binding(0) var<uniform> inputs: Input;
+@group(0) @binding(0) var<uniform> settings: Settings;
+// @layout(push_constant) var<uniform> settings: Settings;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    var offset = inputs.zoom * (2.0 * in.uv - 1.0);
-    var diverge_iteration = mandelbrot_diverge_iteration(inputs.center + offset);
-    var shade = step(-diverge_iteration, -1e-6) * (0.5 + 0.5*cos(pow(inputs.zoom,0.22)*diverge_iteration*0.05 + vec3(3.0,3.5,4.0)));
+    var uv = vec2(in.uv.x * settings.aspect_ratio, in.uv.y);
+    var offset = settings.zoom * (2.0 * uv - 1.0);
+    var diverge_iteration = mandelbrot_diverge_iteration(settings.center + offset);
+    var shade = step(-diverge_iteration, -1e-6) * (0.5 + 0.5*cos(pow(settings.zoom,0.22)*diverge_iteration*0.05 + vec3(3.0,3.5,4.0)));
     return vec4<f32>(shade, 1.0);
 }
 

@@ -71,7 +71,7 @@ impl From<u32> for GraphicsLevel {
 impl WasmInterface {
 
     #[wasm_bindgen(constructor)]
-    pub async fn new(canvas_dom_id: &str) -> Result<WasmInterface, JsValue> {
+    pub async fn new(canvas_dom_id: &str, level: GraphicsLevel) -> Result<WasmInterface, JsValue> {
         #[cfg(feature = "console_error_panic_hook")]
         console_error_panic_hook::set_once();
         js_interop::js_log!("WASM Startup");
@@ -88,6 +88,7 @@ impl WasmInterface {
         {
             // callbacks wired with JS canvas
             let mut demo_state_mut = demo_state.borrow_mut();
+            demo_state_mut.graphics_level = level;
             demo_state_mut.sound_sample_rate = 44100.0; /* NOTE: set once */
             configure_mousedown(&canvas, demo_state_mut.mouse.clone())?;
             configure_mouseup(demo_state_mut.mouse.clone())?;
@@ -118,23 +119,20 @@ impl WasmInterface {
 
     #[wasm_bindgen(js_name = resize)]
     pub fn wasm_resize(&mut self, width: u32, height: u32) {
-        if let Ok(mut state) = self.demo_state.try_borrow_mut() {
-            state.screen_size = (width, height);
-            state.aspect_ratio = width as f32 / height as f32;
-            {
-                let mut webgpu_config = self.webgpu_config.borrow_mut();
-                webgpu_config.width = width;
-                webgpu_config.height = height;
-            }
-            self.webgpu.surface_configure(&self.webgpu_config.borrow());
+        let mut demo_state_mut = self.demo_state.borrow_mut();
+        demo_state_mut.screen_size = (width, height);
+        demo_state_mut.aspect_ratio = width as f32 / height as f32;
+        {
+            let mut webgpu_config = self.webgpu_config.borrow_mut();
+            webgpu_config.width = width;
+            webgpu_config.height = height;
         }
+        self.webgpu.surface_configure(&self.webgpu_config.borrow());
     }
 
     #[wasm_bindgen(js_name = setFpsLimit)]
     pub fn wasm_set_fps_limit(&mut self, fps_limit: i32) {
-        if let Ok(mut state) = self.demo_state.try_borrow_mut() {
-            state.time_delta_limit_ms = 1_000 / fps_limit;
-        }
+        self.demo_state.borrow_mut().time_delta_limit_ms = 1_000 / fps_limit;
     }
 
     #[wasm_bindgen(js_name = setGraphicsLevel)]
@@ -169,10 +167,10 @@ impl WasmInterface {
                     graphics_switching_apply_progress(1.0);
                     // finished switching
                     // don't request another `request_animation_frame`
-                    web_sys::console::log_1(&"Rust graphics_switching_finish".into());
+                    web_sys::console::log_1(&"Rust wasm_set_graphics_level".into());
                     graphics_switching_finish();
                 }
-                Err(_) => panic!("Error when switching graphics level")
+                Err(_) => panic!("Error wasm_set_graphics_level")
             }
         }));
         js_interop::request_animation_frame(&js_interop::window(), switcher_callback.borrow().as_ref().unwrap());

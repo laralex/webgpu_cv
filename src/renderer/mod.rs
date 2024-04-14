@@ -22,15 +22,15 @@ pub fn start_loading_demo<'a>(id: DemoId, webgpu: Rc<Webgpu>, color_target_forma
       DemoId::Triangle =>
          triangle::Demo::start_loading(webgpu, color_target_format, graphics_level),
       DemoId::Fractal =>
-         fractal::Demo::start_loading(webgpu, color_target_format, GraphicsLevel::High),
+         fractal::Demo::start_loading(webgpu, color_target_format, graphics_level),
       DemoId::FrameGeneration =>
-         triangle::Demo::start_loading(webgpu, color_target_format, GraphicsLevel::Low),
+         triangle::Demo::start_loading(webgpu, color_target_format, graphics_level),
       DemoId::HeadAvatar =>
-         triangle::Demo::start_loading(webgpu, color_target_format, GraphicsLevel::Medium),
+         triangle::Demo::start_loading(webgpu, color_target_format, graphics_level),
       DemoId::FullBodyAvatar =>
-         triangle::Demo::start_loading(webgpu, color_target_format, GraphicsLevel::Minimal),
+         triangle::Demo::start_loading(webgpu, color_target_format, graphics_level),
       DemoId::ProceduralGeneration =>
-         triangle::Demo::start_loading(webgpu, color_target_format, GraphicsLevel::Ultra),
+         triangle::Demo::start_loading(webgpu, color_target_format,graphics_level),
       _ => stub_demo::Demo::start_loading(),
    }
 }

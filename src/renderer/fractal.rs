@@ -196,13 +196,14 @@ impl DemoLoadingProcess {
             fractal_center: [-1.1900443, 0.3043895],
             fractal_zoom: 2.0,
             aspect_ratio: 1.0,
+            num_iterations: 1000,
+            __padding: [0; 3],
          },
          uniform: self.uniform.take().unwrap(),
       });
-      let graphics_level = self.graphics_level;
       let webgpu = self.webgpu.clone();
       self.loaded_demo.as_mut().unwrap()
-            .start_switching_graphics_level(webgpu.as_ref(), graphics_level);
+            .start_switching_graphics_level(webgpu.as_ref(), self.graphics_level);
    }
 }
 
@@ -220,6 +221,8 @@ struct UniformData {
    fractal_center: [f32; 2],
    fractal_zoom: f32,
    aspect_ratio: f32,
+   num_iterations: i32,
+   __padding: [i32; 3],
 }
 
 impl IDemo for Demo {
@@ -269,7 +272,7 @@ impl IDemo for Demo {
    }
 
    fn start_switching_graphics_level(&mut self, webgpu: &Webgpu, graphics_level: GraphicsLevel) -> Result<(), wgpu::SurfaceError> {
-      web_sys::console::log_2(&"Rust start_switching_graphics_level".into(), &std::module_path!().into());
+      web_sys::console::log_3(&"Rust start_switching_graphics_level".into(), &std::module_path!().into(), &graphics_level.into());
       self.pending_graphics_level_switch = Some(GraphicsSwitchingProcess{
          progress: 0.0,
          graphics_level,
@@ -350,6 +353,13 @@ impl Progress for GraphicsSwitchingProcess {
 impl GraphicsSwitchingProcess {
    pub fn poll(demo: &mut Demo, _webgpu: &Webgpu) -> std::task::Poll<()> {
       let self_ = demo.pending_graphics_level_switch.as_mut().unwrap();
+      demo.uniform_data.num_iterations = match self_.graphics_level {
+        GraphicsLevel::Minimal => 25,
+        GraphicsLevel::Low => 250,
+        GraphicsLevel::Medium => 500,
+        GraphicsLevel::High => 1000,
+        GraphicsLevel::Ultra => 1500,
+      };
       self_.progress = 1.0;
       std::task::Poll::Ready(())
    }

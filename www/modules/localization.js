@@ -8,6 +8,7 @@ export const UI_STRINGS = (function getLocalization() {
       korean_en: {en: "Korean", ru: "Korean", kr: "Korean"},
       russian: {en: "Russian", ru: "Русский", kr: "러시아어" },
       korean: {en: "Korean", ru: "Корейский", kr: "한국어" },
+      graphics_minimal: {en: "Minimal", ru: "Минимум", kr: "최소" },
       graphics_low: {en: "Low    ", ru: "Низкое ", kr: "낮음" },
       graphics_medium: {en: "Medium", ru: "Среднее", kr: "중간" },
       graphics_high: {en: "High  ", ru: "Высокое", kr: "높음" },

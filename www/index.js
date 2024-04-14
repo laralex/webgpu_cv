@@ -261,9 +261,10 @@ function LanguagePicker(currentLanguage, currentFont, isVertical, tooltipLanguag
 
 function GraphicsLevelPicker(currentGraphicsLevel, isVertical) {
    const meta = {};
-   meta[GraphicsLevel.Low] = {labelId: 'graphics_low', emoji: "✰✰✰"};
-   meta[GraphicsLevel.Medium] = {labelId: 'graphics_medium', emoji: "★✰✰"};
-   meta[GraphicsLevel.High] = {labelId: 'graphics_high', emoji: "★★✰"};
+   meta[GraphicsLevel.Minimal] = {labelId: 'graphics_minimal', emoji: ""};
+   meta[GraphicsLevel.Low] = {labelId: 'graphics_low', emoji: "☆"};
+   meta[GraphicsLevel.Medium] = {labelId: 'graphics_medium', emoji: "★"};
+   meta[GraphicsLevel.High] = {labelId: 'graphics_high', emoji: "★★"};
    meta[GraphicsLevel.Ultra] = {labelId: 'graphics_ultra', emoji: "★★★"};
    const options = Object.entries(meta).map(([level, meta]) =>
       option({ value: level, selected: () => level == currentGraphicsLevel.val},
@@ -869,11 +870,10 @@ window.onload = function() {
 
       // And afterwards we can use all the functionality defined in wasm.
       demo_loading_apply_progress(0.1);
-      WASM_INSTANCE = await new WasmInterface(CANVAS_ID);
+      WASM_INSTANCE = await new WasmInterface(CANVAS_ID, CURRENT_GRAPHICS_LEVEL.val);
       demo_loading_apply_progress(0.5);
       configureCanvas();
       WASM_INSTANCE.setFpsLimit(CURRENT_FPS_LIMIT.val);
-      WASM_INSTANCE.setGraphicsLevel(CURRENT_GRAPHICS_LEVEL.val);
       WASM_INSTANCE.startLoadingDemo(getDemoId(CURRENT_CV_PAGE[1].val));
       demo_loading_finish();
       WASM_INSTANCE.renderLoop();

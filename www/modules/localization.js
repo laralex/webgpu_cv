@@ -58,7 +58,7 @@ export const UI_STRINGS = (function getLocalization() {
       demo_frame_generation: {en: "Frame generation", /* kr: "Huawei" */},
       demo_head_avatar: {en: "Head avatar animation" },
       demo_full_body_avatar: {en: "Full-body avatar animation" },
-      demo_fractal: {en: "The fractal zooming has increased precision compared to naive float64, by using Dekker's double-double arithmetic and perturbation theory"/* , ru: "Интерактивное веб-CV, вы тут :)" */, /* kr: "이 이력서" */},
+      demo_fractal: {en: "The fractal zooming has increased precision compared to naive float32, by using Dekker's double-double arithmetic and perturbation theory"/* , ru: "Интерактивное веб-CV, вы тут :)" */, /* kr: "이 이력서" */},
       demo_procedural_generation: {en: "Procedural mesh generation" },
       intro_hi: {en: "Hi, I'm Alexey :)", ru: "Привет, меня зовут Лёша :)", kr: "안녕하세요! 저는 \"료샤\"라고 합니다 :)"},
       intro_enjoy_resume: {en: "Enjoy my interactive résumé !", ru: "Вы наткнулись на мое интерактивное резюме", kr: "제 이력서를 방문해줘서 반갑습니다!"},

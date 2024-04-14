@@ -3,7 +3,7 @@ struct VertexOutput {
     @location(0) uv: vec2<f32>,
 };
 
-const NUM_ITERS = 1000;
+const NUM_ITERS = 500;
 
 struct Settings {
     center: vec2<f32>,
@@ -19,7 +19,8 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var uv = vec2(in.uv.x * settings.aspect_ratio, in.uv.y);
     var offset = settings.zoom * (2.0 * uv - 1.0);
     var diverge_iteration = mandelbrot_diverge_iteration(settings.center + offset);
-    var shade = step(-diverge_iteration, -1e-6) * (0.5 + 0.5*cos(pow(settings.zoom,0.22)*diverge_iteration*0.05 + vec3(3.0,3.5,4.0)));
+    var zoom_compensation = pow(settings.zoom,0.22);
+    var shade = step(-diverge_iteration, -1e-6) * (0.5 + 0.5*cos(diverge_iteration*0.08 + vec3(3.5,4.0,4.5)));
     return vec4<f32>(shade, 1.0);
 }
 

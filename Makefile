@@ -44,7 +44,7 @@ wasm: cargo test_shaders
 
 .PHONY: wasm_ci
 wasm_ci: CARGO_FLAGS += --jobs ${MAX_THREADS}
-wasm_ci: wasm
+wasm_ci: cargo
 
 .PHONY: wasm_opt
 wasm_opt:

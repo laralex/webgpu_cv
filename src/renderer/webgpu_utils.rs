@@ -1,8 +1,4 @@
-use core::num;
-
 use wgpu::{BindGroupLayout, Device, Surface, SurfaceError, SurfaceTexture, TextureView};
-
-use super::Webgpu;
 
 pub struct WebgpuUtils;
 
@@ -136,7 +132,7 @@ impl<'a> PipelineLayoutBuilder<'a> {
       }
    }
 
-   pub fn with(mut self, uniform_or_pushconstant: &'a PushConstantsCompatibility) -> Self {
+   pub fn with(self, uniform_or_pushconstant: &'a PushConstantsCompatibility) -> Self {
       match uniform_or_pushconstant {
          PushConstantsCompatibility::Uniform(group, _) => self.with_uniform_group(group),
          PushConstantsCompatibility::PushConstant(range) => self.with_push_constant(range.clone()),

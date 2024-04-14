@@ -314,7 +314,7 @@ function configureTextDeselection() {
    });
 }
 
-function configureResizingBorder() {
+function configureResizingBorder(onResize) {
    const resizeElement = document.getElementById("resize-border");
    const sidebar = document.getElementById("sidebar");
    let m_pos;
@@ -333,8 +333,7 @@ function configureResizingBorder() {
       const newSidebarPx = parseInt(getComputedStyle(sidebar, '').flexBasis) + dx;
       // const newSidebarRem = Util.pxToRem(newSidebarPx);
       SIDEBAR_WIDTH_OVERRIDE_PX.val = newSidebarPx;
-      // shouldHide.val = true;
-      // console.log("resize", getComputedStyle(document.documentElement).fontSize);
+      onResize();
       return pauseEvent(e);
    }
 
@@ -655,9 +654,8 @@ function getCanvasConvigurationFunc(canvas_id) {
    function resizeCanvas() {
       canvas.width = canvas.clientWidth;
       canvas.height = window.innerHeight;
-      console.log(canvas.width, canvas.height);
+      // console.log(canvas.width, canvas.height);
       if (WASM_INSTANCE) {
-         let gl = canvas.getContext("webgl2");
          WASM_INSTANCE.resize(canvas.width, canvas.height);
       }
    }
@@ -772,11 +770,10 @@ window.onload = function() {
       }
    })
    configureFromFont(CURRENT_FONT_FAMILY.val, CURRENT_LANGUAGE.val); // other elements' relative sizes depend on this configuration
-   configureResizingBorder();
+   const configureCanvas = getCanvasConvigurationFunc(CANVAS_ID);
+   configureResizingBorder(configureCanvas);
    configureFullscreenSwitch();
    // configureTextDeselection();
-   const configureCanvas = getCanvasConvigurationFunc(CANVAS_ID);
-   configureCanvas();
    van.add(document.getElementById("canvas-controls"), FullscreenButton({extraClasses: "fullscreen-button", height: "80"}));
    van.add(document.getElementById("canvas-controls"), HelpButton({height: "80"}));
    van.add(document.getElementById("canvas-wrapper"), LoadingScreen());

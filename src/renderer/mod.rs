@@ -71,6 +71,11 @@ impl ExternalState {
          px_pos.1 as f32 / self.screen_size.1 as f32,
       )
    }
+
+   pub fn screen_resize(&mut self, (width_px, height_px): (u32, u32)) {
+      self.screen_size = (width_px, height_px);
+      self.aspect_ratio = width_px as f32 / height_px as f32;
+   }
 }
 
 impl Default for ExternalState {

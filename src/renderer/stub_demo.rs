@@ -16,13 +16,14 @@ impl Dispose for Demo {
 impl IDemo for Demo {
    fn tick(&mut self, _input: &ExternalState) { }
 
-   fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, delta_sec: f32) -> Result<(), wgpu::SurfaceError> {
+   fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, _delta_sec: f32) -> Result<(), wgpu::SurfaceError> {
       let view = WebgpuUtils::surface_view(backbuffer);
       let mut encoder = webgpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
          label: Some("Render Encoder"),
       });
 
       {
+         #[allow(unused_variables)]
          let color = wgpu::Color::WHITE;
          #[cfg(debug_assertions)]
          let color = wgpu::Color{r: 0.9, g: 0.0, b: 0.9, a: 1.0};
@@ -82,7 +83,7 @@ impl SimpleFuture for DemoLoadingProcess {
    type Output = Box<dyn IDemo>;
    type Context = ();
 
-   fn simple_poll(mut self: std::pin::Pin<&mut Self>, _cx: &mut Self::Context) -> Poll<Self::Output> {
+   fn simple_poll(self: std::pin::Pin<&mut Self>, _cx: &mut Self::Context) -> Poll<Self::Output> {
       Poll::Ready(Box::new(Demo{}))
    }
 }

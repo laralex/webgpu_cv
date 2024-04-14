@@ -239,7 +239,7 @@ impl IDemo for Demo {
       Ok(())
    }
 
-   fn start_switching_graphics_level(&mut self, webgpu: &Webgpu, graphics_level: GraphicsLevel) -> Result<(), wgpu::SurfaceError> {
+   fn start_switching_graphics_level(&mut self, _webgpu: &Webgpu, graphics_level: GraphicsLevel) -> Result<(), wgpu::SurfaceError> {
       web_sys::console::log_2(&"Rust start_switching_graphics_level".into(), &std::module_path!().into());
       self.pending_graphics_level_switch = Some(GraphicsSwitchingProcess{
          progress: 0.0,
@@ -264,7 +264,7 @@ impl IDemo for Demo {
          .unwrap_or_default()
    }
 
-   fn drop_demo(&mut self, webgpu: &Webgpu) {
+   fn drop_demo(&mut self, _webgpu: &Webgpu) {
       web_sys::console::log_2(&"Rust demo drop".into(), &std::module_path!().into());
    }
 }

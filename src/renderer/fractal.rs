@@ -1,6 +1,5 @@
-use core::num;
 use std::rc::Rc;
-use wgpu::{util::DeviceExt, BindGroupLayout, PushConstantRange, ShaderStages, SurfaceTexture};
+use wgpu::{ShaderStages, SurfaceTexture};
 use bytemuck;
 
 use crate::renderer::webgpu_utils::WebgpuUtils;
@@ -271,7 +270,7 @@ impl IDemo for Demo {
       Ok(())
    }
 
-   fn start_switching_graphics_level(&mut self, webgpu: &Webgpu, graphics_level: GraphicsLevel) -> Result<(), wgpu::SurfaceError> {
+   fn start_switching_graphics_level(&mut self, _webgpu: &Webgpu, graphics_level: GraphicsLevel) -> Result<(), wgpu::SurfaceError> {
       web_sys::console::log_3(&"Rust start_switching_graphics_level".into(), &std::module_path!().into(), &graphics_level.into());
       self.pending_graphics_level_switch = Some(GraphicsSwitchingProcess{
          progress: 0.0,

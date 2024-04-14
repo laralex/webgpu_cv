@@ -1,7 +1,4 @@
-use std::cell::RefCell;
-
 use web_sys::HtmlCanvasElement;
-use wgpu::{SurfaceError, TextureView};
 
 use super::webgpu_utils::WebgpuUtils;
 

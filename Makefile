@@ -34,12 +34,12 @@ test:
 		-- --test-threads=2
 
 .PHONY: wasm_debug
-wasm_debug: cargo_debug test_shaders
+wasm_debug: cargo_debug
 #--keep-debug
 	wasm-bindgen $(WASM_BINDGEN_FLAGS) target/${RUST_TARGET}/debug/${WASM_NAME}.wasm
 
 .PHONY: wasm
-wasm: cargo test_shaders
+wasm: cargo
 	wasm-bindgen $(WASM_BINDGEN_FLAGS) target/${RUST_TARGET}/release/${WASM_NAME}.wasm
 
 .PHONY: wasm_ci
@@ -73,14 +73,14 @@ codegen_debug:
 	BUILD_TYPE=debug $(MAKE) codegen
 
 .PHONY: build_debug
-build_debug: wasm_debug pdf_link
+build_debug: wasm_debug test_shaders
 
 # no `wasm_opt`
 .PHONY: build_ci
 build_ci: wasm_ci codegen pdf_link
 
 .PHONY: build
-build: wasm codegen pdf_link wasm_opt
+build: wasm test_shaders codegen pdf_link wasm_opt
 
 # ===== DEVELOPER DEPLOYMENT
 .PHONY: kill_server

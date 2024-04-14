@@ -19,24 +19,15 @@ futures = "0.3.30"
 js-sys = "0.3"
 bytemuck = { version = "1.15.0", features = [ "derive" ] }
 web-sys = { version = "0.3", features = [
-  "console",
-  "Document", 
-  "Window",
-  "Performance",
-  "HtmlCanvasElement",
-  "Cache",
-  "Request",
-  "Response",
-  "CanvasRenderingContext2d",
-  "WebGlRenderingContext", 
-  "WebGl2RenderingContext", 
-  "MouseEvent",
-  "WebGlProgram", 
-  "WebGlShader", 
-  "WebGlBuffer", 
-  "WebGlUniformLocation",
-  "WebGlVertexArrayObject",
-  "WebGlFramebuffer"] }
+    "console",
+    "Document",
+    "Window",
+    "Performance",
+    "HtmlCanvasElement",
+    "Request",
+    "Response",
+    "MouseEvent",
+    "KeyboardEvent" ] }
 glam = "0.25.0"
 console_error_panic_hook = { version = "0.1.7", optional = true }
 

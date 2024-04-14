@@ -37,13 +37,20 @@ pub fn start_loading_demo<'a>(id: DemoId, webgpu: Rc<Webgpu>, color_target_forma
 
 } // mod wasm
 
-#[derive(Clone, Copy)]
+#[derive(Default, Clone, Copy)]
 pub struct MouseState {
    pub left: f32,
    pub middle: f32,
    pub right: f32,
    pub wheel: f32,
    pub canvas_position_px: (i32, i32), // origin at top-left
+}
+
+#[derive(Default, Clone, Copy)]
+pub struct KeyboardState {
+   pub m: f32,
+   pub comma: f32,
+   pub dot: f32,
 }
 
 #[derive(Default)]
@@ -58,6 +65,7 @@ struct DerivedState {
 
 pub struct ExternalState {
    pub mouse: Rc<Cell<MouseState>>,
+   pub keyboard: Rc<Cell<KeyboardState>>,
    pub screen_size: (u32, u32),
    pub time_now_ms:    f64,
    pub time_prev_ms:   f64,
@@ -131,29 +139,28 @@ impl ExternalState {
 
    pub fn dismiss_events(&mut self) {
       let mut current_mouse_state = self.mouse.get();
-      if current_mouse_state.left < 0.0 {
-         current_mouse_state.left = 0.0;
-      }
-      if current_mouse_state.middle < 0.0 {
-         current_mouse_state.middle = 0.0;
-      }
-      if current_mouse_state.right < 0.0 {
-         current_mouse_state.right = 0.0;
-      }
+      ExternalState::dismiss_input_event(&mut current_mouse_state.left);
+      ExternalState::dismiss_input_event(&mut current_mouse_state.middle);
+      ExternalState::dismiss_input_event(&mut current_mouse_state.right);
       self.mouse.set(current_mouse_state);
+
+      let mut current_keyboard_state = self.keyboard.get();
+      ExternalState::dismiss_input_event(&mut current_keyboard_state.m);
+      ExternalState::dismiss_input_event(&mut current_keyboard_state.comma);
+      ExternalState::dismiss_input_event(&mut current_keyboard_state.dot);
+      self.keyboard.set(current_keyboard_state);
+   }
+
+   fn dismiss_input_event(input_axis: &mut f32) {
+      if *input_axis < 0.0 { *input_axis = 0.0; }
    }
 }
 
 impl Default for ExternalState {
     fn default() -> Self {
         Self {
-         mouse: Rc::new(Cell::new(MouseState {
-            left: Default::default(),
-            middle: Default::default(),
-            right: Default::default(),
-            wheel: Default::default(), /* TODO: not populated */
-            canvas_position_px: Default::default(),
-         })),
+         mouse: Rc::new(Cell::new(Default::default())),
+         keyboard: Rc::new(Cell::new(Default::default())),
          screen_size: (1, 1),
          time_delta_ms: Default::default(),
          time_delta_limit_ms: Default::default(),

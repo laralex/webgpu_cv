@@ -16,6 +16,8 @@ pub enum GraphicsLevel {
 #[cfg(feature = "web")]
 mod wasm {
 
+use self::renderer::KeyboardState;
+
 use super::*;
 use renderer::{wasm::*, DemoLoadingFuture, ExternalState, IDemo, MouseState, Webgpu};
 use web_sys::HtmlCanvasElement;
@@ -92,6 +94,8 @@ impl WasmInterface {
             configure_mousedown(&canvas, demo_state_mut.mouse.clone())?;
             configure_mouseup(demo_state_mut.mouse.clone())?;
             configure_mousemove(&canvas, demo_state_mut.mouse.clone())?;
+            configure_keydown(demo_state_mut.keyboard.clone())?;
+            configure_keyup(demo_state_mut.keyboard.clone())?;
         }
 
         demo_loading_apply_progress(0.6);
@@ -264,6 +268,8 @@ impl WasmInterface {
         let demo_state = self.demo_state.clone();
         let demo_clone = self.demo.clone();
         let window_engine = js_interop::window();
+        let mut previous_timestamp_ms = 0.0;
+        let mut frame_lock_timestamp_ms = None;
         *engine_tick2.borrow_mut() = Some(Closure::new(move |timestamp_ms: f64| {
             // engine step
             let webgpu = webgpu.as_ref();
@@ -272,7 +278,21 @@ impl WasmInterface {
             ) = (
                 demo_clone.try_borrow_mut(), demo_state.try_borrow_mut(), webgpu.surface.get_current_texture()
             ) {
-                demo_state.tick(timestamp_ms);
+                let tick_timestamp_ms = timestamp_ms;
+                if demo_state.keyboard.get().m < 0.0 {
+                    if frame_lock_timestamp_ms.is_none() {
+                        // entering frame lock mode - remember current time, and don't advance it
+                        frame_lock_timestamp_ms = Some(previous_timestamp_ms);
+                        web_sys::console::log_1(&"Frame lock mode ON".into());
+                    } else {
+                        // exiting frame lock mode - set current time to the previous real time (which advanced even in lock)
+                        frame_lock_timestamp_ms.take();
+                        let frame_idx = demo_state.frame_idx;
+                        demo_state.override_time(previous_timestamp_ms, frame_idx);
+                        web_sys::console::log_1(&"Frame lock mode OFF".into());
+                    }
+                }
+                demo_state.tick(frame_lock_timestamp_ms.unwrap_or(timestamp_ms));
                 demo.tick(&demo_state);
                 match demo.render(webgpu, &surface_texture, demo_state.time_delta_sec()) {
                     Ok(_) => {}
@@ -294,12 +314,44 @@ impl WasmInterface {
                 request_timeout = TIMEOUT_CORRECTION_FACTOR * request_timeout;
                 js_interop::set_frame_timeout(&window_engine, &timeout_tick, request_timeout.round() as i32);
             }
+            previous_timestamp_ms = timestamp_ms;
         }));
 
         let window_first_tick = js_interop::window();
         js_interop::request_animation_frame(&window_first_tick, engine_tick2.borrow().as_ref().unwrap());
         Ok(())
     }
+}
+
+fn configure_keydown(keyboard_state: Rc<Cell<renderer::KeyboardState>>) -> Result<(), JsValue> {
+    let closure = Closure::<dyn FnMut(_)>::new(move |event: web_sys::KeyboardEvent| {
+        let current_state = keyboard_state.get(); // TODO: replace Cell with RefCell
+        // web_sys::console::log_2(&"Keycode".into(), &event.key_code().into());
+        match event.key_code() {
+            77 => keyboard_state.set(KeyboardState { m: 1.0, ..current_state }),
+            188 => keyboard_state.set(KeyboardState { comma: 1.0, ..current_state }),
+            190 => keyboard_state.set(KeyboardState { dot: 1.0, ..current_state }),
+            _ => {},
+        }
+    });
+    js_interop::document().add_event_listener_with_callback("keydown", closure.as_ref().unchecked_ref())?;
+    closure.forget();
+    Ok(())
+}
+
+fn configure_keyup(keyboard_state: Rc<Cell<renderer::KeyboardState>>) -> Result<(), JsValue> {
+    let closure = Closure::<dyn FnMut(_)>::new(move |event: web_sys::KeyboardEvent| {
+        let current_state = keyboard_state.get();
+        match event.key_code() {
+            77 => keyboard_state.set(KeyboardState { m: -1.0, ..current_state }),
+            188 => keyboard_state.set(KeyboardState { comma: -1.0, ..current_state }),
+            190 => keyboard_state.set(KeyboardState { dot: -1.0, ..current_state }),
+            _ => {},
+        }
+    });
+    js_interop::document().add_event_listener_with_callback("keyup", closure.as_ref().unchecked_ref())?;
+    closure.forget();
+    Ok(())
 }
 
 fn configure_mousemove(canvas: &web_sys::HtmlCanvasElement, mouse_state: Rc<Cell<renderer::MouseState>>) -> Result<(), JsValue> {

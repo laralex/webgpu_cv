@@ -43,7 +43,8 @@ pub struct MouseState {
    pub middle: f32,
    pub right: f32,
    pub wheel: f32,
-   pub viewport_position: (i32, i32),
+   pub viewport_position: (i32, i32), // origin at bottom-left
+   pub canvas_position: (i32, i32), // origin at top-left
 }
 
 pub struct ExternalState {
@@ -61,6 +62,7 @@ pub struct ExternalState {
    pub frame_rate: f32,
    #[allow(unused)] pub sound_sample_rate: f32,
    pub graphics_level: GraphicsLevel,
+   pub debug_mode: Option<u16>,
 }
 
 impl ExternalState {
@@ -86,6 +88,7 @@ impl Default for ExternalState {
             middle: Default::default(),
             right: Default::default(),
             wheel: Default::default(), /* TODO: not populated */
+            canvas_position: Default::default(),
             viewport_position: Default::default(),
          })),
          screen_size: (1, 1),
@@ -101,12 +104,22 @@ impl Default for ExternalState {
          frame_rate: 1.0,
          sound_sample_rate: Default::default(),
          graphics_level: Default::default(),
+         debug_mode: Default::default(),
        }
     }
 }
 
 impl ExternalState {
    pub fn begin_frame(&mut self, timestamp_ms: usize) {
+      let current_mouse = self.mouse.get();
+      self.mouse.set(MouseState {
+         viewport_position: (
+            current_mouse.canvas_position.0,
+            self.screen_size.1 as i32 - current_mouse.canvas_position.1
+         ), // NOTE: origin at bottom-left
+         ..current_mouse
+      });
+      self.debug_mode = Some(1);
       let time_now_ms  = timestamp_ms as u32;
       let time_now_sec = timestamp_ms as f32 * 0.001;
       let elapsed_ms  = time_now_ms - self.time_prev_ms;

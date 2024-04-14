@@ -9,6 +9,7 @@ use super::{webgpu_utils::{PipelineLayoutBuilder, PushConstantsCompatibility, Un
 
 const VERTEX_SHADER_SRC:   &str = include_str!("shaders/triangle_fullscreen.vs.wgsl");
 const FRAGMENT_SHADER_SRC: &str = include_str!("shaders/mandelbrot.fs.wgsl");
+// const FRAGMENT_SHADER_SRC: &str = include_str!("shaders/uv.fs.wgsl");
 
 #[derive(Default)]
 enum DemoLoadingStage {
@@ -28,7 +29,8 @@ struct DemoLoadingProcess {
    render_pipeline: Option<wgpu::RenderPipeline>,
    vertex_shader: Option<wgpu::ShaderModule>,
    fragment_shader: Option<wgpu::ShaderModule>,
-   uniform: Option<PushConstantsCompatibility>,
+   fractal_uniform: Option<PushConstantsCompatibility>,
+   demo_uniform: Option<PushConstantsCompatibility>,
    webgpu: Rc<Webgpu>,
    loaded_demo: Option<Demo>,
 }
@@ -41,7 +43,7 @@ impl Dispose for DemoLoadingProcess {
             // shouldn't free its resources
          },
          _ => {
-            self.uniform.take();
+            self.fractal_uniform.take();
             self.render_pipeline.take();
             self.vertex_shader.take();
             self.fragment_shader.take();
@@ -135,25 +137,24 @@ impl DemoLoadingProcess {
    }
 
    fn create_uniforms(&mut self) {
-      let uniform_visibility = ShaderStages::FRAGMENT;
-      let num_bytes = std::mem::size_of::<UniformData>() as u32;
-      let mut required_limits = self.webgpu.device.limits();
-      required_limits.max_push_constant_size = num_bytes;
-      self.uniform = Some(if WebgpuUtils::supports_push_constants(&self.webgpu.device, 0..num_bytes) {
-         PushConstantsCompatibility::PushConstant(
-            wgpu::PushConstantRange{stages: uniform_visibility, range: 0..num_bytes})
-      } else {
-         // fallback to uniforms
-         const BIND_GROUP_INDEX: u32 = 0;
-         PushConstantsCompatibility::Uniform(
-            UniformGroup::new(&self.webgpu.device, uniform_visibility, num_bytes as u64,),
-            BIND_GROUP_INDEX)
-      });
+      const DEMO_UNIFORM_BIND_GROUP: u32 = 0;
+      const FRACTAL_BIND_GROUP_INDEX: u32 = 1;
+
+      self.demo_uniform = Some(WebgpuUtils::make_compatible_push_constant::<DemoUniformData>(
+         &self.webgpu.device,  wgpu::ShaderStages::FRAGMENT,
+         DEMO_UNIFORM_BIND_GROUP)
+      );
+
+      self.fractal_uniform = Some(WebgpuUtils::make_compatible_push_constant::<FractalUniformData>(
+         &self.webgpu.device,  wgpu::ShaderStages::FRAGMENT,
+         FRACTAL_BIND_GROUP_INDEX)
+      );
    }
 
    fn create_pipelines(&mut self) {
       let render_pipeline_layout = PipelineLayoutBuilder::new()
-         .with(self.uniform.as_ref().unwrap())
+         .with(self.demo_uniform.as_ref().unwrap())
+         .with(self.fractal_uniform.as_ref().unwrap())
          .build(&self.webgpu.device, Some("Render Pipeline Layout"));
       let vs = self.vertex_shader.take().unwrap();
       let fs = self.fragment_shader.take().unwrap();
@@ -191,14 +192,18 @@ impl DemoLoadingProcess {
          render_pipeline: self.render_pipeline.take().unwrap(),
          num_rendered_vertices: 3,
          pending_graphics_level_switch: None,
-         uniform_data: UniformData {
+         fractal_uniform_data: FractalUniformData {
             fractal_center: [-1.1900443, 0.3043895],
             fractal_zoom: 2.0,
-            aspect_ratio: 1.0,
             num_iterations: 1000,
-            __padding: [0; 3],
          },
-         uniform: self.uniform.take().unwrap(),
+         fractal_uniform: self.fractal_uniform.take().unwrap(),
+         demo_uniform_data: DemoUniformData {
+            mouse_position: [0.0, 0.0],
+            aspect_ratio: 1.0,
+            is_debug: 0.0,
+         },
+         demo_uniform: self.demo_uniform.take().unwrap(),
       });
       let webgpu = self.webgpu.clone();
       self.loaded_demo.as_mut().unwrap()
@@ -210,24 +215,34 @@ pub struct Demo {
    render_pipeline: wgpu::RenderPipeline,
    num_rendered_vertices: i32,
    pending_graphics_level_switch: Option<GraphicsSwitchingProcess>,
-   uniform_data: UniformData,
-   uniform: PushConstantsCompatibility,
+   fractal_uniform_data: FractalUniformData,
+   fractal_uniform: PushConstantsCompatibility,
+   demo_uniform_data: DemoUniformData,
+   demo_uniform: PushConstantsCompatibility,
 }
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-struct UniformData {
+struct FractalUniformData {
    fractal_center: [f32; 2],
    fractal_zoom: f32,
-   aspect_ratio: f32,
    num_iterations: i32,
-   __padding: [i32; 3],
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+struct DemoUniformData {
+   mouse_position: [f32; 2],
+   aspect_ratio: f32,
+   is_debug: f32,
 }
 
 impl IDemo for Demo {
    fn tick(&mut self, input: &ExternalState) {
-      self.uniform_data.fractal_zoom -= self.uniform_data.fractal_zoom * 0.25 * input.time_delta_sec;
-      self.uniform_data.aspect_ratio = input.aspect_ratio;
+      self.fractal_uniform_data.fractal_zoom -= self.fractal_uniform_data.fractal_zoom * 0.25 * input.time_delta_sec;
+      self.demo_uniform_data.aspect_ratio = input.aspect_ratio;
+      self.demo_uniform_data.mouse_position = input.mouse_unit_position().into();
+      self.demo_uniform_data.is_debug = input.debug_mode.map_or(0.0, f32::from);
    }
 
    fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, _delta_sec: f32) -> Result<(), wgpu::SurfaceError> {
@@ -253,15 +268,10 @@ impl IDemo for Demo {
          });
 
          render_pass.set_pipeline(&self.render_pipeline);
-         match &self.uniform {
-            PushConstantsCompatibility::Uniform(UniformGroup{buffer, bind_group, ..}, bind_group_index) => {
-               webgpu.queue.write_buffer(&buffer, 0, bytemuck::cast_slice(&[self.uniform_data]));
-               render_pass.set_bind_group(*bind_group_index, &bind_group, &[]);
-            }
-            PushConstantsCompatibility::PushConstant(range) => {
-               render_pass.set_push_constants(range.stages, range.range.start, bytemuck::cast_slice(&[self.uniform_data]));
-            }
-         }
+         WebgpuUtils::bind_compatible_push_constant(&mut render_pass, &webgpu.queue,
+            &self.fractal_uniform, bytemuck::cast_slice(&[self.fractal_uniform_data]));
+         WebgpuUtils::bind_compatible_push_constant(&mut render_pass, &webgpu.queue,
+            &self.demo_uniform, bytemuck::cast_slice(&[self.demo_uniform_data]));
          render_pass.draw(0..3, 0..1); // self.num_rendered>vertices
       }
    
@@ -319,7 +329,8 @@ impl Demo {
          render_pipeline: Default::default(),
          vertex_shader: Default::default(),
          fragment_shader: Default::default(),
-         uniform: Default::default(),
+         fractal_uniform: Default::default(),
+         demo_uniform: Default::default(),
          loaded_demo: Default::default(),
          webgpu,
       })
@@ -352,7 +363,7 @@ impl Progress for GraphicsSwitchingProcess {
 impl GraphicsSwitchingProcess {
    pub fn poll(demo: &mut Demo, _webgpu: &Webgpu) -> std::task::Poll<()> {
       let self_ = demo.pending_graphics_level_switch.as_mut().unwrap();
-      demo.uniform_data.num_iterations = match self_.graphics_level {
+      demo.fractal_uniform_data.num_iterations = match self_.graphics_level {
         GraphicsLevel::Minimal => 25,
         GraphicsLevel::Low => 250,
         GraphicsLevel::Medium => 500,

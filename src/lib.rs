@@ -302,7 +302,7 @@ fn configure_mousemove(canvas: &web_sys::HtmlCanvasElement, mouse_state: Rc<Cell
     let closure = Closure::<dyn FnMut(_)>::new(move |event: web_sys::MouseEvent| {
         let current_state = mouse_state.get();
         mouse_state.set(MouseState {
-            viewport_position: (event.offset_x(), event.offset_y()),
+            canvas_position: (event.offset_x(), event.offset_y()), // NOTE: origin at top-left
             ..current_state
         });
     });

@@ -63,6 +63,33 @@ impl WebgpuUtils {
          && device.limits().max_push_constant_size > required_range.end
          && false // NOTE: currently WGSL doesn't support push_constants in shaders, so forcing disable to not accidentally use push constants
    }
+
+   pub fn make_compatible_push_constant<T: Sized>(device: &wgpu::Device, visibility: wgpu::ShaderStages, bind_group_index: u32) -> PushConstantsCompatibility {
+      let num_bytes = std::mem::size_of::<T>() as u32;
+      let mut required_limits = device.limits();
+      required_limits.max_push_constant_size = num_bytes;
+      if WebgpuUtils::supports_push_constants(&device, 0..num_bytes) {
+         PushConstantsCompatibility::PushConstant(
+            wgpu::PushConstantRange{stages: visibility, range: 0..num_bytes})
+      } else {
+         // fallback to uniforms
+         PushConstantsCompatibility::Uniform(
+            UniformGroup::new(&device, visibility, num_bytes as u64,),
+            bind_group_index)
+      }
+   }
+
+   pub fn bind_compatible_push_constant<'a, 'b: 'a>(render_pass: &'a mut wgpu::RenderPass<'b>, queue: &wgpu::Queue, uniform: &'b PushConstantsCompatibility, data: &[u8]) {
+      match &uniform {
+         PushConstantsCompatibility::Uniform(UniformGroup{buffer, bind_group, ..}, bind_group_index) => {
+            queue.write_buffer(&buffer, 0, bytemuck::cast_slice(data));
+            render_pass.set_bind_group(*bind_group_index, &bind_group, &[]);
+         }
+         PushConstantsCompatibility::PushConstant(range) => {
+            render_pass.set_push_constants(range.stages, range.range.start, bytemuck::cast_slice(data));
+         }
+      }
+   }
 }
 
 pub struct UniformGroup {

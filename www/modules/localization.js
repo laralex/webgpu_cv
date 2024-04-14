@@ -18,7 +18,7 @@ export const UI_STRINGS = (function getLocalization() {
       graphics_levels: {en: "Graphics quality", ru: "Качество графики", kr: "그래픽 품질"},
       name_surname: {en: "Alexey Larionov", ru: "Алексей Ларионов", kr: "료샤 라리오노브"},
       job_title: {en: "Graphics Software Engineer", ru: "Программист графики", kr: "그래픽 프로그래머"},
-      specialty_computer_graphics: {en: "Optimization and quality of graphics", ru: "Оптимизация и качество 3D графики", kr: "저는 3D 그래픽 성능와 딥러닝 연구을 일합니다."},
+      specialty_computer_graphics: {en: "Optimization, quality of graphics", ru: "Оптимизация и качество графики", kr: "저는 3D 그래픽 성능와 딥러닝 연구을 일합니다."},
       specialty_deep_learning: {en: "Deep Learning R&D", ru: "R&D нейронных сетей", /*no korean kr: ""*/},
       cv: {en: "CV", ru: "CV", kr: "이력서"},
       pdf: {en: "in PDF", ru: "в PDF", kr: "PDF"},
@@ -75,6 +75,7 @@ export const UI_STRINGS = (function getLocalization() {
       font_family: { en: "Font family", ru: "Шрифт", kr: "글꼴" },
       fps_limit: { en: "Max frames per sec", ru: "Лимит частоты кадров", kr: "FPS 한계" },
       geo_location: { en: "in Russia / Relocation / Remote", ru: "Москва / СПб / Релокация", kr: "러시아 / 이주" },
+      debug_mode: { en: "Debug mode", ru: "Режим отладки", kr: "디버그" },
       // xxx: {en: "", ru: "", kr: ""},
    };
 })()

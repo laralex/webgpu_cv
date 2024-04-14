@@ -38,12 +38,15 @@
       <div id="resize-border" class="retro-border"></div>
       <div id="resize-tooltip"></div>
       <div id="main-content" class="scrollify-fixed">
-        <div class="demo-controls flex-column">
-          <div>
-            <div class="flex-row" id="controls_row"></div>
-            <div class="labeled" id="controls_column"></div>
-            <div id="demo-description"></div>
+        <div class="demo-controls-container">
+          <div class="demo-controls flex-column">
+              <!-- <div class="flex-row" id="controls_row"></div> -->
+              <div class="labeled flex-row">
+                <div id="demo-controls-left" class="flex-column flex-spread"></div>
+                <div id="demo-controls-right" class="flex-column flex-spread"></div>
+              </div>
           </div>
+          <div id="demo-description" class="demo-description"></div>
         </div>
         <div id="canvas-wrapper">
           <div id="canvas-controls"></div>

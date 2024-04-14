@@ -119,7 +119,6 @@ impl ExternalState {
          ), // NOTE: origin at bottom-left
          ..current_mouse
       });
-      self.debug_mode = Some(1);
       let time_now_ms  = timestamp_ms as u32;
       let time_now_sec = timestamp_ms as f32 * 0.001;
       let elapsed_ms  = time_now_ms - self.time_prev_ms;

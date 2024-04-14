@@ -555,7 +555,7 @@ function CvProjectWebcv(chapterArgs) {
             li("Deployed via GitHub CI/CD on my web-server (lighttpd)"),
             li("Graphics demos:",
                ul(
-                  li("All made with: ", Highlight("Rust, WebAssembly, WebGL2")),
+                  li("All made with: ", Highlight("Rust, WebAssembly, WebGPU")),
                   li("My implementation of non-blocking demo loading via ", a({href: "https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame"}, "requestAnimationFrame"), " API")
                ),
             ),

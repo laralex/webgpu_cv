@@ -197,6 +197,10 @@ a:active, a:visited, a:link {
    text-align: center;
 }
 
+.flex-spread {
+   justify-content: space-between;
+}
+
 .flex-wrap {
    flex-wrap: wrap;
 }
@@ -243,7 +247,7 @@ a:active, a:visited, a:link {
 .interactive {
    /* display: inline-flex; */
    align-items: center;
-   appearance: none;
+   /* appearance: none; */
    background-color: #FCFCFD;
    border-radius: 4px;
    border-width: 0;
@@ -374,39 +378,51 @@ select option {
    /* flex-grow: 10; */
 }
 
-.demo-controls {
+.demo-controls-container {
    position: relative;
-   width: fit-content;
-   max-width: 23rem;
+   max-width: 26rem;
    height: 0;
    top: 1rem;
    left: 1rem;
-   justify-content: left;
-   align-items: unset;
-   z-index: 75;
+   /* align-items: unset; */
+   z-index: 50;
    /* align-items: center; */
 }
 
-.demo-controls div {
-   margin-top: 3px;
-   padding-bottom: 2px;
-   border-radius: 5px;
-   /* overflow: hidden; */
+.demo-controls {
+   width: fit-content;
 }
 
 .demo-controls select, .demo-controls option {
-   width: 11rem;
+   width: 100%;
    align-items: center;
    text-align: center;
 }
 
-.demo-controls .labeled span {
-   padding-right: 1em;
-   padding-left: 1em;
+.demo-controls .labeled {
+   justify-content: center;
 }
 
-.demo-controls div.flex-row {
+.demo-controls #demo-controls-right {
+   flex: auto;
+   align-items: flex-start;
    justify-content: space-between;
+}
+
+.demo-controls #demo-controls-left {
+   flex-grow: 10;
+   justify-content: flex-start;
+} 
+
+#demo-controls-left > *, #demo-controls-right > * {
+   margin-top: 3px;
+   padding-bottom: 2px;
+   /* overflow: hidden; */
+}
+
+.demo-controls .labeled > * {
+   padding-right: 0.5rem;
+   padding-left: 0.5rem;
 }
 
 .demo-controls .flex-tight {
@@ -415,12 +431,21 @@ select option {
 
 .demo-controls > div {
    background-color: var(--color-theme-normal-alpha);
+   border-radius: 5px;
+   margin-top: 0.1rem;
 }
 
-.demo-controls .demo-description {
+.demo-description {
    /* background-color: var(--color-theme-normal); */
-   margin-left: 0.5rem;
-   margin-right: 0.5rem;
+   background-color: var(--color-theme-normal-alpha);
+   border-radius: 5px;
+   margin-top: 0.3rem;
+   padding-left: 0.5rem;
+   padding-right: 0.5rem;
+}
+
+.demo-description * {
+   background-color: unset;
 }
 
 #main-canvas {

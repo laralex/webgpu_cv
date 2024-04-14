@@ -9,6 +9,7 @@ const SIDEBAR_WIDTH_FONT_PX = van.state(0);
 const CURRENT_GRAPHICS_LEVEL = van.state(GraphicsLevel.Low);
 const CURRENT_FPS_LIMIT = van.state(45);
 const CURRENT_FONT_FAMILY = van.state("\"Share Tech\"");
+const CURRENT_DEBUG_MODE = van.state(null);
 const DEFAULT_MAIN_CHAPTER = "chapter_career";
 const DEFAULT_SUB_CHAPTER = "career_huawei";
 const CURRENT_CV_PAGE = [van.state(DEFAULT_MAIN_CHAPTER), van.state(DEFAULT_SUB_CHAPTER)];
@@ -63,6 +64,7 @@ function dumpUiCookies() {
 function dumpDemoCookies() {
    Util.setCookie('graphicsLevel', CURRENT_GRAPHICS_LEVEL.val);
    Util.setCookie('fpsLimit', CURRENT_FPS_LIMIT.val);
+   Util.setCookie('debugMode', CURRENT_DEBUG_MODE.val);
 }
 
 function dumpCookies() {
@@ -86,6 +88,7 @@ function loadCookies() {
    setState('subChapter', CURRENT_CV_PAGE[1]);
    setState('showIntro', IS_INTRO_SHOWN);
    setState('sidebarWidth', SIDEBAR_WIDTH_OVERRIDE_PX);
+   setState('debugMode', CURRENT_DEBUG_MODE);
 }
 
 function clearCookies() {
@@ -97,6 +100,7 @@ function clearCookies() {
    Util.deleteCookie('subChapter');
    Util.deleteCookie('showIntro');
    Util.deleteCookie('sidebarWidth');
+   Util.deleteCookie('debugMode');
 }
    
    // van.derive(() => console.log('full', IS_FULLSCREEN.val));
@@ -174,16 +178,31 @@ function FontPicker(currentFont) {
       option({ value: fontFamily, selected: () => fontFamily == currentFont.val}, fontFamily));
    const labelBefore = null;
    const labelAfter = span(localizeUi('font_family'));
-   return () => div(
-      { class: 'font-picker ' + "flex-row" },
-      labelBefore,
-      select({
+   return {
+      control: () => select({
          class: 'interactive btn',
          value: currentFont,
          oninput: e => currentFont.val = e.target.value,
       }, options,),
-      labelAfter,
-   );
+      label: labelAfter,
+   };
+}
+
+function DebugModePicker(currentDebugMode) {
+   const DEBUG_MODES = [
+      "Off", "Mode 1", "Mode 2", "Mode 3", "Mode 4",
+   ];
+	const options = DEBUG_MODES.map((debug_mode_id, index) =>
+      option({ value: index, selected: () => index == currentDebugMode.val}, debug_mode_id));
+   const labelAfter = span(localizeUi('debug_mode'));
+   return {
+      control: () => select({
+         class: 'interactive btn',
+         value: currentDebugMode,
+         oninput: e => currentDebugMode.val = e.target.value,
+      }, options,),
+      label: () => labelAfter,
+   };
 }
 
 function FpsLimitPicker(currentLimit) {
@@ -192,7 +211,6 @@ function FpsLimitPicker(currentLimit) {
    ];
 	const options = FPS_LIMITS.map((fpsLimit, index) =>
       option({ value: fpsLimit, selected: () => fpsLimit == currentLimit.val}, () => `${fpsLimit} FPS`));
-   const labelBefore = null;
    const labelAfter = span(localizeUi('fps_limit'));
    van.derive(() => {
       var newLimit = currentLimit.val;
@@ -201,16 +219,14 @@ function FpsLimitPicker(currentLimit) {
          WASM_INSTANCE.setFpsLimit(newLimit);
       }
    })
-   return () => div(
-      { class: 'fps-limit-picker ' + "flex-row" },
-      labelBefore,
-      select({
+   return {
+      control: select({
          class: 'interactive btn',
          value: currentLimit,
          oninput: e => currentLimit.val = e.target.value,
       }, options,),
-      labelAfter,
-   );
+      label: labelAfter,
+   };
 }
 
 function LanguagePicker(currentLanguage, currentFont, isVertical, tooltipLanguage=undefined, tooltipLabelId='ui_language') {
@@ -242,12 +258,9 @@ function LanguagePicker(currentLanguage, currentFont, isVertical, tooltipLanguag
 	const options = Object.entries(LANGUAGES).map(([language, meta]) =>
       option({ value: language, selected: () => language == currentLanguage.val},
          () => (Util.isFlagEmojiSupported() ? meta.emoji + " " : "") + UI_STRINGS[meta.labelId][tooltipLanguage.val]));
-   const labelBefore = isVertical ? span(() => UI_STRINGS[tooltipLabelId][tooltipLanguage.val]) : null;
-   const labelAfter = !isVertical ? span(() => UI_STRINGS[tooltipLabelId][tooltipLanguage.val]) : null;
-   return () => div(
-      { class: 'language-picker ' + (isVertical ? "flex-column" : "flex-row") },
-      labelBefore,
-      select({
+   const labelAfter = span(() => UI_STRINGS[tooltipLabelId][tooltipLanguage.val]);
+   return {
+      control: select({
          class: 'interactive btn',
          value: currentLanguage,
          oninput: e => {
@@ -255,8 +268,8 @@ function LanguagePicker(currentLanguage, currentFont, isVertical, tooltipLanguag
             currentFont.val = LANGUAGES[currentLanguage.val].font;
          },
       }, options,),
-      labelAfter,
-   );
+      label: labelAfter,
+   };
 }
 
 function GraphicsLevelPicker(currentGraphicsLevel, isVertical) {
@@ -275,19 +288,16 @@ function GraphicsLevelPicker(currentGraphicsLevel, isVertical) {
          WASM_INSTANCE.setGraphicsLevel(currentGraphicsLevel.val)
       }
    });
-   const labelBefore = isVertical ? span(localizeUi('graphics_levels')) : null;
-   const labelAfter = !isVertical ? span(localizeUi('graphics_levels')) : null;
-   return div(
-      { class: 'graphics-picker ' + (isVertical ? "flex-column" : "flex-row") },
-      labelBefore,
-      select({
+   const labelAfter = span(localizeUi('graphics_levels'));
+   return {
+      control: select({
          class: 'interactive btn',
          oninput: e => currentGraphicsLevel.val = e.target.value,
          value: currentGraphicsLevel,
          disabled: () => CURRENT_DEMO_LOADING_PROGRESS.val != null || CURRENT_GRAPHICS_SWITCHING_PROGRESS.val != null,
       }, options,),
-      labelAfter,
-   );
+      label: labelAfter,
+   };
 }
 
 function ResumePdfLink() {
@@ -400,7 +410,7 @@ function PersonalCard() {
          return deepLearning != null ? ul(li(cg), li(deepLearning)) : cg;
       }),
       div({class: "techlist"},
-      (["C++", "Python", "OpenGL", /*"WebGL",*/ "Android"]
+      (["C++", "Python", "OpenGL", "WebGPU", /* "Android" */]
          .map(text => div({class: "badge"}, text))),
       ),
       GeoLocation(),
@@ -434,42 +444,45 @@ function IntroPopup({onclose}) {
       onclose();
       needOnClose = false;
    }});
-   return () => closed.val ? null : div({class: "popup font-large retro-box checkerboard-background"},
-      div({class: "message font-Large"}, LanguagePicker(CURRENT_LANGUAGE, CURRENT_FONT_FAMILY, /* vertical */ false, undefined, 'ui_language_intro')),
-      div({
-         class: () => (needAnimation.val ? " animated-appear " : "") + " flex-column",
-         onanimationend: () => needAnimation.val = false, // to prevent animation repeat when language switched
-      },
-      span({class: "message bold font-LARGE"}, localizeUi("intro_hi")),
-      span({class: "message"}, localizeUi("intro_enjoy_resume")),
-      span({class: "message"}, localizeUi("intro_using")), // ""
-      div({class: "flex-row wide"},
-         div({class: "message flex-column", style: "margin-right: 1.5em;"},
-            span(a({href: "https://www.rust-lang.org/", target: "_blank"}, "Rust"), " + ", a({href: "https://www.khronos.org/webgl/", target: "_blank"}, "WebGL2")),
-            span(localizeUi("intro_3d")),
-            div({class: "flex-row"},
-               a({href: "https://www.rust-lang.org/", target: "_blank"},
-                  img({src: "../assets/rust-plain.svg", height:"80"}, "Rust")),
-               a({href: "https://www.khronos.org/webgl/", target: "_blank"},
-                  img({src: "../assets/WebGL_Logo.svg", height:"70", style: "padding:7px;"}, "WebGL 2"))
+   return () =>  {
+      const languagePicker = LanguagePicker(CURRENT_LANGUAGE, CURRENT_FONT_FAMILY, /* vertical */ false, undefined, 'ui_language_intro');
+      return closed.val ? null : div({class: "popup font-large retro-box zmax checkerboard-background"},
+         div({class: "message font-Large flex-row", style:"gap:1rem;"}, languagePicker.control, languagePicker.label),
+         div({
+            class: () => (needAnimation.val ? " animated-appear " : "") + " flex-column",
+            onanimationend: () => needAnimation.val = false, // to prevent animation repeat when language switched
+         },
+         span({class: "message bold font-LARGE"}, localizeUi("intro_hi")),
+         span({class: "message"}, localizeUi("intro_enjoy_resume")),
+         span({class: "message"}, localizeUi("intro_using")), // ""
+         div({class: "flex-row wide"},
+            div({class: "message flex-column", style: "margin-right: 1.5em;"},
+               span(a({href: "https://www.rust-lang.org/", target: "_blank"}, "Rust"), " + ", a({href: "https://en.wikipedia.org/wiki/WebGPU", target: "_blank"}, "WebGPU")),
+               span(localizeUi("intro_3d")),
+               div({class: "flex-row"},
+                  a({href: "https://www.rust-lang.org/", target: "_blank"},
+                     img({src: "../assets/rust-plain.svg", height:"80"}, "Rust")),
+                  a({href: "https://en.wikipedia.org/wiki/WebGPU", target: "_blank"},
+                     img({src: "../assets/webgpu-horizontal.svg", height:"70"}, "WebGPU"))
+               ),
+            ),
+            div({class: "message flex-column", style: "margin-left: 1.5em;"},
+               span(a({href: "https://en.wikipedia.org/wiki/JavaScript", target: "_blank"}, "JavaScript"), " + ", a({href: "https://vanjs.org/", target: "_blank"}, "VanJS")),
+               span(localizeUi("intro_frontend")),
+               div({class: "flex-row"},
+                  a({href: "https://en.wikipedia.org/wiki/JavaScript", target: "_blank"},
+                     img({src: "../assets/javascript-original.svg", height:"80", style: "padding:3px;"}, "JavaScript")),
+                  a({href: "https://vanjs.org/", target: "_blank"},
+                     img({src: "../assets/vanjs.svg", height:"80", style: "padding:3px;"}, "VanJS")),
+               ),
+               ),
             ),
          ),
-         div({class: "message flex-column", style: "margin-left: 1.5em;"},
-            span(a({href: "https://en.wikipedia.org/wiki/JavaScript", target: "_blank"}, "JavaScript"), " + ", a({href: "https://vanjs.org/", target: "_blank"}, "VanJS")),
-            span(localizeUi("intro_frontend")),
-            div({class: "flex-row"},
-               a({href: "https://en.wikipedia.org/wiki/JavaScript", target: "_blank"},
-                  img({src: "../assets/javascript-original.svg", height:"80", style: "padding:3px;"}, "JavaScript")),
-               a({href: "https://vanjs.org/", target: "_blank"},
-                  img({src: "../assets/vanjs.svg", height:"80", style: "padding:3px;"}, "VanJS")),
-            ),
-            ),
+         div({class: "controls"},
+            button({class: "btn popup-btn font-large", onclick: (e) => closed.val = true }, localizeUi("intro_close")),
          ),
-      ),
-      div({class: "controls"},
-         button({class: "btn popup-btn font-large", onclick: (e) => closed.val = true }, localizeUi("intro_close")),
-      ),
-   )
+      )
+   }
 }
 
 function ControlsPopup({onclose}) {
@@ -769,6 +782,13 @@ window.onload = function() {
          WASM_INSTANCE.startLoadingDemo(demoId);
       }
    })
+   van.derive(() => {
+      let debugMode = CURRENT_DEBUG_MODE.val != null ? CURRENT_DEBUG_MODE.val : null;
+      if (WASM_INSTANCE) {
+         console.log("Set debug mode", debugMode);
+         WASM_INSTANCE.setDebugMode(debugMode);
+      }
+   })
    configureFromFont(CURRENT_FONT_FAMILY.val, CURRENT_LANGUAGE.val); // other elements' relative sizes depend on this configuration
    const configureCanvas = getCanvasConvigurationFunc(CANVAS_ID);
    configureResizingBorder(configureCanvas);
@@ -777,11 +797,23 @@ window.onload = function() {
    van.add(document.getElementById("canvas-controls"), FullscreenButton({extraClasses: "fullscreen-button", height: "80"}));
    van.add(document.getElementById("canvas-controls"), HelpButton({height: "80"}));
    van.add(document.getElementById("canvas-wrapper"), LoadingScreen());
-   van.add(document.getElementById("controls_column"), LanguagePicker(CURRENT_LANGUAGE, CURRENT_FONT_FAMILY, /*vertical*/ false));
-   van.add(document.getElementById("controls_column"), GraphicsLevelPicker(CURRENT_GRAPHICS_LEVEL, /*vertical*/ false));
-   van.add(document.getElementById("controls_column"), FpsLimitPicker(CURRENT_FPS_LIMIT, /*vertical*/ false));
-   van.add(document.getElementById("controls_row"), RepositoryLink({width: "49%"}));
-   van.add(document.getElementById("controls_row"), ClearCookiesButton({width: "49%"}));
+   van.add(document.getElementById("demo-controls-left"), RepositoryLink({width: "100%"}));
+   van.add(document.getElementById("demo-controls-right"), ClearCookiesButton({width: "100%"}));
+   {
+      const picker = LanguagePicker(CURRENT_LANGUAGE, CURRENT_FONT_FAMILY, /*vertical*/ false);
+      van.add(document.getElementById("demo-controls-left"), picker.control);
+      van.add(document.getElementById("demo-controls-right"), picker.label);
+   }
+   {
+      const picker = GraphicsLevelPicker(CURRENT_GRAPHICS_LEVEL, /*vertical*/ false);
+      van.add(document.getElementById("demo-controls-left"), picker.control);
+      van.add(document.getElementById("demo-controls-right"), picker.label);
+   }
+   {
+      const picker = FpsLimitPicker(CURRENT_FPS_LIMIT, /*vertical*/ false);
+      van.add(document.getElementById("demo-controls-left"), picker.control);
+      van.add(document.getElementById("demo-controls-right"), picker.label);
+   }
    document.querySelectorAll(".firstinfo").forEach(element => {
       van.add(element, PersonalCard())
    });
@@ -823,7 +855,12 @@ window.onload = function() {
 
       // add select to font family
       if (BUILD_DATA.debug) {
-         van.add(document.getElementById("controls_column"), FontPicker(CURRENT_FONT_FAMILY));
+         const fontPicker = FontPicker(CURRENT_FONT_FAMILY);
+         van.add(document.getElementById("demo-controls-left"), fontPicker.control);
+         van.add(document.getElementById("demo-controls-right"), fontPicker.label);
+         const debugModePicker = DebugModePicker(CURRENT_DEBUG_MODE);
+         van.add(document.getElementById("demo-controls-left"), debugModePicker.control);
+         van.add(document.getElementById("demo-controls-right"), debugModePicker.label);
       }
 
       // add scroll management that controls CV chapters
@@ -871,6 +908,7 @@ window.onload = function() {
       demo_loading_apply_progress(0.5);
       configureCanvas();
       WASM_INSTANCE.setFpsLimit(CURRENT_FPS_LIMIT.val);
+      WASM_INSTANCE.setDebugMode(CURRENT_DEBUG_MODE.val);
       WASM_INSTANCE.startLoadingDemo(getDemoId(CURRENT_CV_PAGE[1].val));
       demo_loading_finish();
       WASM_INSTANCE.renderLoop();

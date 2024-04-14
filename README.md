@@ -13,7 +13,7 @@ Known issues:
    - debug render mode (maybe visualize demo state in JS)
 - Demos:
    - frame prediction
-   - fractal with high precision
+   - fractal with high precision (perturbation)
    - water
    - deferred rendering
    - webXR (VR fractal)

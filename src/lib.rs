@@ -134,6 +134,11 @@ impl WasmInterface {
         self.demo_state.borrow_mut().time_delta_limit_ms = 1_000 / fps_limit;
     }
 
+    #[wasm_bindgen(js_name = setDebugMode)]
+    pub fn wasm_set_debug_mode(&mut self, debug_mode: Option<u16>) {
+        self.demo_state.borrow_mut().debug_mode = debug_mode;
+    }
+
     #[wasm_bindgen(js_name = setGraphicsLevel)]
     pub fn wasm_set_graphics_level(&mut self, level: GraphicsLevel) {
         // NOTE: If the request to switch graphics level is issued,

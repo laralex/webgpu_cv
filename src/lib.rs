@@ -16,7 +16,7 @@ pub enum GraphicsLevel {
 #[cfg(feature = "web")]
 mod wasm {
 
-use self::renderer::KeyboardState;
+use self::renderer::{ExternalStateData, KeyboardState};
 
 use super::*;
 use renderer::{wasm::*, DemoLoadingFuture, ExternalState, IDemo, MouseState, Webgpu};
@@ -269,7 +269,8 @@ impl WasmInterface {
         let demo_clone = self.demo.clone();
         let window_engine = js_interop::window();
         let mut previous_timestamp_ms = 0.0;
-        let mut frame_lock_timestamp_ms = None;
+        let mut demo_state_history = renderer::DemoStateHistory::new();
+        let mut demo_history_playback = renderer::DemoHistoryPlayback::new();
         *engine_tick2.borrow_mut() = Some(Closure::new(move |timestamp_ms: f64| {
             // engine step
             let webgpu = webgpu.as_ref();
@@ -278,21 +279,17 @@ impl WasmInterface {
             ) = (
                 demo_clone.try_borrow_mut(), demo_state.try_borrow_mut(), webgpu.surface.get_current_texture()
             ) {
-                let tick_timestamp_ms = timestamp_ms;
                 if demo_state.keyboard.get().m < 0.0 {
-                    if frame_lock_timestamp_ms.is_none() {
-                        // entering frame lock mode - remember current time, and don't advance it
-                        frame_lock_timestamp_ms = Some(previous_timestamp_ms);
-                        web_sys::console::log_1(&"Frame lock mode ON".into());
-                    } else {
-                        // exiting frame lock mode - set current time to the previous real time (which advanced even in lock)
-                        frame_lock_timestamp_ms.take();
-                        let frame_idx = demo_state.frame_idx;
-                        demo_state.override_time(previous_timestamp_ms, frame_idx);
-                        web_sys::console::log_1(&"Frame lock mode OFF".into());
-                    }
+                    demo_history_playback.toggle_frame_lock(&mut demo_state, previous_timestamp_ms);
                 }
-                demo_state.tick(frame_lock_timestamp_ms.unwrap_or(timestamp_ms));
+                if demo_state.keyboard.get().comma > 0.0 {
+                    demo_history_playback.advance_back(&demo_state_history);
+                }
+                if demo_state.keyboard.get().dot > 0.0 {
+                    demo_history_playback.advance_forward(&demo_state_history);
+                }
+                let tick_timestamp_ms = demo_history_playback.playback_timestamp_ms().unwrap_or(timestamp_ms);
+                demo_state.tick(tick_timestamp_ms);
                 demo.tick(&demo_state);
                 match demo.render(webgpu, &surface_texture, demo_state.time_delta_sec()) {
                     Ok(_) => {}
@@ -315,6 +312,9 @@ impl WasmInterface {
                 js_interop::set_frame_timeout(&window_engine, &timeout_tick, request_timeout.round() as i32);
             }
             previous_timestamp_ms = timestamp_ms;
+            if !demo_history_playback.is_playing_back() {
+                demo_state_history.store_state((*demo_state.borrow()).data());
+            }
         }));
 
         let window_first_tick = js_interop::window();

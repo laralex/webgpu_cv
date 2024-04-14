@@ -239,6 +239,7 @@ struct DemoUniformData {
 
 impl IDemo for Demo {
    fn tick(&mut self, input: &ExternalState) {
+      web_sys::console::log_2(&"^^".into(), &input.time_delta_sec().into());
       self.fractal_uniform_data.fractal_zoom -= self.fractal_uniform_data.fractal_zoom * 0.25 * input.time_delta_sec() as f32;
       self.demo_uniform_data.aspect_ratio = input.aspect_ratio();
       self.demo_uniform_data.mouse_position = input.mouse_unit_position().into();

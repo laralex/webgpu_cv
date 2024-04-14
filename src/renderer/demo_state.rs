@@ -1,0 +1,257 @@
+use std::{cell::Cell, rc::Rc};
+
+use crate::GraphicsLevel;
+
+#[derive(Default, Clone, Copy)]
+pub struct MouseState {
+   pub left: f32,
+   pub middle: f32,
+   pub right: f32,
+   pub wheel: f32,
+   pub canvas_position_px: (i32, i32), // origin at top-left
+}
+
+#[derive(Default, Clone, Copy)]
+pub struct KeyboardState {
+   pub m: f32,
+   pub comma: f32,
+   pub dot: f32,
+}
+
+#[derive(Clone, Default)]
+struct DerivedState {
+   pub aspect_ratio: f32,
+   pub time_now_sec:   f64,
+   pub time_prev_sec:  f64,
+   pub time_delta_sec: f64,
+   pub frame_rate: f32,
+   pub mouse_viewport_position_px: (i32, i32), // origin at bottom-left
+}
+
+pub struct ExternalState {
+   pub mouse: Rc<Cell<MouseState>>,
+   pub keyboard: Rc<Cell<KeyboardState>>,
+   pub screen_size: (u32, u32),
+   pub time_now_ms:    f64,
+   pub time_prev_ms:   f64,
+   pub time_delta_ms:  f64,
+   pub time_delta_limit_ms: f64,
+   pub frame_idx: usize,
+   pub graphics_level: GraphicsLevel,
+   pub debug_mode: Option<u16>,
+   derived: DerivedState,
+}
+
+#[derive(Default, Clone, Copy)]
+pub struct ExternalStateData {
+   pub mouse: MouseState,
+   pub keyboard: KeyboardState,
+   pub screen_size: (u32, u32),
+   pub time_now_ms:    f64,
+   pub time_prev_ms:   f64,
+   pub time_delta_ms:  f64,
+   pub time_delta_limit_ms: f64,
+   pub frame_idx: usize,
+   pub graphics_level: GraphicsLevel,
+   pub debug_mode: Option<u16>,
+}
+
+impl ExternalState {
+   pub fn data(&self) -> ExternalStateData {
+      ExternalStateData {
+         mouse: self.mouse.get(),
+         keyboard: self.keyboard.get(),
+         screen_size: self.screen_size.clone(),
+         time_now_ms: self.time_now_ms.clone(),
+         time_prev_ms: self.time_prev_ms.clone(),
+         time_delta_ms: self.time_delta_ms.clone(),
+         time_delta_limit_ms: self.time_delta_limit_ms.clone(),
+         frame_idx: self.frame_idx.clone(),
+         graphics_level: self.graphics_level.clone(),
+         debug_mode: self.debug_mode.clone(),
+      }
+   }
+
+   pub fn mouse_unit_position(&self) -> (f32, f32) {
+      let px_pos = self.mouse_viewport_position_px();
+      return (
+         px_pos.0 as f32 / self.screen_size.0 as f32,
+         px_pos.1 as f32 / self.screen_size.1 as f32,
+      )
+   }
+
+   pub fn update_derived_state(&mut self) {
+      let now = self.time_now_ms * 0.001;
+      let then = self.time_prev_ms * 0.001;
+      let delta = self.derived.time_now_sec - self.derived.time_prev_sec;
+      
+      let current_mouse = self.mouse.get();
+      self.derived = DerivedState {
+         aspect_ratio: self.screen_size.0 as f32 / self.screen_size.1 as f32,
+         time_now_sec: now,
+         time_prev_sec: then,
+         time_delta_sec: delta,
+         frame_rate: (1.0 / delta) as f32,
+         mouse_viewport_position_px: (
+            current_mouse.canvas_position_px.0,
+            self.screen_size.1 as i32 - current_mouse.canvas_position_px.1
+         ),
+      }
+
+   }
+
+   pub fn aspect_ratio(&self) -> f32 { self.derived.aspect_ratio }
+   pub fn time_now_sec(&self) -> f64 { self.derived.time_now_sec }
+   pub fn time_prev_sec(&self) -> f64 { self.derived.time_prev_sec }
+   pub fn time_delta_sec(&self) -> f64 { self.derived.time_delta_sec }
+   pub fn frame_rate(&self) -> f32 { self.derived.frame_rate }
+   pub fn mouse_viewport_position_px(&self) -> (i32, i32) { self.derived.mouse_viewport_position_px }
+
+   pub fn screen_resize(&mut self, (width_px, height_px): (u32, u32)) {
+      self.screen_size = (width_px, height_px);
+   }
+
+   pub fn override_time(&mut self, timestamp_ms: f64, frame_idx: usize) {
+      self.frame_idx = frame_idx;
+      self.time_delta_ms = 0.0; // .max(1)
+      self.time_prev_ms  = timestamp_ms;
+      self.time_now_ms   = timestamp_ms;
+      self.update_derived_state();
+   }
+
+   pub fn tick(&mut self, tick_timestamp_ms: f64) {
+      self.frame_idx += 1;
+      self.time_delta_ms = tick_timestamp_ms - self.time_prev_ms;
+      self.time_prev_ms  = self.time_now_ms;
+      self.time_now_ms   = tick_timestamp_ms;
+      self.update_derived_state();
+   }
+
+   pub fn tick_from_delta(&mut self, tick_delta_ms: f64) {
+      self.tick(self.time_prev_ms + tick_delta_ms);
+   }
+
+   pub fn dismiss_events(&mut self) {
+      let mut current_mouse_state = self.mouse.get();
+      ExternalState::dismiss_input_event(&mut current_mouse_state.left);
+      ExternalState::dismiss_input_event(&mut current_mouse_state.middle);
+      ExternalState::dismiss_input_event(&mut current_mouse_state.right);
+      self.mouse.set(current_mouse_state);
+
+      let mut current_keyboard_state = self.keyboard.get();
+      ExternalState::dismiss_input_event(&mut current_keyboard_state.m);
+      ExternalState::dismiss_input_event(&mut current_keyboard_state.comma);
+      ExternalState::dismiss_input_event(&mut current_keyboard_state.dot);
+      self.keyboard.set(current_keyboard_state);
+   }
+
+   fn dismiss_input_event(input_axis: &mut f32) {
+      if *input_axis < 0.0 { *input_axis = 0.0; }
+   }
+}
+
+impl Default for ExternalState {
+    fn default() -> Self {
+        Self {
+         mouse: Rc::new(Cell::new(Default::default())),
+         keyboard: Rc::new(Cell::new(Default::default())),
+         screen_size: (1, 1),
+         time_delta_ms: Default::default(),
+         time_delta_limit_ms: Default::default(),
+         time_now_ms: Default::default(),
+         time_prev_ms: Default::default(),
+         frame_idx: Default::default(),
+         graphics_level: Default::default(),
+         debug_mode: Default::default(),
+         derived: Default::default(),
+       }
+    }
+}
+
+pub struct DemoStateHistory {
+   history: Vec<ExternalStateData>,
+   history_size: usize,
+   history_head_idx: usize,
+}
+
+impl DemoStateHistory {
+   pub fn new() -> Self {
+       let history = vec![Default::default(); 256];
+       Self {
+           history,
+           history_size: 0,
+           history_head_idx: 0,
+       }
+   }
+
+   pub fn sample_state(&self, offset_back: usize) -> Option<ExternalStateData> {
+       if offset_back >= self.history_size {
+           return None;
+       }
+       let state_idx = (self.history_head_idx + self.history.len()) - offset_back - 1;
+       let state_idx = state_idx % self.history.len();
+       web_sys::console::log_3(&"sample_state".into(), &offset_back.into(), &self.history.len().into());
+       Some(self.history[state_idx])
+   }
+
+   pub fn store_state(&mut self, state: ExternalStateData) {
+       self.history[self.history_head_idx] = state;
+       self.history_head_idx += 1;
+       if self.history_head_idx >= self.history.len() {
+           self.history_head_idx = 0;
+       }
+       self.history_size = self.history.len().min(self.history_size + 1);
+   }
+}
+
+pub struct DemoHistoryPlayback {
+   history_playback_offset: usize,
+   frame_lock_timestamp_ms: Option<f64>,
+}
+
+impl DemoHistoryPlayback {
+   pub fn new() -> Self {
+      Self {
+         history_playback_offset: 0,
+         frame_lock_timestamp_ms: None,
+      }
+   }
+
+   pub fn is_playing_back(&self) -> bool { self.frame_lock_timestamp_ms.is_some() }
+   pub fn playback_timestamp_ms(&self) -> Option<f64> { self.frame_lock_timestamp_ms }
+
+   pub fn toggle_frame_lock(&mut self, demo_state: &mut ExternalState, lock_at_timestamp_ms: f64) -> bool {
+      if self.frame_lock_timestamp_ms.is_none() {
+         // entering frame lock mode - remember current time, and don't advance it
+         self.frame_lock_timestamp_ms = Some(lock_at_timestamp_ms);
+         self.history_playback_offset = 0;
+         web_sys::console::log_1(&"Frame lock mode ON".into());
+         true
+     } else {
+         // exiting frame lock mode - set current time to the previous real time (which advanced even in lock)
+         self.frame_lock_timestamp_ms.take();
+         let frame_idx = 0;
+         demo_state.override_time(lock_at_timestamp_ms, frame_idx);
+         web_sys::console::log_1(&"Frame lock mode OFF".into());
+         false
+     }
+   }
+
+   pub fn advance_back(&mut self, state_history: &DemoStateHistory) {
+      if self.frame_lock_timestamp_ms.is_some() {
+         if let Some(state) = state_history.sample_state(self.history_playback_offset + 1) {
+             self.frame_lock_timestamp_ms.replace(state.time_now_ms);
+             self.history_playback_offset += 1;
+         }
+      }
+   }
+
+   pub fn advance_forward(&mut self, state_history: &DemoStateHistory) {
+      if self.frame_lock_timestamp_ms.is_some() && self.history_playback_offset > 0 {
+         if let Some(state) = state_history.sample_state(self.history_playback_offset - 1) {
+            self.frame_lock_timestamp_ms.replace(state.time_now_ms);
+            self.history_playback_offset -= 1;
+         }
+      }
+   }
+}

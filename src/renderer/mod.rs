@@ -3,6 +3,8 @@ pub use stub_demo::Demo as StubDemo;
 pub mod webgpu;
 pub use webgpu::Webgpu;
 pub mod webgpu_utils;
+pub mod demo_state;
+pub use demo_state::*;
 mod triangle;
 mod fractal;
 
@@ -36,143 +38,6 @@ pub fn start_loading_demo<'a>(id: DemoId, webgpu: Rc<Webgpu>, color_target_forma
 }
 
 } // mod wasm
-
-#[derive(Default, Clone, Copy)]
-pub struct MouseState {
-   pub left: f32,
-   pub middle: f32,
-   pub right: f32,
-   pub wheel: f32,
-   pub canvas_position_px: (i32, i32), // origin at top-left
-}
-
-#[derive(Default, Clone, Copy)]
-pub struct KeyboardState {
-   pub m: f32,
-   pub comma: f32,
-   pub dot: f32,
-}
-
-#[derive(Default)]
-struct DerivedState {
-   pub aspect_ratio: f32,
-   pub time_now_sec:   f64,
-   pub time_prev_sec:  f64,
-   pub time_delta_sec: f64,
-   pub frame_rate: f32,
-   pub mouse_viewport_position_px: (i32, i32), // origin at bottom-left
-}
-
-pub struct ExternalState {
-   pub mouse: Rc<Cell<MouseState>>,
-   pub keyboard: Rc<Cell<KeyboardState>>,
-   pub screen_size: (u32, u32),
-   pub time_now_ms:    f64,
-   pub time_prev_ms:   f64,
-   pub time_delta_ms:  f64,
-   pub time_delta_limit_ms: f64,
-   pub frame_idx: usize,
-   pub graphics_level: GraphicsLevel,
-   pub debug_mode: Option<u16>,
-   derived: DerivedState,
-}
-
-impl ExternalState {
-   pub fn mouse_unit_position(&self) -> (f32, f32) {
-      let px_pos = self.mouse_viewport_position_px();
-      return (
-         px_pos.0 as f32 / self.screen_size.0 as f32,
-         px_pos.1 as f32 / self.screen_size.1 as f32,
-      )
-   }
-
-   pub fn update_derived_state(&mut self) {
-      let now = self.time_now_ms * 0.001;
-      let then = self.time_prev_ms * 0.001;
-      let delta = self.derived.time_now_sec - self.derived.time_prev_sec;
-      
-      let current_mouse = self.mouse.get();
-      self.derived = DerivedState {
-         aspect_ratio: self.screen_size.0 as f32 / self.screen_size.1 as f32,
-         time_now_sec: now,
-         time_prev_sec: then,
-         time_delta_sec: delta,
-         frame_rate: (1.0 / delta) as f32,
-         mouse_viewport_position_px: (
-            current_mouse.canvas_position_px.0,
-            self.screen_size.1 as i32 - current_mouse.canvas_position_px.1
-         ),
-      }
-
-   }
-
-   pub fn aspect_ratio(&self) -> f32 { self.derived.aspect_ratio }
-   pub fn time_now_sec(&self) -> f64 { self.derived.time_now_sec }
-   pub fn time_prev_sec(&self) -> f64 { self.derived.time_prev_sec }
-   pub fn time_delta_sec(&self) -> f64 { self.derived.time_delta_sec }
-   pub fn frame_rate(&self) -> f32 { self.derived.frame_rate }
-   pub fn mouse_viewport_position_px(&self) -> (i32, i32) { self.derived.mouse_viewport_position_px }
-
-   pub fn screen_resize(&mut self, (width_px, height_px): (u32, u32)) {
-      self.screen_size = (width_px, height_px);
-   }
-
-   pub fn override_time(&mut self, timestamp_ms: f64, frame_idx: usize) {
-      self.frame_idx = frame_idx;
-      self.time_delta_ms = 0.0; // .max(1)
-      self.time_prev_ms  = timestamp_ms;
-      self.time_now_ms   = timestamp_ms;
-      self.update_derived_state();
-   }
-
-   pub fn tick(&mut self, tick_timestamp_ms: f64) {
-      self.frame_idx += 1;
-      self.time_delta_ms = tick_timestamp_ms - self.time_prev_ms;
-      self.time_prev_ms  = self.time_now_ms;
-      self.time_now_ms   = tick_timestamp_ms;
-      self.update_derived_state();
-   }
-
-   pub fn tick_from_delta(&mut self, tick_delta_ms: f64) {
-      self.tick(self.time_prev_ms + tick_delta_ms);
-   }
-
-   pub fn dismiss_events(&mut self) {
-      let mut current_mouse_state = self.mouse.get();
-      ExternalState::dismiss_input_event(&mut current_mouse_state.left);
-      ExternalState::dismiss_input_event(&mut current_mouse_state.middle);
-      ExternalState::dismiss_input_event(&mut current_mouse_state.right);
-      self.mouse.set(current_mouse_state);
-
-      let mut current_keyboard_state = self.keyboard.get();
-      ExternalState::dismiss_input_event(&mut current_keyboard_state.m);
-      ExternalState::dismiss_input_event(&mut current_keyboard_state.comma);
-      ExternalState::dismiss_input_event(&mut current_keyboard_state.dot);
-      self.keyboard.set(current_keyboard_state);
-   }
-
-   fn dismiss_input_event(input_axis: &mut f32) {
-      if *input_axis < 0.0 { *input_axis = 0.0; }
-   }
-}
-
-impl Default for ExternalState {
-    fn default() -> Self {
-        Self {
-         mouse: Rc::new(Cell::new(Default::default())),
-         keyboard: Rc::new(Cell::new(Default::default())),
-         screen_size: (1, 1),
-         time_delta_ms: Default::default(),
-         time_delta_limit_ms: Default::default(),
-         time_now_ms: Default::default(),
-         time_prev_ms: Default::default(),
-         frame_idx: Default::default(),
-         graphics_level: Default::default(),
-         debug_mode: Default::default(),
-         derived: Default::default(),
-       }
-    }
-}
 
 pub trait IDemo : Drop {
    fn tick(&mut self, state: &ExternalState);

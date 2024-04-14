@@ -196,13 +196,13 @@ impl Demo {
 impl IDemo for Demo {
    fn tick(&mut self, input: &ExternalState) {
       let mouse_pos = input.mouse_unit_position();
-      self.clear_color[0] = (input.time_now_sec.sin() * 0.5 + 0.5 * mouse_pos.0) as f64;
-      self.clear_color[1] = ((input.time_now_sec * 1.2).sin() * 0.5 + 0.5) as f64;
+      self.clear_color[0] = (input.time_now_sec().sin() as f32 * 0.5 + 0.5 * mouse_pos.0) as f64;
+      self.clear_color[1] = ((input.time_now_sec() * 1.2).sin() * 0.5 + 0.5) as f64;
       self.clear_color[2] = input.mouse.get().left as f64;
       self.clear_color[3] = 1.0;
    }
 
-   fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, _delta_sec: f32) -> Result<(), wgpu::SurfaceError> {
+   fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, _delta_sec: f64) -> Result<(), wgpu::SurfaceError> {
       let view = WebgpuUtils::surface_view(backbuffer);
       let mut encoder = webgpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
          label: Some("Render Encoder"),

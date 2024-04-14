@@ -89,7 +89,6 @@ impl WasmInterface {
             // callbacks wired with JS canvas
             let mut demo_state_mut = demo_state.borrow_mut();
             demo_state_mut.graphics_level = level;
-            demo_state_mut.sound_sample_rate = 44100.0; /* NOTE: set once */
             configure_mousedown(&canvas, demo_state_mut.mouse.clone())?;
             configure_mouseup(demo_state_mut.mouse.clone())?;
             configure_mousemove(&canvas, demo_state_mut.mouse.clone())?;
@@ -130,8 +129,8 @@ impl WasmInterface {
     }
 
     #[wasm_bindgen(js_name = setFpsLimit)]
-    pub fn wasm_set_fps_limit(&mut self, fps_limit: i32) {
-        self.demo_state.borrow_mut().time_delta_limit_ms = 1_000 / fps_limit;
+    pub fn wasm_set_fps_limit(&mut self, fps_limit: f64) {
+        self.demo_state.borrow_mut().time_delta_limit_ms = 1_000.0 / fps_limit;
     }
 
     #[wasm_bindgen(js_name = setDebugMode)]
@@ -159,7 +158,7 @@ impl WasmInterface {
         let webgpu_ref = self.webgpu.clone();
 
         // request to advance the loading process once per frame
-        *switcher_callback.borrow_mut() = Some(Closure::new(move |_: usize| {
+        *switcher_callback.borrow_mut() = Some(Closure::new(move |_: f64| {
             let poll = demo_ref.borrow_mut().poll_switching_graphics_level(webgpu_ref.as_ref());
             match poll {
                 Ok(std::task::Poll::Pending) => {
@@ -216,7 +215,7 @@ impl WasmInterface {
             js_interop::request_animation_frame(&js_interop::window(), &finish);
         });
         // request to advance the loading proecess once per frame
-        *loader_callback.borrow_mut() = Some(Closure::new(move |_: usize| {
+        *loader_callback.borrow_mut() = Some(Closure::new(move |_| {
             if let Ok(mut loading_process_ref) = pending_loading_demo_ref.try_borrow_mut() {
                 if let Some(loading_process) = loading_process_ref.as_mut() {
                     match loading_process.as_mut().simple_poll(/*cx*/&mut ()) {
@@ -254,7 +253,7 @@ impl WasmInterface {
         // engine callback will schedule timeout callback (to limit fps)
         // timeout callback will schedule engine callback (to render the next frame)
         let engine_tick = Rc::new(RefCell::new(None));
-        let engine_first_tick = engine_tick.clone(); // to have a separate object, which is not owned by tick closure
+        let engine_tick2 = engine_tick.clone(); // to have a separate object, which is not owned by tick closure
         let window_timeout = js_interop::window();
         let timeout_tick = Closure::wrap(Box::new(move || {
             js_interop::request_animation_frame(&window_timeout, engine_tick.borrow().as_ref().unwrap());
@@ -265,7 +264,7 @@ impl WasmInterface {
         let demo_state = self.demo_state.clone();
         let demo_clone = self.demo.clone();
         let window_engine = js_interop::window();
-        *engine_first_tick.borrow_mut() = Some(Closure::new(move |timestamp_ms: usize| {
+        *engine_tick2.borrow_mut() = Some(Closure::new(move |timestamp_ms: f64| {
             // engine step
             let webgpu = webgpu.as_ref();
             if let (
@@ -273,9 +272,9 @@ impl WasmInterface {
             ) = (
                 demo_clone.try_borrow_mut(), demo_state.try_borrow_mut(), webgpu.surface.get_current_texture()
             ) {
-                demo_state.begin_frame(timestamp_ms);
+                demo_state.tick(timestamp_ms);
                 demo.tick(&demo_state);
-                match demo.render(webgpu, &surface_texture, demo_state.time_delta_sec) {
+                match demo.render(webgpu, &surface_texture, demo_state.time_delta_sec()) {
                     Ok(_) => {}
                     Err(wgpu::SurfaceError::Lost) => {
                         webgpu_config.try_borrow()
@@ -285,20 +284,20 @@ impl WasmInterface {
                     Err(e) => eprintln!("{:?}", e), // resolved by the next frame
                 }
                 surface_texture.present();
-                demo_state.end_frame();
+                demo_state.dismiss_events();
             }
             {
                 // setTimeout may overshoot the requested timeout, so compensate it by requesting less 
-                const TIMEOUT_CORRECTION_FACTOR: f32 = 0.85;
+                const TIMEOUT_CORRECTION_FACTOR: f64 = 0.85;
                 let ds = demo_state.borrow();
-                let mut request_timeout = ds.time_delta_limit_ms - ds.time_delta_ms as i32;
-                request_timeout = (TIMEOUT_CORRECTION_FACTOR * (request_timeout as f32)) as i32;
-                js_interop::set_frame_timeout(&window_engine, &timeout_tick, request_timeout);
+                let mut request_timeout = ds.time_delta_limit_ms - ds.time_delta_ms;
+                request_timeout = TIMEOUT_CORRECTION_FACTOR * request_timeout;
+                js_interop::set_frame_timeout(&window_engine, &timeout_tick, request_timeout.round() as i32);
             }
         }));
 
         let window_first_tick = js_interop::window();
-        js_interop::request_animation_frame(&window_first_tick, engine_first_tick.borrow().as_ref().unwrap());
+        js_interop::request_animation_frame(&window_first_tick, engine_tick2.borrow().as_ref().unwrap());
         Ok(())
     }
 }
@@ -307,7 +306,7 @@ fn configure_mousemove(canvas: &web_sys::HtmlCanvasElement, mouse_state: Rc<Cell
     let closure = Closure::<dyn FnMut(_)>::new(move |event: web_sys::MouseEvent| {
         let current_state = mouse_state.get();
         mouse_state.set(MouseState {
-            canvas_position: (event.offset_x(), event.offset_y()), // NOTE: origin at top-left
+            canvas_position_px: (event.offset_x(), event.offset_y()), // NOTE: origin at top-left
             ..current_state
         });
     });

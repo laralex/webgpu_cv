@@ -21,7 +21,7 @@ pub fn window() -> web_sys::Window {
     web_sys::window().expect("no global `window` exists")
 }
 
-pub fn request_animation_frame(window: &web_sys::Window, f: &Closure<dyn FnMut(usize)>) {
+pub fn request_animation_frame(window: &web_sys::Window, f: &Closure<dyn FnMut(f64)>) {
     window
         .request_animation_frame(f.as_ref().unchecked_ref())
         .expect("must've registered `requestAnimationFrame`");

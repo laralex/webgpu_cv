@@ -16,7 +16,7 @@ impl Dispose for Demo {
 impl IDemo for Demo {
    fn tick(&mut self, _input: &ExternalState) { }
 
-   fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, _delta_sec: f32) -> Result<(), wgpu::SurfaceError> {
+   fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, _delta_sec: f64) -> Result<(), wgpu::SurfaceError> {
       let view = WebgpuUtils::surface_view(backbuffer);
       let mut encoder = webgpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
          label: Some("Render Encoder"),

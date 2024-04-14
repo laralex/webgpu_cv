@@ -239,13 +239,13 @@ struct DemoUniformData {
 
 impl IDemo for Demo {
    fn tick(&mut self, input: &ExternalState) {
-      self.fractal_uniform_data.fractal_zoom -= self.fractal_uniform_data.fractal_zoom * 0.25 * input.time_delta_sec;
-      self.demo_uniform_data.aspect_ratio = input.aspect_ratio;
+      self.fractal_uniform_data.fractal_zoom -= self.fractal_uniform_data.fractal_zoom * 0.25 * input.time_delta_sec() as f32;
+      self.demo_uniform_data.aspect_ratio = input.aspect_ratio();
       self.demo_uniform_data.mouse_position = input.mouse_unit_position().into();
       self.demo_uniform_data.is_debug = input.debug_mode.map_or(0.0, f32::from);
    }
 
-   fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, _delta_sec: f32) -> Result<(), wgpu::SurfaceError> {
+   fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, _delta_sec: f64) -> Result<(), wgpu::SurfaceError> {
       let view = WebgpuUtils::surface_view(backbuffer);
       let mut encoder = webgpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
          label: Some("Render Encoder"),

@@ -41,12 +41,12 @@ export const BUILD_DATA = {
 // };
 
 // import mywasm from 'my-wasm';
-// import init, { wasm_loop, wasm_resize, wasm_startup, wasm_set_fps_limit, wasm_set_graphics_level } from '/wasm/index.js';
+// import init, { renderLoop, resize, wasm_startup, setFpsLimit, setGraphicsLevel } from '/wasm/index.js';
 import init, { WasmInterface, GraphicsLevel } from '/wasm/index.js';
 import { UI_STRINGS, CURRENT_LANGUAGE, localizeString, localizeUi, localizeUiPostprocess } from '/modules/localization.js';
 import { Util } from '/modules/util.js';
 import { CvContent, DemoDescription, getDemoId } from '/modules/cv.js';
-import { CURRENT_DEMO_LOADING_PROGRESS, CURRENT_GRAPHICS_SWITCHING_PROGRESS } from '/modules/exports_to_wasm.js';
+import { CURRENT_DEMO_LOADING_PROGRESS, CURRENT_GRAPHICS_SWITCHING_PROGRESS, demo_loading_apply_progress, demo_loading_finish } from '/modules/exports_to_wasm.js';
 
 function dumpCvCookies() {
    Util.setCookie('mainChapter', CURRENT_CV_PAGE[0].val);
@@ -198,7 +198,7 @@ function FpsLimitPicker(currentLimit) {
       var newLimit = currentLimit.val;
       if (WASM_INSTANCE) {
          console.log("new fps", newLimit);
-         WASM_INSTANCE.wasm_set_fps_limit(newLimit);
+         WASM_INSTANCE.setFpsLimit(newLimit);
       }
    })
    return () => div(
@@ -271,7 +271,7 @@ function GraphicsLevelPicker(currentGraphicsLevel, isVertical) {
    van.derive(() => {
       console.log("Set graphics_level="+currentGraphicsLevel.val)
       if (WASM_INSTANCE) {
-         WASM_INSTANCE.wasm_set_graphics_level(currentGraphicsLevel.val)
+         WASM_INSTANCE.setGraphicsLevel(currentGraphicsLevel.val)
       }
    });
    const labelBefore = isVertical ? span(localizeUi('graphics_levels')) : null;
@@ -657,7 +657,7 @@ function getCanvasConvigurationFunc(canvas_id) {
       console.log(canvas.width, canvas.height);
       if (WASM_INSTANCE) {
          let gl = canvas.getContext("webgl2");
-         WASM_INSTANCE.wasm_resize(canvas.width, canvas.height);
+         WASM_INSTANCE.resize(canvas.width, canvas.height);
       }
    }
    document.addEventListener("visibilitychange", resizeCanvas, false);
@@ -767,7 +767,7 @@ window.onload = function() {
       const demoId = getDemoId(CURRENT_CV_PAGE[1].val);
       if (WASM_INSTANCE) {
          console.log("Start switching demo", demoId);
-         WASM_INSTANCE.wasm_start_loading_demo(demoId);
+         WASM_INSTANCE.startLoadingDemo(demoId);
       }
    })
    configureFromFont(CURRENT_FONT_FAMILY.val, CURRENT_LANGUAGE.val); // other elements' relative sizes depend on this configuration
@@ -864,14 +864,18 @@ window.onload = function() {
       // default export to inform it where the wasm file is located on the
       // server, and then we wait on the returned promise to wait for the
       // wasm to be loaded.
+      demo_loading_apply_progress(0.0);
       await init('./wasm/index_bg.wasm');
 
       // And afterwards we can use all the functionality defined in wasm.
+      demo_loading_apply_progress(0.1);
       WASM_INSTANCE = await new WasmInterface(CANVAS_ID);
+      demo_loading_apply_progress(0.5);
       configureCanvas();
-      WASM_INSTANCE.wasm_set_fps_limit(CURRENT_FPS_LIMIT.val);
-      WASM_INSTANCE.wasm_set_graphics_level(CURRENT_GRAPHICS_LEVEL.val);
-      WASM_INSTANCE.wasm_start_loading_demo(getDemoId(CURRENT_CV_PAGE[1].val));
-      WASM_INSTANCE.wasm_loop();
+      WASM_INSTANCE.setFpsLimit(CURRENT_FPS_LIMIT.val);
+      WASM_INSTANCE.setGraphicsLevel(CURRENT_GRAPHICS_LEVEL.val);
+      WASM_INSTANCE.startLoadingDemo(getDemoId(CURRENT_CV_PAGE[1].val));
+      demo_loading_finish();
+      WASM_INSTANCE.renderLoop();
    })();
 }

@@ -76,13 +76,15 @@ impl WasmInterface {
         console_error_panic_hook::set_once();
         js_interop::js_log!("WASM Startup");
 
+        demo_loading_apply_progress(0.1);
         let document = web_sys::window().unwrap().document().unwrap();
         let canvas = document.get_element_by_id(canvas_dom_id).unwrap();
         let canvas = canvas.dyn_into::<web_sys::HtmlCanvasElement>()?;
         let demo_state = Rc::new(RefCell::new(renderer::ExternalState::default()));
         let pending_loading_demo = Rc::new(RefCell::new(None));
         let demo_id = Rc::new(RefCell::new(DemoId::Stub));
-
+        demo_loading_apply_progress(0.4);
+        
         {
             // callbacks wired with JS canvas
             let mut demo_state_mut = demo_state.borrow_mut();
@@ -92,7 +94,9 @@ impl WasmInterface {
             configure_mousemove(&canvas, demo_state_mut.mouse.clone())?;
         }
 
+        demo_loading_apply_progress(0.6);
         let (webgpu, webgpu_config) = Webgpu::new(canvas).await;
+        demo_loading_finish();
 
         Ok(Self {
             webgpu: Rc::new(webgpu),
@@ -104,7 +108,7 @@ impl WasmInterface {
         })
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = getFrameIdx)]
     pub fn wasm_get_frame_idx(&self) -> usize {
         match self.demo_state.try_borrow() {
             Ok(state) => state.frame_idx,
@@ -112,7 +116,7 @@ impl WasmInterface {
         }
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = resize)]
     pub fn wasm_resize(&mut self, width: u32, height: u32) {
         if let Ok(mut state) = self.demo_state.try_borrow_mut() {
             state.screen_size = (width, height);
@@ -125,14 +129,14 @@ impl WasmInterface {
         }
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = setFpsLimit)]
     pub fn wasm_set_fps_limit(&mut self, fps_limit: i32) {
         if let Ok(mut state) = self.demo_state.try_borrow_mut() {
             state.time_delta_limit_ms = 1_000 / fps_limit;
         }
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = setGraphicsLevel)]
     pub fn wasm_set_graphics_level(&mut self, level: GraphicsLevel) {
         // NOTE: If the request to switch graphics level is issued,
         // prior to completion of loading of a new demo,
@@ -173,7 +177,7 @@ impl WasmInterface {
         js_interop::request_animation_frame(&js_interop::window(), switcher_callback.borrow().as_ref().unwrap());
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = startLoadingDemo)]
     pub fn wasm_start_loading_demo(&mut self, demo_id: DemoId) {
         let loader_callback = Rc::new(RefCell::new(None));
         let loader_callback2 = loader_callback.clone();
@@ -242,7 +246,7 @@ impl WasmInterface {
         js_interop::request_animation_frame(&js_interop::window(), loader_callback.borrow().as_ref().unwrap());
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = renderLoop)]
     pub fn wasm_loop(&mut self) -> Result<(), JsValue> {
         // engine callback will schedule timeout callback (to limit fps)
         // timeout callback will schedule engine callback (to render the next frame)

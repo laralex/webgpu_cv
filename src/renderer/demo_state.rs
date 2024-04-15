@@ -16,6 +16,9 @@ pub struct KeyboardState {
    pub m: f32,
    pub comma: f32,
    pub dot: f32,
+   pub shift: bool,
+   pub alt: bool,
+   pub ctrl: bool,
 }
 
 #[derive(Clone, Default)]
@@ -220,7 +223,7 @@ impl DemoHistoryPlayback {
    pub fn is_playing_back(&self) -> bool { self.frame_lock_timestamp_ms.is_some() }
    pub fn playback_timestamp_ms(&self) -> Option<f64> { self.frame_lock_timestamp_ms }
 
-   pub fn toggle_frame_lock(&mut self, demo_state: &mut ExternalState, lock_at_timestamp_ms: f64) -> bool {
+   pub fn toggle_frame_lock(&mut self, lock_at_timestamp_ms: f64) -> bool {
       if self.frame_lock_timestamp_ms.is_none() {
          // entering frame lock mode - remember current time, and don't advance it
          self.frame_lock_timestamp_ms = Some(lock_at_timestamp_ms);
@@ -230,8 +233,6 @@ impl DemoHistoryPlayback {
      } else {
          // exiting frame lock mode - set current time to the previous real time (which advanced even in lock)
          self.frame_lock_timestamp_ms.take();
-         let frame_idx = 0;
-         demo_state.override_time(lock_at_timestamp_ms, frame_idx);
          web_sys::console::log_1(&"Frame lock mode OFF".into());
          false
      }

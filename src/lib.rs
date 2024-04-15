@@ -42,6 +42,8 @@ pub struct WasmInterface {
     pending_loading_demo: Rc<RefCell<Option<Pin<Box<dyn DemoLoadingFuture>>>>>,
     // canvas: Option<web_sys::HtmlCanvasElement>,
     // gl: Rc<web_sys::WebGl2RenderingContext>,
+    // demo_state_history: Rc<RefCell<renderer::DemoStateHistory>>, //::new();
+    // demo_history_playback: Rc<RefCell<renderer::DemoHistoryPlayback>>, //::new();
 }
 
 #[wasm_bindgen]
@@ -109,6 +111,8 @@ impl WasmInterface {
             demo_state,
             demo_id,
             pending_loading_demo,
+            // demo_state_history: Rc::new(RefCell::new(renderer::DemoStateHistory::new())),
+            // demo_history_playback: Rc::new(RefCell::new(renderer::DemoHistoryPlayback::new())),
         })
     }
 
@@ -258,39 +262,47 @@ impl WasmInterface {
         // timeout callback will schedule engine callback (to render the next frame)
         let engine_tick = Rc::new(RefCell::new(None));
         let engine_tick2 = engine_tick.clone(); // to have a separate object, which is not owned by tick closure
-        let window_timeout = js_interop::window();
+        let window = js_interop::window();
         let timeout_tick = Closure::wrap(Box::new(move || {
-            js_interop::request_animation_frame(&window_timeout, engine_tick.borrow().as_ref().unwrap());
+            js_interop::request_animation_frame(&window, engine_tick.borrow().as_ref().unwrap());
         }) as Box<dyn FnMut()>);
 
         let webgpu = self.webgpu.clone();
         let webgpu_config = self.webgpu_config.clone();
         let demo_state = self.demo_state.clone();
         let demo_clone = self.demo.clone();
-        let window_engine = js_interop::window();
-        let mut previous_timestamp_ms = 0.0;
+        // let demo_state_history = self.demo_state_history.clone();
+        // let demo_history_playback = self.demo_history_playback.clone();
         let mut demo_state_history = renderer::DemoStateHistory::new();
         let mut demo_history_playback = renderer::DemoHistoryPlayback::new();
-        *engine_tick2.borrow_mut() = Some(Closure::new(move |timestamp_ms: f64| {
+        let window = js_interop::window();
+        let mut previous_timestamp_ms = 0.0;
+        *engine_tick2.borrow_mut() = Some(Closure::new(move |now_timestamp_ms: f64| {
             // engine step
             let webgpu = webgpu.as_ref();
             if let (
-                Ok(mut demo), Ok(mut demo_state), Ok(surface_texture)
+                Ok(mut demo), Ok(mut demo_state), Ok(surface_texture),
+                // Ok(mut demo_state_history), Ok(mut demo_history_playback),
             ) = (
-                demo_clone.try_borrow_mut(), demo_state.try_borrow_mut(), webgpu.surface.get_current_texture()
+                demo_clone.try_borrow_mut(), demo_state.try_borrow_mut(), webgpu.surface.get_current_texture(),
+                // demo_state_history.try_borrow_mut(), demo_history_playback.try_borrow_mut(),
             ) {
-                if demo_state.keyboard.get().m < 0.0 {
-                    demo_history_playback.toggle_frame_lock(&mut demo_state, previous_timestamp_ms);
-                }
-                if demo_state.keyboard.get().comma > 0.0 {
-                    demo_history_playback.advance_back(&demo_state_history);
-                }
-                if demo_state.keyboard.get().dot > 0.0 {
-                    demo_history_playback.advance_forward(&demo_state_history);
-                }
-                let tick_timestamp_ms = demo_history_playback.playback_timestamp_ms().unwrap_or(timestamp_ms);
+                let keyboard = demo_state.keyboard.get();
+                let frame_state = FrameStateRef {
+                    demo_state_history: &mut demo_state_history,
+                    demo_history_playback: &mut demo_history_playback,
+                    demo_state: &mut demo_state,
+                    previous_timestamp_ms,
+                    now_timestamp_ms,
+                };
+                handle_keyboard(keyboard, frame_state);
+
+                // engine tick
+                let tick_timestamp_ms = demo_history_playback.playback_timestamp_ms().unwrap_or(now_timestamp_ms);
                 demo_state.tick(tick_timestamp_ms);
                 demo.tick(&demo_state);
+                
+                // engine render
                 match demo.render(webgpu, &surface_texture, demo_state.time_delta_sec()) {
                     Ok(_) => {}
                     Err(wgpu::SurfaceError::Lost) => {
@@ -300,6 +312,8 @@ impl WasmInterface {
                     Err(wgpu::SurfaceError::OutOfMemory) => return, // just quit rendering
                     Err(e) => eprintln!("{:?}", e), // resolved by the next frame
                 }
+
+                // swap buffers
                 surface_texture.present();
                 demo_state.dismiss_events();
             }
@@ -309,17 +323,41 @@ impl WasmInterface {
                 let ds = demo_state.borrow();
                 let mut request_timeout = ds.time_delta_limit_ms - ds.time_delta_ms;
                 request_timeout = TIMEOUT_CORRECTION_FACTOR * request_timeout;
-                js_interop::set_frame_timeout(&window_engine, &timeout_tick, request_timeout.round() as i32);
+                js_interop::set_frame_timeout(&window, &timeout_tick, request_timeout.round() as i32);
             }
-            previous_timestamp_ms = timestamp_ms;
+            previous_timestamp_ms = now_timestamp_ms;
             if !demo_history_playback.is_playing_back() {
                 demo_state_history.store_state((*demo_state.borrow()).data());
             }
         }));
 
-        let window_first_tick = js_interop::window();
-        js_interop::request_animation_frame(&window_first_tick, engine_tick2.borrow().as_ref().unwrap());
+        let window = js_interop::window();
+        js_interop::request_animation_frame(&window, engine_tick2.borrow().as_ref().unwrap());
         Ok(())
+    }
+}
+
+struct FrameStateRef<'a> {
+    demo_state_history: &'a mut renderer::DemoStateHistory,
+    demo_history_playback: &'a mut renderer::DemoHistoryPlayback,
+    demo_state: &'a mut renderer::ExternalState,
+    previous_timestamp_ms: f64,
+    now_timestamp_ms: f64,
+}
+
+fn handle_keyboard<'a>(keyboard: KeyboardState, state: FrameStateRef<'a>) {
+    if keyboard.m < 0.0 {
+        if state.demo_history_playback.toggle_frame_lock(state.previous_timestamp_ms) == false {
+            // canceling frame lock, resume time
+            let frame_idx = 0;
+            state.demo_state.override_time(state.previous_timestamp_ms, frame_idx);
+        }
+    }
+    if keyboard.comma < 0.0 || keyboard.comma > 0.0 && keyboard.shift {
+        state.demo_history_playback.advance_back(&state.demo_state_history);
+    }
+    if keyboard.dot < 0.0 || keyboard.dot > 0.0 && keyboard.shift {
+        state.demo_history_playback.advance_forward(&state.demo_state_history);
     }
 }
 
@@ -327,12 +365,21 @@ fn configure_keydown(keyboard_state: Rc<Cell<renderer::KeyboardState>>) -> Resul
     let closure = Closure::<dyn FnMut(_)>::new(move |event: web_sys::KeyboardEvent| {
         let current_state = keyboard_state.get(); // TODO: replace Cell with RefCell
         // web_sys::console::log_2(&"Keycode".into(), &event.key_code().into());
+        if (event.default_prevented()) {
+            return; // Do nothing if the event was already processed
+        }
+        let mut current_state = keyboard_state.get();
         match event.key_code() {
-            77 => keyboard_state.set(KeyboardState { m: 1.0, ..current_state }),
-            188 => keyboard_state.set(KeyboardState { comma: 1.0, ..current_state }),
-            190 => keyboard_state.set(KeyboardState { dot: 1.0, ..current_state }),
+            77 => current_state.m = 1.0,
+            188 => current_state.comma = 1.0,
+            190 => current_state.dot = 1.0,
             _ => {},
         }
+        current_state.shift = event.shift_key();
+        current_state.ctrl = event.ctrl_key();
+        current_state.alt = event.alt_key();
+        keyboard_state.set(current_state);
+        event.prevent_default();
     });
     js_interop::document().add_event_listener_with_callback("keydown", closure.as_ref().unchecked_ref())?;
     closure.forget();
@@ -341,13 +388,21 @@ fn configure_keydown(keyboard_state: Rc<Cell<renderer::KeyboardState>>) -> Resul
 
 fn configure_keyup(keyboard_state: Rc<Cell<renderer::KeyboardState>>) -> Result<(), JsValue> {
     let closure = Closure::<dyn FnMut(_)>::new(move |event: web_sys::KeyboardEvent| {
-        let current_state = keyboard_state.get();
+        if (event.default_prevented()) {
+            return; // Do nothing if the event was already processed
+        }
+        let mut current_state = keyboard_state.get();
         match event.key_code() {
-            77 => keyboard_state.set(KeyboardState { m: -1.0, ..current_state }),
-            188 => keyboard_state.set(KeyboardState { comma: -1.0, ..current_state }),
-            190 => keyboard_state.set(KeyboardState { dot: -1.0, ..current_state }),
+            77 => current_state.m = -1.0,
+            188 => current_state.comma = -1.0,
+            190 => current_state.dot = -1.0,
             _ => {},
         }
+        current_state.shift = event.shift_key();
+        current_state.ctrl = event.ctrl_key();
+        current_state.alt = event.alt_key();
+        keyboard_state.set(current_state);
+        event.prevent_default();
     });
     js_interop::document().add_event_listener_with_callback("keyup", closure.as_ref().unchecked_ref())?;
     closure.forget();

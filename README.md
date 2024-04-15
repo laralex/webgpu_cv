@@ -11,8 +11,6 @@ Known issues:
    - dynamic resolution confgurable per demo / pixel budget of the screen
    - demo panic - progress bar gets stuck
    - debug render mode (maybe visualize demo state in JS)
-   - freeze at some frame (some demo state)
-   - progress frame by frame
 - Demos:
    - frame prediction
    - fractal with high precision (perturbation)

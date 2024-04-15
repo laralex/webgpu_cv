@@ -44,7 +44,7 @@ wasm: cargo
 
 .PHONY: wasm_ci
 wasm_ci: CARGO_FLAGS += --jobs ${MAX_THREADS}
-wasm_ci: cargo
+wasm_ci: wasm
 
 .PHONY: wasm_opt
 wasm_opt:

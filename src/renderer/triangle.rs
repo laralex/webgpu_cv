@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use wgpu::SurfaceTexture;
 
-use crate::renderer::webgpu_utils::WebgpuUtils;
+use crate::renderer::webgpu::Utils;
 
 use super::{DemoLoadingFuture, Dispose, ExternalState, GraphicsLevel, IDemo, Progress, SimpleFuture, Webgpu};
 
@@ -70,8 +70,8 @@ impl SimpleFuture for DemoLoadingProcess {
          CompileShaders => {
             
             let device = &self.webgpu.as_ref().device;
-            let vertex_shader = WebgpuUtils::make_vertex_shader(device, VERTEX_SHADER_SRC);
-            let fragment_shader = WebgpuUtils::make_fragment_shader(device, FRAGMENT_SHADER_SRC);
+            let vertex_shader = Utils::make_vertex_shader(device, VERTEX_SHADER_SRC);
+            let fragment_shader = Utils::make_fragment_shader(device, FRAGMENT_SHADER_SRC);
             std::mem::drop(device);
             self.vertex_shader = Some(vertex_shader);
             self.fragment_shader = Some(fragment_shader);
@@ -106,7 +106,7 @@ impl SimpleFuture for DemoLoadingProcess {
                         write_mask: wgpu::ColorWrites::ALL,
                      })],
                }),
-               primitive: WebgpuUtils::default_primitive_state(),
+               primitive: Utils::default_primitive_state(),
                depth_stencil: None, // 1.
                multisample: wgpu::MultisampleState {
                   count: 1,
@@ -203,7 +203,7 @@ impl IDemo for Demo {
    }
 
    fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, _delta_sec: f64) -> Result<(), wgpu::SurfaceError> {
-      let view = WebgpuUtils::surface_view(backbuffer);
+      let view = Utils::surface_view(backbuffer);
       let mut encoder = webgpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
          label: Some("Render Encoder"),
       });
@@ -317,8 +317,8 @@ mod tests {
     fn shaders_compile() {
         let (device, _) = futures::executor::block_on(Webgpu::new_offscreen());
       //   let result = std::panic::catch_unwind(||
-        WebgpuUtils::make_vertex_shader(&device, VERTEX_SHADER_SRC);
-        WebgpuUtils::make_fragment_shader(&device, FRAGMENT_SHADER_SRC);
+        Utils::make_vertex_shader(&device, VERTEX_SHADER_SRC);
+        Utils::make_fragment_shader(&device, FRAGMENT_SHADER_SRC);
     }
 
     #[test]

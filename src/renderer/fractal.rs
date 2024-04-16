@@ -2,19 +2,21 @@ use std::rc::Rc;
 use wgpu::{ShaderStages, SurfaceTexture};
 use bytemuck;
 
-use crate::renderer::webgpu_utils::WebgpuUtils;
+use crate::renderer::webgpu::Utils;
 use crate::GraphicsLevel;
 
-use super::{webgpu_utils::{PipelineLayoutBuilder, PushConstantsCompatibility, UniformGroup}, DemoLoadingFuture, Dispose, ExternalState, IDemo, Progress, SimpleFuture, Webgpu};
+use super::webgpu::utils::PipelineLayoutBuilder;
+use super::webgpu::uniform::{PushConstantsCompatibility, UniformGroup};
+use super::{DemoLoadingFuture, Dispose, ExternalState, IDemo, Progress, SimpleFuture, Webgpu};
 
 const VERTEX_SHADER_SRC:   &str = include_str!("shaders/triangle_fullscreen.vs.wgsl");
 const FRAGMENT_SHADER_SRC: &str = include_str!("shaders/mandelbrot.fs.wgsl");
-// const FRAGMENT_SHADER_SRC: &str = include_str!("shaders/uv.fs.wgsl");
+const FRAGMENT_SHADER_AA_SRC: &str = include_str!("shaders/mandelbrot_aa.fs.wgsl");
 
 #[derive(Default)]
 enum DemoLoadingStage {
    Ready = 0,
-   #[default] CompileShaders,
+   #[default] CreateShaders,
    CreatePipelines,
    CreateUniforms,
    StartSwitchingGraphicsLevel,
@@ -26,9 +28,10 @@ struct DemoLoadingProcess {
    stage_percent: f32,
    graphics_level: GraphicsLevel,
    color_target_format: wgpu::TextureFormat,
-   render_pipeline: Option<wgpu::RenderPipeline>,
+   render_pipelines: Option<FractalRenderPipelines>,
    vertex_shader: Option<wgpu::ShaderModule>,
-   fragment_shader: Option<wgpu::ShaderModule>,
+   fragment_shader_default: Option<wgpu::ShaderModule>,
+   fragment_shader_antialiasing: Option<wgpu::ShaderModule>,
    fractal_uniform: Option<PushConstantsCompatibility>,
    demo_uniform: Option<PushConstantsCompatibility>,
    webgpu: Rc<Webgpu>,
@@ -44,9 +47,10 @@ impl Dispose for DemoLoadingProcess {
          },
          _ => {
             self.fractal_uniform.take();
-            self.render_pipeline.take();
+            self.render_pipelines.take();
             self.vertex_shader.take();
-            self.fragment_shader.take();
+            self.fragment_shader_default.take();
+            self.fragment_shader_antialiasing.take();
             self.stage = DemoLoadingStage::Ready;
             self.loaded_demo.take();
             web_sys::console::log_3(&"Rust loading drop".into(), &std::module_path!().into(), &self.stage_percent.into());
@@ -74,7 +78,7 @@ impl SimpleFuture for DemoLoadingProcess {
    fn simple_poll(mut self: std::pin::Pin<&mut Self>, _cx: &mut Self::Context) -> std::task::Poll<Self::Output> {
       use DemoLoadingStage::*;
       match self.stage {
-         CompileShaders => {
+         CreateShaders => {
             self.compile_shaders();
             self.stage_percent += 0.1;
             self.stage = CreateUniforms;
@@ -129,23 +133,25 @@ impl DemoLoadingFuture for DemoLoadingProcess {}
 impl DemoLoadingProcess {
    fn compile_shaders(&mut self) {
       let device = &self.webgpu.as_ref().device;
-      let vertex_shader = WebgpuUtils::make_vertex_shader(device, VERTEX_SHADER_SRC);
-      let fragment_shader = WebgpuUtils::make_fragment_shader(device, FRAGMENT_SHADER_SRC);
+      let vertex_shader = Utils::make_vertex_shader(device, VERTEX_SHADER_SRC);
+      let fragment_shader_default = Utils::make_fragment_shader(device, FRAGMENT_SHADER_SRC);
+      let fragment_shader_antialiasing = Utils::make_fragment_shader(device, FRAGMENT_SHADER_AA_SRC);
       std::mem::drop(device);
       self.vertex_shader = Some(vertex_shader);
-      self.fragment_shader = Some(fragment_shader);
+      self.fragment_shader_default = Some(fragment_shader_default);
+      self.fragment_shader_antialiasing = Some(fragment_shader_antialiasing);
    }
 
    fn create_uniforms(&mut self) {
       const DEMO_UNIFORM_BIND_GROUP: u32 = 0;
       const FRACTAL_BIND_GROUP_INDEX: u32 = 1;
 
-      self.demo_uniform = Some(WebgpuUtils::make_compatible_push_constant::<DemoUniformData>(
+      self.demo_uniform = Some(Utils::make_compatible_push_constant::<DemoUniformData>(
          &self.webgpu.device,  wgpu::ShaderStages::FRAGMENT,
          DEMO_UNIFORM_BIND_GROUP)
       );
 
-      self.fractal_uniform = Some(WebgpuUtils::make_compatible_push_constant::<FractalUniformData>(
+      self.fractal_uniform = Some(Utils::make_compatible_push_constant::<FractalUniformData>(
          &self.webgpu.device,  wgpu::ShaderStages::FRAGMENT,
          FRACTAL_BIND_GROUP_INDEX)
       );
@@ -157,18 +163,25 @@ impl DemoLoadingProcess {
          .with(self.fractal_uniform.as_ref().unwrap())
          .build(&self.webgpu.device, Some("Render Pipeline Layout"));
       let vs = self.vertex_shader.take().unwrap();
-      let fs = self.fragment_shader.take().unwrap();
-      self.render_pipeline = Some(
-         self.webgpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-         label: Some("Render Pipeline"),
-         layout: Some(&render_pipeline_layout),
+      let fs = self.fragment_shader_default.take().unwrap();
+      let fs_aa = self.fragment_shader_antialiasing.take().unwrap();
+      self.render_pipelines = Some(FractalRenderPipelines{
+         default: self.create_render_pipeline("Render Pipeline - Default", &render_pipeline_layout, &vs, &fs),
+         antiialiasing: self.create_render_pipeline("Render Pipeline - AA", &render_pipeline_layout, &vs, &fs_aa),
+      })
+   }
+
+   fn create_render_pipeline(&self, label: &str, layout: &wgpu::PipelineLayout, vs: &wgpu::ShaderModule, fs: &wgpu::ShaderModule) -> wgpu::RenderPipeline {
+      self.webgpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+         label: Some(label),
+         layout: Some(&layout),
          vertex: wgpu::VertexState {
-               module: &vs,
+               module: vs,
                entry_point: "vs_main",
                buffers: &[],
          },
          fragment: Some(wgpu::FragmentState {
-               module: &fs,
+               module: fs,
                entry_point: "fs_main",
                targets: &[Some(wgpu::ColorTargetState {
                   format: self.color_target_format,
@@ -176,7 +189,7 @@ impl DemoLoadingProcess {
                   write_mask: wgpu::ColorWrites::ALL,
                })],
          }),
-         primitive: WebgpuUtils::default_primitive_state(),
+         primitive: Utils::default_primitive_state(),
          depth_stencil: None, // 1.
          multisample: wgpu::MultisampleState {
             count: 1,
@@ -184,12 +197,13 @@ impl DemoLoadingProcess {
             alpha_to_coverage_enabled: false,
          },
          multiview: None,
-      }));
+      })
    }
 
    fn switch_graphics_level(&mut self) {
       self.loaded_demo = Some(Demo {
-         render_pipeline: self.render_pipeline.take().unwrap(),
+         render_pipelines: self.render_pipelines.take().unwrap(),
+         use_antialiasing: false,
          num_rendered_vertices: 3,
          pending_graphics_level_switch: None,
          fractal_uniform_data: FractalUniformData {
@@ -211,8 +225,13 @@ impl DemoLoadingProcess {
    }
 }
 
+struct FractalRenderPipelines {
+   default: wgpu::RenderPipeline,
+   antiialiasing: wgpu::RenderPipeline
+}
 pub struct Demo {
-   render_pipeline: wgpu::RenderPipeline,
+   render_pipelines: FractalRenderPipelines,
+   use_antialiasing: bool,
    num_rendered_vertices: i32,
    pending_graphics_level_switch: Option<GraphicsSwitchingProcess>,
    fractal_uniform_data: FractalUniformData,
@@ -239,7 +258,6 @@ struct DemoUniformData {
 
 impl IDemo for Demo {
    fn tick(&mut self, input: &ExternalState) {
-      web_sys::console::log_2(&"^^".into(), &input.time_delta_sec().into());
       self.fractal_uniform_data.fractal_zoom -= self.fractal_uniform_data.fractal_zoom * 0.25 * input.time_delta_sec() as f32;
       self.demo_uniform_data.aspect_ratio = input.aspect_ratio();
       self.demo_uniform_data.mouse_position = input.mouse_unit_position().into();
@@ -247,11 +265,10 @@ impl IDemo for Demo {
    }
 
    fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, _delta_sec: f64) -> Result<(), wgpu::SurfaceError> {
-      let view = WebgpuUtils::surface_view(backbuffer);
-      let mut encoder = webgpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-         label: Some("Render Encoder"),
-      });
-      
+      let view = Utils::surface_view(backbuffer);
+      let mut encoder = webgpu.device.create_command_encoder(
+         &wgpu::CommandEncoderDescriptor { label: Some("Render Encoder"), });
+
       {
          let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                label: Some("Render Pass"),
@@ -268,10 +285,12 @@ impl IDemo for Demo {
                timestamp_writes: None,
          });
 
-         render_pass.set_pipeline(&self.render_pipeline);
-         WebgpuUtils::bind_compatible_push_constant(&mut render_pass, &webgpu.queue,
+         render_pass.set_pipeline(
+            if self.use_antialiasing { &self.render_pipelines.antiialiasing }
+            else { &self.render_pipelines.default });
+         Utils::bind_compatible_push_constant(&mut render_pass, &webgpu.queue,
             &self.fractal_uniform, bytemuck::cast_slice(&[self.fractal_uniform_data]));
-         WebgpuUtils::bind_compatible_push_constant(&mut render_pass, &webgpu.queue,
+         Utils::bind_compatible_push_constant(&mut render_pass, &webgpu.queue,
             &self.demo_uniform, bytemuck::cast_slice(&[self.demo_uniform_data]));
          render_pass.draw(0..3, 0..1); // self.num_rendered>vertices
       }
@@ -291,32 +310,26 @@ impl IDemo for Demo {
    }
 
    fn poll_switching_graphics_level(&mut self, webgpu: &Webgpu) -> Result<std::task::Poll<()>, wgpu::SurfaceError> {
-      if self.pending_graphics_level_switch.is_some() {
-         Ok(GraphicsSwitchingProcess::poll(self, webgpu))
-      } else {
-         self.pending_graphics_level_switch.take();
-         Ok(std::task::Poll::Ready(()))
+      match self.pending_graphics_level_switch {
+         Some(_) => Ok(GraphicsSwitchingProcess::poll(self, webgpu)),
+         _ => Ok(std::task::Poll::Ready(())),
       }
    }
 
    fn progress_switching_graphics_level(&self) -> f32 {
-      self.pending_graphics_level_switch
-         .as_ref()
-         .map(|s| s.progress())
-         .unwrap_or_default()
+      self.pending_graphics_level_switch.as_ref()
+         .map_or(0.0, |s| s.progress())
    }
 
    fn drop_demo(&mut self, webgpu: &Webgpu) {
-      // gl.delete_program(Some(&self.main_program));
-      web_sys::console::log_2(&"Rust demo drop".into(), &std::module_path!().into());
+      web_sys::console::log_2(&"Rust demo drop custom".into(), &std::module_path!().into());
    }
 }
 
 
 impl Drop for Demo {
    fn drop(&mut self) {
-      //std::mem::drop(self.render_pipeline);
-      self.pending_graphics_level_switch.take();
+      web_sys::console::log_2(&"Rust demo drop".into(), &std::module_path!().into());
    }
 }
 
@@ -327,9 +340,10 @@ impl Demo {
          stage_percent: 0.0,
          graphics_level,
          color_target_format,
-         render_pipeline: Default::default(),
+         render_pipelines: Default::default(),
          vertex_shader: Default::default(),
-         fragment_shader: Default::default(),
+         fragment_shader_default: Default::default(),
+         fragment_shader_antialiasing: Default::default(),
          fractal_uniform: Default::default(),
          demo_uniform: Default::default(),
          loaded_demo: Default::default(),
@@ -364,12 +378,12 @@ impl Progress for GraphicsSwitchingProcess {
 impl GraphicsSwitchingProcess {
    pub fn poll(demo: &mut Demo, _webgpu: &Webgpu) -> std::task::Poll<()> {
       let self_ = demo.pending_graphics_level_switch.as_mut().unwrap();
-      demo.fractal_uniform_data.num_iterations = match self_.graphics_level {
-        GraphicsLevel::Minimal => 25,
-        GraphicsLevel::Low => 250,
-        GraphicsLevel::Medium => 500,
-        GraphicsLevel::High => 1000,
-        GraphicsLevel::Ultra => 1500,
+      (demo.fractal_uniform_data.num_iterations, demo.use_antialiasing) = match self_.graphics_level {
+        GraphicsLevel::Minimal => (25, false),
+        GraphicsLevel::Low => (250, false),
+        GraphicsLevel::Medium => (500, true),
+        GraphicsLevel::High => (1000, true),
+        GraphicsLevel::Ultra => (1500, true),
       };
       self_.progress = 1.0;
       std::task::Poll::Ready(())
@@ -385,7 +399,8 @@ mod tests {
     #[test]
     fn shaders_compile() {
         let (device, _) = futures::executor::block_on(Webgpu::new_offscreen());
-        WebgpuUtils::make_vertex_shader(&device, VERTEX_SHADER_SRC);
-        WebgpuUtils::make_fragment_shader(&device, FRAGMENT_SHADER_SRC);
+        Utils::make_vertex_shader(&device, VERTEX_SHADER_SRC);
+        Utils::make_fragment_shader(&device, FRAGMENT_SHADER_SRC);
+        Utils::make_fragment_shader(&device, FRAGMENT_SHADER_AA_SRC);
     }
 }

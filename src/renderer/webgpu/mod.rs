@@ -1,7 +1,10 @@
+pub mod buffer;
+pub mod utils;
+pub use utils::*;
+pub mod draw;
+pub mod uniform;
+
 use web_sys::HtmlCanvasElement;
-
-use super::webgpu_utils::WebgpuUtils;
-
 struct SurfaceView {
    texture: Option<wgpu::SurfaceTexture>,
 }
@@ -37,14 +40,14 @@ impl Webgpu {
       ).await.unwrap();
 
       let mut device_result = adapter.request_device(
-         &WebgpuUtils::default_device_descriptor(),
+         &Utils::default_device_descriptor(),
          None, // Trace path
       ).await;
       if let Err(e) = device_result {
          web_sys::console::log_1(
             &"Failed to request a webgpu device with default features, fallbacking to more compatible features".into());
          device_result = adapter.request_device(
-            &WebgpuUtils::downlevel_device_descriptor(),
+            &Utils::downlevel_device_descriptor(),
             None, // Trace path
          ).await
       }
@@ -87,7 +90,7 @@ impl Webgpu {
          .await
          .unwrap();
       let (device, queue) = adapter
-         .request_device(&WebgpuUtils::default_device_descriptor(), None)
+         .request_device(&Utils::default_device_descriptor(), None)
          .await
          .unwrap();
       (device, queue)

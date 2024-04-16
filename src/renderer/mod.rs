@@ -2,7 +2,6 @@ pub mod stub_demo;
 pub use stub_demo::Demo as StubDemo;
 pub mod webgpu;
 pub use webgpu::Webgpu;
-pub mod webgpu_utils;
 pub mod demo_state;
 pub use demo_state::*;
 mod triangle;

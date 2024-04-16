@@ -1,8 +1,10 @@
 use wgpu::{BindGroupLayout, Device, Surface, SurfaceError, SurfaceTexture, TextureView};
 
-pub struct WebgpuUtils;
+use super::uniform::{PushConstantsCompatibility, UniformGroup};
 
-impl WebgpuUtils {
+pub struct Utils;
+
+impl Utils {
    pub fn surface_view(surface_texture: &SurfaceTexture) -> wgpu::TextureView {
       surface_texture.texture.create_view(
          &wgpu::TextureViewDescriptor::default())
@@ -16,11 +18,11 @@ impl WebgpuUtils {
    }
 
    pub fn make_vertex_shader(device: &Device, shader_code: &str) -> wgpu::ShaderModule {
-      WebgpuUtils::make_shader(device, shader_code, "Vertex Shader")
+      Utils::make_shader(device, shader_code, "Vertex Shader")
    }
 
    pub fn make_fragment_shader(device: &Device, shader_code: &str) -> wgpu::ShaderModule {
-      WebgpuUtils::make_shader(device,  shader_code, "Fragment Shader")
+      Utils::make_shader(device,  shader_code, "Fragment Shader")
    }
 
    pub fn default_primitive_state() -> wgpu::PrimitiveState {
@@ -39,11 +41,11 @@ impl WebgpuUtils {
    }
 
    pub fn default_device_descriptor() -> wgpu::DeviceDescriptor<'static> {
-      WebgpuUtils::make_device_descriptor(wgpu::Features::PUSH_CONSTANTS)
+      Utils::make_device_descriptor(wgpu::Features::PUSH_CONSTANTS)
    }
 
    pub fn downlevel_device_descriptor() -> wgpu::DeviceDescriptor<'static> {
-      WebgpuUtils::make_device_descriptor(wgpu::Features::empty())
+      Utils::make_device_descriptor(wgpu::Features::empty())
    }
 
    pub fn make_device_descriptor(features: wgpu::Features) -> wgpu::DeviceDescriptor<'static> {
@@ -68,7 +70,7 @@ impl WebgpuUtils {
       let num_bytes = std::mem::size_of::<T>() as u32;
       let mut required_limits = device.limits();
       required_limits.max_push_constant_size = num_bytes;
-      if WebgpuUtils::supports_push_constants(&device, 0..num_bytes) {
+      if Utils::supports_push_constants(&device, 0..num_bytes) {
          PushConstantsCompatibility::PushConstant(
             wgpu::PushConstantRange{stages: visibility, range: 0..num_bytes})
       } else {
@@ -92,60 +94,6 @@ impl WebgpuUtils {
    }
 }
 
-pub struct UniformGroup {
-   pub buffer: wgpu::Buffer,
-   pub bind_group: wgpu::BindGroup,
-   pub bind_group_layout: wgpu::BindGroupLayout,
-}
-
-impl UniformGroup {
-   pub fn new(device: &wgpu::Device, visibility: wgpu::ShaderStages, num_bytes: u64) -> Self {
-      let buffer = device.create_buffer(
-         &wgpu::BufferDescriptor {
-             label: Some("uniform_buffer"),
-             size: num_bytes,
-             mapped_at_creation: false,
-             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-         }
-      );
-      let bind_group_layout = device.create_bind_group_layout(
-         &wgpu::BindGroupLayoutDescriptor {
-         label: Some("bind_layout"),
-         entries: &[
-             wgpu::BindGroupLayoutEntry {
-                 binding: 0,
-                 visibility,
-                 ty: wgpu::BindingType::Buffer {
-                     ty: wgpu::BufferBindingType::Uniform,
-                     has_dynamic_offset: false,
-                     min_binding_size: None,
-                 },
-                 count: None,
-             }
-         ],
-      });
-      let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-         label: Some("uniform_bind_group"),
-         layout: &bind_group_layout,
-         entries: &[
-             wgpu::BindGroupEntry {
-                 binding: 0,
-                 resource: buffer.as_entire_binding(),
-             }
-         ],
-      });
-      Self {
-         buffer,
-         bind_group,
-         bind_group_layout,
-      }
-   }
-}
-
-pub enum PushConstantsCompatibility {
-   Uniform(UniformGroup, u32),
-   PushConstant(wgpu::PushConstantRange),
-}
 pub struct PipelineLayoutBuilder<'a> {
    uniform_group_layouts: Vec<&'a wgpu::BindGroupLayout>,
    push_constant_ranges: Vec<wgpu::PushConstantRange>,

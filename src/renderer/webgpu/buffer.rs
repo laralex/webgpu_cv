@@ -1,31 +1,68 @@
 use std::ops::RangeBounds;
 
+use bytemuck::Pod;
 use wgpu::{util::DeviceExt, BufferAddress, VertexAttribute};
+
+pub struct Buffer {
+    pub buffer: wgpu::Buffer,
+}
+
+impl<'a> Buffer {
+    pub fn new(device: &wgpu::Device, size: u64, usage: wgpu::BufferUsages, label: Option<&str>) -> wgpu::Buffer {
+        let mapped_at_creation = false;
+        device.create_buffer(
+            &wgpu::BufferDescriptor { label, mapped_at_creation, size, usage }
+        )
+    }
+
+    pub fn new_init(device: &wgpu::Device, contents: &[u8], usage: wgpu::BufferUsages, label: Option<&str>) -> wgpu::Buffer {
+        let usage = wgpu::BufferUsages::VERTEX.union(usage);
+        device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor { label, contents, usage }
+        )
+    }
+
+    pub fn new_vertex(device: &wgpu::Device, size: u64, usage: wgpu::BufferUsages, label: Option<&str>) -> VertexBuffer {
+        let usage = usage.union(wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST);
+        VertexBuffer{
+            buffer: Self::new(device ,size, usage, label),
+        }
+    }
+
+    pub fn new_vertex_init(device: &wgpu::Device, contents: &[u8], usage: wgpu::BufferUsages, label: Option<&str>) -> VertexBuffer {
+        let usage = usage.union(wgpu::BufferUsages::VERTEX);
+        VertexBuffer{
+            buffer: Self::new_init(device, contents, usage, label),
+        }
+    }
+
+    pub fn new_uniform<T: Sized>(device: &wgpu::Device, usage: wgpu::BufferUsages, label: Option<&str>) -> UniformBuffer {
+        Self::new_uniform_size(device, std::mem::size_of::<T>() as u64, usage, label)
+    }
+
+    pub fn new_uniform_size(device: &wgpu::Device, size: u64, usage: wgpu::BufferUsages, label: Option<&str>) -> UniformBuffer {
+        let usage = usage.union(wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST);
+        UniformBuffer{
+            buffer: Self::new(device, size, usage, label),
+        }
+    }
+
+    pub fn new_uniform_init(device: &wgpu::Device, contents: &[u8], usage: wgpu::BufferUsages, label: Option<&str>) -> UniformBuffer {
+        let usage = usage.union(wgpu::BufferUsages::UNIFORM);
+        UniformBuffer{
+            buffer: Self::new_init(device, contents, usage, label),
+        }
+    }
+
+}
 
 pub struct VertexBuffer {
     pub buffer: wgpu::Buffer,
 }
 
 impl<'a> VertexBuffer {
-    pub fn new(device: &wgpu::Device, size: u64, usage: wgpu::BufferUsages, label: Option<&str>) -> Self {
-        let usage = wgpu::BufferUsages::VERTEX.union(usage);
-        let mapped_at_creation = false;
-        let buffer = device.create_buffer(
-            &wgpu::BufferDescriptor { label, mapped_at_creation, size, usage }
-        );
-        Self {
-            buffer,
-        }
-    }
-
-    pub fn new_init(device: &wgpu::Device, contents: &[u8], usage: wgpu::BufferUsages, label: Option<&str>) -> Self {
-        let usage = wgpu::BufferUsages::VERTEX.union(usage);
-        let buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor { label, contents, usage }
-        );
-        Self {
-            buffer,
-        }
+    pub fn new(buffer: wgpu::Buffer) -> Self {
+        Self { buffer }
     }
 
     pub fn bind(&'a self, render_pass: &mut wgpu::RenderPass<'a>, slot: u32) {
@@ -37,6 +74,18 @@ impl<'a> VertexBuffer {
     }
 }
 
+pub struct UniformBuffer {
+    pub buffer: wgpu::Buffer,
+}
+
+impl UniformBuffer {
+    // pub fn write(&self, queue: &wgpu::Queue, offset: u64, data: &[u8]) {
+    //     queue.write_buffer(&self.buffer, offset, data);
+    // }
+    pub fn write<T>(&self, queue: &wgpu::Queue, offset: u64, data: &[T]) where T:  bytemuck::Pod {
+        queue.write_buffer(&self.buffer, offset, bytemuck::cast_slice(data));
+    }
+}
 pub struct IndexBuffer {
     pub buffer: wgpu::Buffer,
     pub dtype: wgpu::IndexFormat,

@@ -5,8 +5,9 @@ use bytemuck;
 use crate::renderer::webgpu::Utils;
 use crate::GraphicsLevel;
 
+use super::webgpu::buffer::{Buffer, UniformBuffer};
 use super::webgpu::utils::PipelineLayoutBuilder;
-use super::webgpu::uniform::{PushConstantsCompatibility, UniformGroup};
+use super::webgpu::uniform::{BindGroup, BindGroupBuilfer, PushConstantsCompatibility};
 use super::{DemoLoadingFuture, Dispose, ExternalState, IDemo, Progress, SimpleFuture, Webgpu};
 
 const VERTEX_SHADER_SRC:   &str = include_str!("shaders/triangle_fullscreen.vs.wgsl");
@@ -32,8 +33,10 @@ struct DemoLoadingProcess {
    vertex_shader: Option<wgpu::ShaderModule>,
    fragment_shader_default: Option<wgpu::ShaderModule>,
    fragment_shader_antialiasing: Option<wgpu::ShaderModule>,
-   fractal_uniform: Option<PushConstantsCompatibility>,
-   demo_uniform: Option<PushConstantsCompatibility>,
+   fractal_uniform: Option<BindGroup>,
+   fractal_uniform_buffer: Option<UniformBuffer>,
+   demo_uniform: Option<BindGroup>,
+   demo_uniform_buffer: Option<UniformBuffer>,
    webgpu: Rc<Webgpu>,
    loaded_demo: Option<Demo>,
 }
@@ -131,6 +134,8 @@ impl SimpleFuture for DemoLoadingProcess {
 impl DemoLoadingFuture for DemoLoadingProcess {}
 
 impl DemoLoadingProcess {
+   const MIN_UNIFORM_BUFFER_OFFSET_ALIGNMENT: u64 = 256;
+
    fn compile_shaders(&mut self) {
       let device = &self.webgpu.as_ref().device;
       let vertex_shader = Utils::make_vertex_shader(device, VERTEX_SHADER_SRC);
@@ -143,18 +148,31 @@ impl DemoLoadingProcess {
    }
 
    fn create_uniforms(&mut self) {
-      const DEMO_UNIFORM_BIND_GROUP: u32 = 0;
-      const FRACTAL_BIND_GROUP_INDEX: u32 = 1;
+      let uniform_visibility = ShaderStages::FRAGMENT;
+      let uniform_usage = wgpu::BufferUsages::COPY_DST;
 
-      self.demo_uniform = Some(Utils::make_compatible_push_constant::<DemoUniformData>(
-         &self.webgpu.device,  wgpu::ShaderStages::FRAGMENT,
-         DEMO_UNIFORM_BIND_GROUP)
+      let demo_static_uniform_size = std::mem::size_of::<DemoStaticUniformData>() as u64;
+      let demo_dynamic_uniform_size = std::mem::size_of::<DemoDynamicUniformData>() as u64;
+      let demo_buffer = Buffer::new_uniform_size(
+         &self.webgpu.device, Self::MIN_UNIFORM_BUFFER_OFFSET_ALIGNMENT + demo_dynamic_uniform_size,
+          uniform_usage, Some("Demo Bind Buffer"));
+      let fractal_buffer = Buffer::new_uniform::<DemoDynamicUniformData>(
+         &self.webgpu.device, uniform_usage, Some("Fractal Bind Buffer"));
+      
+      self.demo_uniform = Some(BindGroup::builder()
+         .with_uniform_buffer_range(0, uniform_visibility,
+            &demo_buffer.buffer, (0, demo_static_uniform_size))
+         .with_uniform_buffer_range(1, uniform_visibility,
+            &demo_buffer.buffer, (Self::MIN_UNIFORM_BUFFER_OFFSET_ALIGNMENT, demo_dynamic_uniform_size))
+         .build(&self.webgpu.device, Some("Demo Bind Group"), None)
       );
+      self.demo_uniform_buffer = Some(demo_buffer);
 
-      self.fractal_uniform = Some(Utils::make_compatible_push_constant::<FractalUniformData>(
-         &self.webgpu.device,  wgpu::ShaderStages::FRAGMENT,
-         FRACTAL_BIND_GROUP_INDEX)
+      self.fractal_uniform = Some(BindGroup::builder()
+         .with_uniform_buffer(0, uniform_visibility, &fractal_buffer.buffer)
+         .build(&self.webgpu.device, Some("Fractal Bind Group"), None)
       );
+      self.fractal_uniform_buffer = Some(fractal_buffer);
    }
 
    fn create_pipelines(&mut self) {
@@ -206,17 +224,27 @@ impl DemoLoadingProcess {
          use_antialiasing: false,
          num_rendered_vertices: 3,
          pending_graphics_level_switch: None,
+         pending_write_static_uniform: false,
          fractal_uniform_data: FractalUniformData {
             fractal_center: [-1.1900443, 0.3043895],
             fractal_zoom: 2.0,
             num_iterations: 1000,
          },
+         fractal_buffer_offset: 0,
+         fractal_uniform_buffer: self.fractal_uniform_buffer.take().unwrap(),
          fractal_uniform: self.fractal_uniform.take().unwrap(),
-         demo_uniform_data: DemoUniformData {
-            mouse_position: [0.0, 0.0],
+         demo_static_uniform_data: DemoStaticUniformData {
+            color_attachment_size: [1, 1],
             aspect_ratio: 1.0,
             is_debug: 0.0,
          },
+         demo_static_buffer_offset: 0,
+         demo_dynamic_uniform_data: DemoDynamicUniformData {
+            mouse_position: [0.0, 0.0],
+            __padding: Default::default(),
+         },
+         demo_dynamic_buffer_offset: Self::MIN_UNIFORM_BUFFER_OFFSET_ALIGNMENT,
+         demo_uniform_buffer: self.demo_uniform_buffer.take().unwrap(),
          demo_uniform: self.demo_uniform.take().unwrap(),
       });
       let webgpu = self.webgpu.clone();
@@ -234,10 +262,17 @@ pub struct Demo {
    use_antialiasing: bool,
    num_rendered_vertices: i32,
    pending_graphics_level_switch: Option<GraphicsSwitchingProcess>,
+   pending_write_static_uniform: bool,
    fractal_uniform_data: FractalUniformData,
-   fractal_uniform: PushConstantsCompatibility,
-   demo_uniform_data: DemoUniformData,
-   demo_uniform: PushConstantsCompatibility,
+   fractal_uniform_buffer: UniformBuffer,
+   fractal_uniform: BindGroup,
+   fractal_buffer_offset: u64,
+   demo_static_uniform_data: DemoStaticUniformData,
+   demo_static_buffer_offset: u64,
+   demo_dynamic_uniform_data: DemoDynamicUniformData,
+   demo_dynamic_buffer_offset: u64,
+   demo_uniform_buffer: UniformBuffer,
+   demo_uniform: BindGroup,
 }
 
 #[repr(C)]
@@ -250,18 +285,27 @@ struct FractalUniformData {
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-struct DemoUniformData {
-   mouse_position: [f32; 2],
+struct DemoStaticUniformData {
+   color_attachment_size: [u32; 2],
    aspect_ratio: f32,
    is_debug: f32,
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+struct DemoDynamicUniformData {
+   mouse_position: [f32; 2],
+   __padding: [u32; 2],
 }
 
 impl IDemo for Demo {
    fn tick(&mut self, input: &ExternalState) {
       self.fractal_uniform_data.fractal_zoom -= self.fractal_uniform_data.fractal_zoom * 0.25 * input.time_delta_sec() as f32;
-      self.demo_uniform_data.aspect_ratio = input.aspect_ratio();
-      self.demo_uniform_data.mouse_position = input.mouse_unit_position().into();
-      self.demo_uniform_data.is_debug = input.debug_mode.map_or(0.0, f32::from);
+      self.demo_static_uniform_data.aspect_ratio = input.aspect_ratio();
+      self.demo_static_uniform_data.is_debug = input.debug_mode.map_or(0.0, f32::from);
+      self.demo_static_uniform_data.color_attachment_size = input.screen_size.into();
+      self.pending_write_static_uniform = true; // TODO: get from external state
+      self.demo_dynamic_uniform_data.mouse_position = input.mouse_unit_position().into();
    }
 
    fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, _delta_sec: f64) -> Result<(), wgpu::SurfaceError> {
@@ -287,11 +331,17 @@ impl IDemo for Demo {
 
          render_pass.set_pipeline(
             if self.use_antialiasing { &self.render_pipelines.antiialiasing }
-            else { &self.render_pipelines.default });
-         Utils::bind_compatible_push_constant(&mut render_pass, &webgpu.queue,
-            &self.fractal_uniform, bytemuck::cast_slice(&[self.fractal_uniform_data]));
-         Utils::bind_compatible_push_constant(&mut render_pass, &webgpu.queue,
-            &self.demo_uniform, bytemuck::cast_slice(&[self.demo_uniform_data]));
+            else { &self.render_pipelines.default }
+         );
+         if self.pending_write_static_uniform {
+            self.demo_uniform_buffer.write(&webgpu.queue, self.demo_static_buffer_offset, &[self.demo_static_uniform_data]);
+         }
+         self.demo_uniform_buffer.write(&webgpu.queue, self.demo_dynamic_buffer_offset, &[self.demo_dynamic_uniform_data]);
+         self.fractal_uniform_buffer.write(&webgpu.queue, self.fractal_buffer_offset, &[self.fractal_uniform_data]);
+         const DEMO_UNIFORM_BIND_GROUP_INDEX: u32 = 0;
+         const FRACTAL_UNIFORM_BIND_GROUP_INDEX: u32 = 1;
+         render_pass.set_bind_group(DEMO_UNIFORM_BIND_GROUP_INDEX, &self.demo_uniform.bind_group, &[]);
+         render_pass.set_bind_group(FRACTAL_UNIFORM_BIND_GROUP_INDEX, &self.fractal_uniform.bind_group, &[]);
          render_pass.draw(0..3, 0..1); // self.num_rendered>vertices
       }
    
@@ -345,7 +395,9 @@ impl Demo {
          fragment_shader_default: Default::default(),
          fragment_shader_antialiasing: Default::default(),
          fractal_uniform: Default::default(),
+         fractal_uniform_buffer: Default::default(),
          demo_uniform: Default::default(),
+         demo_uniform_buffer: Default::default(),
          loaded_demo: Default::default(),
          webgpu,
       })

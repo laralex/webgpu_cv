@@ -1,6 +1,6 @@
 use wgpu::{BindGroupLayout, Device, Surface, SurfaceError, SurfaceTexture, TextureView};
 
-use super::uniform::{PushConstantsCompatibility, UniformGroup};
+use super::uniform::{PushConstantsCompatibility, BindGroup};
 
 pub struct Utils;
 
@@ -66,32 +66,18 @@ impl Utils {
          && false // NOTE: currently WGSL doesn't support push_constants in shaders, so forcing disable to not accidentally use push constants
    }
 
-   pub fn make_compatible_push_constant<T: Sized>(device: &wgpu::Device, visibility: wgpu::ShaderStages, bind_group_index: u32) -> PushConstantsCompatibility {
-      let num_bytes = std::mem::size_of::<T>() as u32;
-      let mut required_limits = device.limits();
-      required_limits.max_push_constant_size = num_bytes;
-      if Utils::supports_push_constants(&device, 0..num_bytes) {
-         PushConstantsCompatibility::PushConstant(
-            wgpu::PushConstantRange{stages: visibility, range: 0..num_bytes})
-      } else {
-         // fallback to uniforms
-         PushConstantsCompatibility::Uniform(
-            UniformGroup::new(&device, visibility, num_bytes as u64,),
-            bind_group_index)
-      }
-   }
+   // pub fn make_uniform<T: Sized>(device: &wgpu::Device, visibility: wgpu::ShaderStages) -> BindGroup {
+   //    let num_bytes = std::mem::size_of::<T>() as u32;
+   //    let mut required_limits = device.limits();
+   //    required_limits.max_push_constant_size = num_bytes;
+   //    BindGroup::new(&device, visibility, num_bytes as u64)
+   // }
 
-   pub fn bind_compatible_push_constant<'a, 'b: 'a>(render_pass: &'a mut wgpu::RenderPass<'b>, queue: &wgpu::Queue, uniform: &'b PushConstantsCompatibility, data: &[u8]) {
-      match &uniform {
-         PushConstantsCompatibility::Uniform(UniformGroup{buffer, bind_group, ..}, bind_group_index) => {
-            queue.write_buffer(&buffer, 0, bytemuck::cast_slice(data));
-            render_pass.set_bind_group(*bind_group_index, &bind_group, &[]);
-         }
-         PushConstantsCompatibility::PushConstant(range) => {
-            render_pass.set_push_constants(range.stages, range.range.start, bytemuck::cast_slice(data));
-         }
-      }
-   }
+   // pub fn bind_group<'a, 'b: 'a>(render_pass: &'a mut wgpu::RenderPass<'b>, queue: &wgpu::Queue, uniform: &'b BindGroup, data: &[u8], bind_group_index: u32) {
+   //    let BindGroup{buffers: buffer, bind_group, ..} = uniform;
+   //    queue.write_buffer(&buffer, 0, bytemuck::cast_slice(data));
+   //    render_pass.set_bind_group(bind_group_index, &bind_group, &[]);
+   // }
 }
 
 pub struct PipelineLayoutBuilder<'a> {
@@ -107,14 +93,11 @@ impl<'a> PipelineLayoutBuilder<'a> {
       }
    }
 
-   pub fn with(self, uniform_or_pushconstant: &'a PushConstantsCompatibility) -> Self {
-      match uniform_or_pushconstant {
-         PushConstantsCompatibility::Uniform(group, _) => self.with_uniform_group(group),
-         PushConstantsCompatibility::PushConstant(range) => self.with_push_constant(range.clone()),
-      }
+   pub fn with(self, uniform_group: &'a BindGroup) -> Self {
+      self.with_uniform_group(uniform_group)
    }
 
-   pub fn with_uniform_group(mut self, uniform_group: &'a UniformGroup) -> Self {
+   pub fn with_uniform_group(mut self, uniform_group: &'a BindGroup) -> Self {
       self.uniform_group_layouts.push(&uniform_group.bind_group_layout);
       self
    }

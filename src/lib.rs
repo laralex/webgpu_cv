@@ -363,9 +363,8 @@ fn handle_keyboard<'a>(keyboard: KeyboardState, state: FrameStateRef<'a>) {
 
 fn configure_keydown(keyboard_state: Rc<Cell<renderer::KeyboardState>>) -> Result<(), JsValue> {
     let closure = Closure::<dyn FnMut(_)>::new(move |event: web_sys::KeyboardEvent| {
-        let current_state = keyboard_state.get(); // TODO: replace Cell with RefCell
         // web_sys::console::log_2(&"Keycode".into(), &event.key_code().into());
-        if (event.default_prevented()) {
+        if event.default_prevented() {
             return; // Do nothing if the event was already processed
         }
         let mut current_state = keyboard_state.get();

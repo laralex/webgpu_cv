@@ -22,8 +22,7 @@ pub struct KeyboardState {
 }
 
 #[derive(Clone, Default)]
-struct DerivedState {
-   pub aspect_ratio: f32,
+struct DerivedDynamicState {
    pub time_now_sec:   f64,
    pub time_prev_sec:  f64,
    pub time_delta_sec: f64,
@@ -31,30 +30,48 @@ struct DerivedState {
    pub mouse_viewport_position_px: (i32, i32), // origin at bottom-left
 }
 
-pub struct ExternalState {
-   pub mouse: Rc<Cell<MouseState>>,
-   pub keyboard: Rc<Cell<KeyboardState>>,
+#[derive(Clone, Default)]
+struct DerivedStableState {
+   pub aspect_ratio: f32,
+}
+
+#[derive(Clone)]
+struct StableState {
    pub screen_size: (u32, u32),
-   pub time_now_ms:    f64,
-   pub time_prev_ms:   f64,
-   pub time_delta_ms:  f64,
-   pub time_delta_limit_ms: f64,
-   pub frame_idx: usize,
    pub graphics_level: GraphicsLevel,
    pub debug_mode: Option<u16>,
-   derived: DerivedState,
+}
+
+pub struct ExternalState {
+   // dynamic
+   mouse: Rc<Cell<MouseState>>,
+   keyboard: Rc<Cell<KeyboardState>>,
+   time_now_ms:    f64,
+   time_prev_ms:   f64,
+   time_delta_ms:  f64,
+   time_delta_limit_ms: f64,
+   frame_idx: usize,
+   derived: DerivedDynamicState,
+
+   // stable
+   stable: StableState,
+   is_stable_updated: bool,
+   derived_stable: DerivedStableState,
 }
 
 #[derive(Default, Clone, Copy)]
 pub struct ExternalStateData {
+   // dynamic
    pub mouse: MouseState,
    pub keyboard: KeyboardState,
-   pub screen_size: (u32, u32),
    pub time_now_ms:    f64,
    pub time_prev_ms:   f64,
    pub time_delta_ms:  f64,
    pub time_delta_limit_ms: f64,
    pub frame_idx: usize,
+
+   // stable
+   pub screen_size: (u32, u32),
    pub graphics_level: GraphicsLevel,
    pub debug_mode: Option<u16>,
 }
@@ -64,22 +81,22 @@ impl ExternalState {
       ExternalStateData {
          mouse: self.mouse.get(),
          keyboard: self.keyboard.get(),
-         screen_size: self.screen_size.clone(),
          time_now_ms: self.time_now_ms.clone(),
          time_prev_ms: self.time_prev_ms.clone(),
          time_delta_ms: self.time_delta_ms.clone(),
          time_delta_limit_ms: self.time_delta_limit_ms.clone(),
          frame_idx: self.frame_idx.clone(),
-         graphics_level: self.graphics_level.clone(),
-         debug_mode: self.debug_mode.clone(),
+         screen_size: self.stable.screen_size.clone(),
+         graphics_level: self.stable.graphics_level.clone(),
+         debug_mode: self.stable.debug_mode.clone(),
       }
    }
 
    pub fn mouse_unit_position(&self) -> (f32, f32) {
       let px_pos = self.mouse_viewport_position_px();
       return (
-         px_pos.0 as f32 / self.screen_size.0 as f32,
-         px_pos.1 as f32 / self.screen_size.1 as f32,
+         px_pos.0 as f32 / self.stable.screen_size.0 as f32,
+         px_pos.1 as f32 / self.stable.screen_size.1 as f32,
       )
    }
 
@@ -89,29 +106,60 @@ impl ExternalState {
       let delta = self.derived.time_now_sec - self.derived.time_prev_sec;
       
       let current_mouse = self.mouse.get();
-      self.derived = DerivedState {
-         aspect_ratio: self.screen_size.0 as f32 / self.screen_size.1 as f32,
+      self.derived = DerivedDynamicState {
          time_now_sec: now,
          time_prev_sec: then,
          time_delta_sec: delta,
          frame_rate: (1.0 / delta) as f32,
          mouse_viewport_position_px: (
             current_mouse.canvas_position_px.0,
-            self.screen_size.1 as i32 - current_mouse.canvas_position_px.1
+            self.stable.screen_size.1 as i32 - current_mouse.canvas_position_px.1
          ),
+      };
+      if self.is_stable_updated {
+         self.derived_stable = DerivedStableState {
+            aspect_ratio: self.stable.screen_size.0 as f32 / self.stable.screen_size.1 as f32,
+         }
       }
-
    }
 
-   pub fn aspect_ratio(&self) -> f32 { self.derived.aspect_ratio }
+   pub fn screen_size(&self) -> (u32, u32) { self.stable.screen_size }
+   pub fn graphics_level(&self) -> GraphicsLevel { self.stable.graphics_level }
+   pub fn debug_mode(&self) -> Option<u16> { self.stable.debug_mode }
+   pub fn aspect_ratio(&self) -> f32 { self.derived_stable.aspect_ratio }
+   pub fn is_stable_updated(&self) -> bool { self.is_stable_updated }
+
+   pub fn mouse(&self) -> &Rc<Cell<MouseState>> { &self.mouse }
+   pub fn keyboard(&self) -> &Rc<Cell<KeyboardState>> { &self.keyboard }
+   pub fn time_now_ms(&self) -> f64 { self.time_now_ms }
+   pub fn time_prev_ms(&self) -> f64 { self.time_prev_ms }
+   pub fn time_delta_ms(&self) -> f64 { self.time_delta_ms }
+   pub fn time_delta_limit_ms(&self) -> f64 { self.time_delta_limit_ms }
+   pub fn frame_idx(&self) -> usize { self.frame_idx }
+
    pub fn time_now_sec(&self) -> f64 { self.derived.time_now_sec }
    pub fn time_prev_sec(&self) -> f64 { self.derived.time_prev_sec }
    pub fn time_delta_sec(&self) -> f64 { self.derived.time_delta_sec }
    pub fn frame_rate(&self) -> f32 { self.derived.frame_rate }
    pub fn mouse_viewport_position_px(&self) -> (i32, i32) { self.derived.mouse_viewport_position_px }
 
-   pub fn screen_resize(&mut self, (width_px, height_px): (u32, u32)) {
-      self.screen_size = (width_px, height_px);
+   pub fn set_time_delta_limit_ms(&mut self, time_delta_limit_ms: f64) {
+      self.time_delta_limit_ms = time_delta_limit_ms;
+   }
+
+   pub fn set_screen_size(&mut self, (width_px, height_px): (u32, u32)) {
+      self.stable.screen_size = (width_px, height_px);
+      self.is_stable_updated = true;
+   }
+
+   pub fn set_graphics_level(&mut self, graphics_level: GraphicsLevel) {
+      self.stable.graphics_level = graphics_level;
+      self.is_stable_updated = true;
+   }
+
+   pub fn set_debug_mode(&mut self, debug_mode: Option<u16>) {
+      self.stable.debug_mode = debug_mode;
+      self.is_stable_updated = true;
    }
 
    pub fn override_time(&mut self, timestamp_ms: f64, frame_idx: usize) {
@@ -135,6 +183,8 @@ impl ExternalState {
    }
 
    pub fn dismiss_events(&mut self) {
+      self.is_stable_updated = false;
+
       let mut current_mouse_state = self.mouse.get();
       ExternalState::dismiss_input_event(&mut current_mouse_state.left);
       ExternalState::dismiss_input_event(&mut current_mouse_state.middle);
@@ -154,21 +204,25 @@ impl ExternalState {
 }
 
 impl Default for ExternalState {
-    fn default() -> Self {
-        Self {
+   fn default() -> Self {
+      Self {
          mouse: Rc::new(Cell::new(Default::default())),
          keyboard: Rc::new(Cell::new(Default::default())),
-         screen_size: (1, 1),
+         stable: StableState {
+            screen_size: (1, 1),
+            graphics_level: Default::default(),
+            debug_mode: Default::default(),
+         } ,
+         is_stable_updated: true,
          time_delta_ms: Default::default(),
          time_delta_limit_ms: Default::default(),
          time_now_ms: Default::default(),
          time_prev_ms: Default::default(),
          frame_idx: Default::default(),
-         graphics_level: Default::default(),
-         debug_mode: Default::default(),
          derived: Default::default(),
-       }
-    }
+         derived_stable: Default::default(),
+      }
+   }
 }
 
 pub struct DemoStateHistory {

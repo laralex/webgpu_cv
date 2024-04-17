@@ -92,12 +92,12 @@ impl WasmInterface {
         {
             // callbacks wired with JS canvas
             let mut demo_state_mut = demo_state.borrow_mut();
-            demo_state_mut.graphics_level = level;
-            configure_mousedown(&canvas, demo_state_mut.mouse.clone())?;
-            configure_mouseup(demo_state_mut.mouse.clone())?;
-            configure_mousemove(&canvas, demo_state_mut.mouse.clone())?;
-            configure_keydown(demo_state_mut.keyboard.clone())?;
-            configure_keyup(demo_state_mut.keyboard.clone())?;
+            demo_state_mut.set_graphics_level(level);
+            configure_mousedown(&canvas, demo_state_mut.mouse().clone())?;
+            configure_mouseup(demo_state_mut.mouse().clone())?;
+            configure_mousemove(&canvas, demo_state_mut.mouse().clone())?;
+            configure_keydown(demo_state_mut.keyboard().clone())?;
+            configure_keyup(demo_state_mut.keyboard().clone())?;
         }
 
         demo_loading_apply_progress(0.6);
@@ -119,7 +119,7 @@ impl WasmInterface {
     #[wasm_bindgen(js_name = getFrameIdx)]
     pub fn wasm_get_frame_idx(&self) -> usize {
         match self.demo_state.try_borrow() {
-            Ok(state) => state.frame_idx,
+            Ok(state) => state.frame_idx(),
             _ => Default::default(),
         }
     }
@@ -127,7 +127,7 @@ impl WasmInterface {
     #[wasm_bindgen(js_name = resize)]
     pub fn wasm_resize(&mut self, width: u32, height: u32) {
         let mut demo_state_mut = self.demo_state.borrow_mut();
-        demo_state_mut.screen_resize((width, height));
+        demo_state_mut.set_screen_size((width, height));
         {
             let mut webgpu_config = self.webgpu_config.borrow_mut();
             webgpu_config.width = width;
@@ -138,12 +138,12 @@ impl WasmInterface {
 
     #[wasm_bindgen(js_name = setFpsLimit)]
     pub fn wasm_set_fps_limit(&mut self, fps_limit: f64) {
-        self.demo_state.borrow_mut().time_delta_limit_ms = 1_000.0 / fps_limit;
+        self.demo_state.borrow_mut().set_time_delta_limit_ms(1_000.0 / fps_limit);
     }
 
     #[wasm_bindgen(js_name = setDebugMode)]
     pub fn wasm_set_debug_mode(&mut self, debug_mode: Option<u16>) {
-        self.demo_state.borrow_mut().debug_mode = debug_mode;
+        self.demo_state.borrow_mut().set_debug_mode(debug_mode);
     }
 
     #[wasm_bindgen(js_name = setGraphicsLevel)]
@@ -158,7 +158,7 @@ impl WasmInterface {
         // then the graphics level is switched for the PREVIOUS demo ,
         // and the new demo will be initialized with new graphics level,
 
-        self.demo_state.borrow_mut().graphics_level = level;
+        self.demo_state.borrow_mut().set_graphics_level(level);
         let switcher_callback = Rc::new(RefCell::new(None));
         let switcher_callback2 = switcher_callback.clone();
         self.demo.borrow_mut().as_mut().start_switching_graphics_level(self.webgpu.as_ref(), level);
@@ -193,6 +193,7 @@ impl WasmInterface {
         let loader_callback2 = loader_callback.clone();
         
         let demo_ref = self.demo.clone();
+        let demo_state_ref = self.demo_state.clone();
         let demo_id_ref = self.demo_id.clone();
 
         // cancel current loading process (drop resources it allocated already)
@@ -210,7 +211,7 @@ impl WasmInterface {
             Box::into_pin(renderer::wasm::start_loading_demo(demo_id,
                 self.webgpu.clone(),
                 self.webgpu_config.borrow().format,
-                self.demo_state.borrow().graphics_level)));
+                self.demo_state.borrow().graphics_level())));
 
         let webgpu_ref = self.webgpu.clone();
 
@@ -287,7 +288,7 @@ impl WasmInterface {
                 demo_clone.try_borrow_mut(), demo_state.try_borrow_mut(), webgpu.surface.get_current_texture(),
                 // demo_state_history.try_borrow_mut(), demo_history_playback.try_borrow_mut(),
             ) {
-                let keyboard = demo_state.keyboard.get();
+                let keyboard = demo_state.keyboard().get();
                 let frame_state = FrameStateRef {
                     demo_state_history: &mut demo_state_history,
                     demo_history_playback: &mut demo_history_playback,
@@ -321,7 +322,7 @@ impl WasmInterface {
                 // setTimeout may overshoot the requested timeout, so compensate it by requesting less 
                 const TIMEOUT_CORRECTION_FACTOR: f64 = 0.85;
                 let ds = demo_state.borrow();
-                let mut request_timeout = ds.time_delta_limit_ms - ds.time_delta_ms;
+                let mut request_timeout = ds.time_delta_limit_ms() - ds.time_delta_ms();
                 request_timeout = TIMEOUT_CORRECTION_FACTOR * request_timeout;
                 js_interop::set_frame_timeout(&window, &timeout_tick, request_timeout.round() as i32);
             }

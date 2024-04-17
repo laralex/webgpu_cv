@@ -3,7 +3,7 @@ struct VertexOutput {
     @location(0) uv: vec2<f32>,
 };
 
-struct DemoSettingsStatic {
+struct DemoSettingsStable {
     color_attachment_size: vec2<i32>,
     aspect_ratio: f32,
     is_debug: f32,
@@ -14,7 +14,7 @@ struct DemoSettingsDynamic {
     padding__: vec2<i32>,
 }
 
-@group(0) @binding(0) var<uniform> demo: DemoSettingsStatic;
+@group(0) @binding(0) var<uniform> demo: DemoSettingsStable;
 @group(0) @binding(1) var<uniform> demo_dyn: DemoSettingsDynamic;
 
 struct FractalSettings {

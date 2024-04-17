@@ -6,6 +6,7 @@ pub mod demo_state;
 pub use demo_state::*;
 mod triangle;
 mod fractal;
+mod preprocessor;
 
 use crate::GraphicsLevel;
 use wgpu::SurfaceTexture;

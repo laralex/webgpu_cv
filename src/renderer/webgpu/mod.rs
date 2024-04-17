@@ -9,14 +9,14 @@ struct SurfaceView {
    texture: Option<wgpu::SurfaceTexture>,
 }
 pub struct Webgpu {
-   pub surface: wgpu::Surface<'static>,
+   // pub surface: wgpu::Surface<'static>,
    pub device: wgpu::Device,
    pub queue: wgpu::Queue,
 }
 
 impl Webgpu {
    #[cfg(feature = "web")]
-   pub async fn new(canvas: HtmlCanvasElement) -> (Self, wgpu::SurfaceConfiguration) {
+   pub async fn new(canvas: HtmlCanvasElement) -> (Self, wgpu::Surface<'static>, wgpu::SurfaceConfiguration) {
       // The instance is a handle to our GPU
       // Backends::all => Vulkan + Metal + DX12 + Browser WebGPU
 
@@ -73,10 +73,10 @@ impl Webgpu {
 
       surface.configure(&device, &config);
 
-      ( Self { surface, device, queue }, config )
+      ( Self { device, queue }, surface, config )
    }
 
-   pub async fn new_offscreen() -> (wgpu::Device, wgpu::Queue) {
+   pub async fn new_offscreen() -> Self {
       let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
          backends: wgpu::Backends::GL,
          ..Default::default()
@@ -93,10 +93,10 @@ impl Webgpu {
          .request_device(&Utils::default_device_descriptor(), None)
          .await
          .unwrap();
-      (device, queue)
+      Self {device, queue}
    }
 
-   pub fn surface_configure(&self, config: &wgpu::SurfaceConfiguration) {
-      self.surface.configure(&self.device, config);
-   }
+   // pub fn surface_configure(&self, config: &wgpu::SurfaceConfiguration) {
+   //    self.surface.configure(&self.device, config);
+   // }
 }

@@ -35,6 +35,7 @@ extern "C" {
 #[wasm_bindgen]
 pub struct WasmInterface {
     webgpu: Rc<Webgpu>,
+    webgpu_surface: Rc<wgpu::Surface<'static>>,
     webgpu_config: Rc<RefCell<wgpu::SurfaceConfiguration>>,
     demo: Rc<RefCell<Box<dyn IDemo>>>,
     demo_state: Rc<RefCell<ExternalState>>,
@@ -101,11 +102,12 @@ impl WasmInterface {
         }
 
         demo_loading_apply_progress(0.6);
-        let (webgpu, webgpu_config) = Webgpu::new(canvas).await;
+        let (webgpu, webgpu_surface, webgpu_config) = Webgpu::new(canvas).await;
         demo_loading_finish();
 
         Ok(Self {
             webgpu: Rc::new(webgpu),
+            webgpu_surface: Rc::new(webgpu_surface),
             webgpu_config: Rc::new(RefCell::new(webgpu_config)),
             demo: Rc::new(RefCell::new(Box::new(renderer::StubDemo{}))),
             demo_state,
@@ -133,7 +135,7 @@ impl WasmInterface {
             webgpu_config.width = width;
             webgpu_config.height = height;
         }
-        self.webgpu.surface_configure(&self.webgpu_config.borrow());
+        self.webgpu_surface.configure(&self.webgpu.device, &self.webgpu_config.borrow())
     }
 
     #[wasm_bindgen(js_name = setFpsLimit)]
@@ -269,6 +271,7 @@ impl WasmInterface {
         }) as Box<dyn FnMut()>);
 
         let webgpu = self.webgpu.clone();
+        let webgpu_surface = self.webgpu_surface.clone();
         let webgpu_config = self.webgpu_config.clone();
         let demo_state = self.demo_state.clone();
         let demo_clone = self.demo.clone();
@@ -285,7 +288,7 @@ impl WasmInterface {
                 Ok(mut demo), Ok(mut demo_state), Ok(surface_texture),
                 // Ok(mut demo_state_history), Ok(mut demo_history_playback),
             ) = (
-                demo_clone.try_borrow_mut(), demo_state.try_borrow_mut(), webgpu.surface.get_current_texture(),
+                demo_clone.try_borrow_mut(), demo_state.try_borrow_mut(), webgpu_surface.get_current_texture(),
                 // demo_state_history.try_borrow_mut(), demo_history_playback.try_borrow_mut(),
             ) {
                 let keyboard = demo_state.keyboard().get();
@@ -308,7 +311,7 @@ impl WasmInterface {
                     Ok(_) => {}
                     Err(wgpu::SurfaceError::Lost) => {
                         webgpu_config.try_borrow()
-                            .inspect(|config| webgpu.surface_configure(config));
+                            .inspect(|config| webgpu_surface.configure(&webgpu.device, &config));
                     }
                     Err(wgpu::SurfaceError::OutOfMemory) => return, // just quit rendering
                     Err(e) => eprintln!("{:?}", e), // resolved by the next frame
@@ -388,7 +391,7 @@ fn configure_keydown(keyboard_state: Rc<Cell<renderer::KeyboardState>>) -> Resul
 
 fn configure_keyup(keyboard_state: Rc<Cell<renderer::KeyboardState>>) -> Result<(), JsValue> {
     let closure = Closure::<dyn FnMut(_)>::new(move |event: web_sys::KeyboardEvent| {
-        if (event.default_prevented()) {
+        if event.default_prevented() {
             return; // Do nothing if the event was already processed
         }
         let mut current_state = keyboard_state.get();

@@ -5,6 +5,7 @@ use bytemuck;
 use crate::renderer::webgpu::Utils;
 use crate::GraphicsLevel;
 
+use super::preprocessor::Preprocessor;
 use super::webgpu::buffer::{Buffer, UniformBuffer};
 use super::webgpu::utils::PipelineLayoutBuilder;
 use super::webgpu::uniform::{BindGroup, BindGroupBuilfer, PushConstantsCompatibility};
@@ -12,7 +13,6 @@ use super::{DemoLoadingFuture, Dispose, ExternalState, IDemo, Progress, SimpleFu
 
 const VERTEX_SHADER_SRC:   &str = include_str!("shaders/triangle_fullscreen.vs.wgsl");
 const FRAGMENT_SHADER_SRC: &str = include_str!("shaders/mandelbrot.fs.wgsl");
-const FRAGMENT_SHADER_AA_SRC: &str = include_str!("shaders/mandelbrot_aa.fs.wgsl");
 
 #[derive(Default)]
 enum DemoLoadingStage {
@@ -58,6 +58,7 @@ impl Dispose for DemoLoadingProcess {
             self.fragment_shader_antialiasing.take();
             self.stage = DemoLoadingStage::Ready;
             self.loaded_demo.take();
+            #[cfg(feature = "web")]
             web_sys::console::log_3(&"Rust loading drop".into(), &std::module_path!().into(), &self.stage_percent.into());
          },
       }
@@ -136,11 +137,36 @@ impl SimpleFuture for DemoLoadingProcess {
 impl DemoLoadingFuture for DemoLoadingProcess {}
 
 impl DemoLoadingProcess {
+   fn new(webgpu: Rc<Webgpu>, color_target_format: wgpu::TextureFormat, graphics_level: GraphicsLevel) -> Self {
+      Self {
+         stage: Default::default(),
+         stage_percent: 0.0,
+         graphics_level: graphics_level,
+         color_target_format: color_target_format,
+         render_pipelines: Default::default(),
+         vertex_shader: Default::default(),
+         fragment_shader_default: Default::default(),
+         fragment_shader_antialiasing: Default::default(),
+         fractal_uniform: Default::default(),
+         fractal_uniform_buffer: Default::default(),
+         demo_uniform: Default::default(),
+         demo_uniform_buffer: Default::default(),
+         demo_stable_buffer_offset: Default::default(),
+         demo_dynamic_buffer_offset: Default::default(),
+         loaded_demo: Default::default(),
+         webgpu,
+      }
+   }
+
    fn compile_shaders(&mut self) {
+      let mut preprocessor = Preprocessor::new();
+      let fs_code_default = &preprocessor.process(FRAGMENT_SHADER_SRC).unwrap();
+      preprocessor.define("USE_ANTIALIASING", "1");
+      let fs_code_antialiazing = &preprocessor.process(FRAGMENT_SHADER_SRC).unwrap();
       let device = &self.webgpu.as_ref().device;
       let vertex_shader = Utils::make_vertex_shader(device, VERTEX_SHADER_SRC);
-      let fragment_shader_default = Utils::make_fragment_shader(device, FRAGMENT_SHADER_SRC);
-      let fragment_shader_antialiasing = Utils::make_fragment_shader(device, FRAGMENT_SHADER_AA_SRC);
+      let fragment_shader_default = Utils::make_fragment_shader(device, fs_code_default);
+      let fragment_shader_antialiasing = Utils::make_fragment_shader(device, fs_code_antialiazing);
       std::mem::drop(device);
       self.vertex_shader = Some(vertex_shader);
       self.fragment_shader_default = Some(fragment_shader_default);
@@ -306,11 +332,6 @@ impl IDemo for Demo {
       self.demo_stable_uniform_data.aspect_ratio = input.aspect_ratio();
       self.demo_stable_uniform_data.is_debug = input.debug_mode().map_or(0.0, f32::from);
       self.pending_write_stable_uniform = self.pending_write_stable_uniform || input.is_stable_updated();
-      web_sys::console::log_4(&"^^^".into(),
-         &self.demo_stable_uniform_data.color_attachment_size[0].into(),
-         &self.demo_stable_uniform_data.color_attachment_size[1].into(),
-         &self.pending_write_stable_uniform.into(),
-      );
       self.demo_dynamic_uniform_data.mouse_position = input.mouse_unit_position().into();
    }
 
@@ -361,6 +382,7 @@ impl IDemo for Demo {
    }
 
    fn start_switching_graphics_level(&mut self, _webgpu: &Webgpu, graphics_level: GraphicsLevel) -> Result<(), wgpu::SurfaceError> {
+      #[cfg(feature = "web")]
       web_sys::console::log_3(&"Rust start_switching_graphics_level".into(), &std::module_path!().into(), &graphics_level.into());
       self.pending_graphics_level_switch = Some(GraphicsSwitchingProcess{
          progress: 0.0,
@@ -382,6 +404,7 @@ impl IDemo for Demo {
    }
 
    fn drop_demo(&mut self, webgpu: &Webgpu) {
+      #[cfg(feature = "web")]
       web_sys::console::log_2(&"Rust demo drop custom".into(), &std::module_path!().into());
    }
 }
@@ -389,30 +412,14 @@ impl IDemo for Demo {
 
 impl Drop for Demo {
    fn drop(&mut self) {
+      #[cfg(feature = "web")]
       web_sys::console::log_2(&"Rust demo drop".into(), &std::module_path!().into());
    }
 }
 
 impl Demo {
    pub fn start_loading<'a>(webgpu: Rc<Webgpu>, color_target_format: wgpu::TextureFormat, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture> {
-      Box::new(DemoLoadingProcess {
-         stage: Default::default(),
-         stage_percent: 0.0,
-         graphics_level,
-         color_target_format,
-         render_pipelines: Default::default(),
-         vertex_shader: Default::default(),
-         fragment_shader_default: Default::default(),
-         fragment_shader_antialiasing: Default::default(),
-         fractal_uniform: Default::default(),
-         fractal_uniform_buffer: Default::default(),
-         demo_uniform: Default::default(),
-         demo_uniform_buffer: Default::default(),
-         demo_stable_buffer_offset: Default::default(),
-         demo_dynamic_buffer_offset: Default::default(),
-         loaded_demo: Default::default(),
-         webgpu,
-      })
+      Box::new(DemoLoadingProcess::new(webgpu, color_target_format, graphics_level))
    }
 }
 
@@ -423,6 +430,7 @@ pub struct GraphicsSwitchingProcess {
 
 impl Dispose for GraphicsSwitchingProcess {
    fn dispose(&mut self) {
+      #[cfg(feature = "web")]
       web_sys::console::log_2(&"Rust graphics switching drop".into(), &std::module_path!().into());
    }
 }
@@ -458,13 +466,12 @@ impl GraphicsSwitchingProcess {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pretty_assertions::assert_eq;
 
     #[test]
-    fn shaders_compile() {
-        let (device, _) = futures::executor::block_on(Webgpu::new_offscreen());
-        Utils::make_vertex_shader(&device, VERTEX_SHADER_SRC);
-        Utils::make_fragment_shader(&device, FRAGMENT_SHADER_SRC);
-        Utils::make_fragment_shader(&device, FRAGMENT_SHADER_AA_SRC);
-    }
+   fn shaders_compile() {
+      let webgpu = futures::executor::block_on(Webgpu::new_offscreen());
+      let mut demo_loader = DemoLoadingProcess::new(Rc::new(webgpu),
+      wgpu::TextureFormat::Rgba8Unorm, GraphicsLevel::Medium);
+      demo_loader.compile_shaders();
+   }
 }

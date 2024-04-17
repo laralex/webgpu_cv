@@ -315,14 +315,9 @@ mod tests {
 
     #[test]
     fn shaders_compile() {
-        let (device, _) = futures::executor::block_on(Webgpu::new_offscreen());
-      //   let result = std::panic::catch_unwind(||
-        Utils::make_vertex_shader(&device, VERTEX_SHADER_SRC);
-        Utils::make_fragment_shader(&device, FRAGMENT_SHADER_SRC);
+        let webgpu = futures::executor::block_on(Webgpu::new_offscreen());
+        Utils::make_vertex_shader(&webgpu.device, VERTEX_SHADER_SRC);
+        Utils::make_fragment_shader(&webgpu.device, FRAGMENT_SHADER_SRC);
     }
 
-    #[test]
-    fn ok() {
-      assert_eq!(1, 1);
-    }
 }

@@ -4,7 +4,7 @@ struct VertexOutput {
 };
 
 struct DemoSettingsStable {
-    color_attachment_size: vec2<u32>,
+    color_attachment_size: vec2<i32>,
     aspect_ratio: f32,
     is_debug: f32,
 }
@@ -23,17 +23,29 @@ struct FractalSettings {
     num_iterations: i32
 }
 @group(1) @binding(0) var<uniform> fractal: FractalSettings;
-// @layout(push_constant) var<uniform> fractal: FractalSettings;
+
+const AA : i32 = 2;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var uv = vec2(in.uv.x * demo.aspect_ratio, in.uv.y);
     var delta_center = fractal.zoom * (2.0 * uv - 1.0);
     var center = fractal.center + delta_center;
+
+#ifdef USE_ANTIALIASING
+    var AA_norm = fractal.zoom / vec2<f32>(demo.color_attachment_size);
+    var shade = vec3(0.0);
+    for (var re = 0; re < AA; re++) {
+        for (var im = 0; im < AA; im++) {
+            var diverge_iteration = mandelbrot_diverge_iteration(center + vec2(f32(re), f32(im)) * AA_norm, fractal.num_iterations);
+            shade += step(1e-6, diverge_iteration) * (0.5 + 0.5*cos(pow(fractal.zoom,0.22)*diverge_iteration*0.08 + vec3(3.0,3.5,4.0)));
+        }
+    }
+    shade /= f32(AA*AA);
+#else
     var diverge_iteration = mandelbrot_diverge_iteration(center, fractal.num_iterations);
     var shade = step(1e-6, diverge_iteration) * (0.5 + 0.5*cos(pow(fractal.zoom,0.22)*diverge_iteration*0.08 + vec3(3.0,3.5,4.0)));
-    //var mouse_position = vec2(demo.mouse_position.x * demo.aspect_ratio, demo.mouse_position.y);
-    // step(demo.is_debug, 0.5)
+#endif
     shade = mix(shade, vec3(1.0, 0.0, 0.0), step(length(in.uv - demo_dyn.mouse_position), 0.01) * step(0.5, demo.is_debug));
     return vec4<f32>(shade, 1.0);
 }

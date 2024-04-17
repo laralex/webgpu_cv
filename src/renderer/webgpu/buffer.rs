@@ -1,12 +1,12 @@
 use std::ops::RangeBounds;
 
-use bytemuck::Pod;
 use wgpu::{util::DeviceExt, BufferAddress, VertexAttribute};
 
 pub struct Buffer {
     pub buffer: wgpu::Buffer,
 }
 
+#[allow(unused)]
 impl<'a> Buffer {
     pub fn new(device: &wgpu::Device, size: u64, usage: wgpu::BufferUsages, label: Option<&str>) -> wgpu::Buffer {
         let mapped_at_creation = false;
@@ -60,6 +60,7 @@ pub struct VertexBuffer {
     pub buffer: wgpu::Buffer,
 }
 
+#[allow(unused)]
 impl<'a> VertexBuffer {
     pub fn new(buffer: wgpu::Buffer) -> Self {
         Self { buffer }
@@ -92,6 +93,7 @@ pub struct IndexBuffer {
     pub num_indices: u32,
 }
 
+#[allow(unused)]
 impl<'a> IndexBuffer {
     pub fn new(device: &wgpu::Device, contents: &[u8], dtype: wgpu::IndexFormat, usage: wgpu::BufferUsages, label: Option<&str>) -> Self {
         let usage = wgpu::BufferUsages::INDEX.union(usage);
@@ -135,6 +137,7 @@ pub struct VertexPosUv {
     uv: [f32; 2],
 }
 
+#[allow(unused)]
 impl VertexPosUv {
    const ATTRIBS: [wgpu::VertexAttribute; 2] =
        wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x2];
@@ -152,6 +155,7 @@ pub struct VertexPosUvNormal {
     normal: [f32; 3],
 }
 
+#[allow(unused)]
 impl VertexPosUvNormal {
     const ATTRIBS: [wgpu::VertexAttribute; 3] =
         wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x2, 2 => Float32x3];

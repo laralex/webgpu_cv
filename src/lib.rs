@@ -13,14 +13,25 @@ pub enum GraphicsLevel {
    Ultra = 0xFF,
 }
 
+#[wasm_bindgen]
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum DemoId {
+    Stub,
+    Triangle,
+    Fractal,
+    FrameGeneration,
+    HeadAvatar,
+    FullBodyAvatar,
+    ProceduralGeneration,
+}
+
 #[cfg(feature = "web")]
 mod wasm {
 
-use self::renderer::{ExternalStateData, KeyboardState};
+use self::renderer::KeyboardState;
 
 use super::*;
-use renderer::{wasm::*, DemoLoadingFuture, ExternalState, IDemo, MouseState, Webgpu};
-use web_sys::HtmlCanvasElement;
+use renderer::{DemoLoadingFuture, ExternalState, IDemo, MouseState, Webgpu};
 use std::pin::Pin;
 use std::{cell::{RefCell, Cell}, rc::Rc};
 
@@ -45,18 +56,6 @@ pub struct WasmInterface {
     // gl: Rc<web_sys::WebGl2RenderingContext>,
     // demo_state_history: Rc<RefCell<renderer::DemoStateHistory>>, //::new();
     // demo_history_playback: Rc<RefCell<renderer::DemoHistoryPlayback>>, //::new();
-}
-
-#[wasm_bindgen]
-#[derive(Copy, Clone, PartialEq, Eq)]
-pub enum DemoId {
-    Stub,
-    Triangle,
-    Fractal,
-    FrameGeneration,
-    HeadAvatar,
-    FullBodyAvatar,
-    ProceduralGeneration,
 }
 
 impl From<u32> for GraphicsLevel {
@@ -109,7 +108,7 @@ impl WasmInterface {
             webgpu: Rc::new(webgpu),
             webgpu_surface: Rc::new(webgpu_surface),
             webgpu_config: Rc::new(RefCell::new(webgpu_config)),
-            demo: Rc::new(RefCell::new(Box::new(renderer::StubDemo{}))),
+            demo: Rc::new(RefCell::new(Box::new(renderer::stub_demo::Demo{}))),
             demo_state,
             demo_id,
             pending_loading_demo,
@@ -163,7 +162,9 @@ impl WasmInterface {
         self.demo_state.borrow_mut().set_graphics_level(level);
         let switcher_callback = Rc::new(RefCell::new(None));
         let switcher_callback2 = switcher_callback.clone();
-        self.demo.borrow_mut().as_mut().start_switching_graphics_level(self.webgpu.as_ref(), level);
+        self.demo.borrow_mut().as_mut()
+            .start_switching_graphics_level(self.webgpu.as_ref(), level)
+            .expect("WebGPU surface error");
         let demo_ref = self.demo.clone();
         let webgpu_ref = self.webgpu.clone();
 
@@ -195,7 +196,7 @@ impl WasmInterface {
         let loader_callback2 = loader_callback.clone();
         
         let demo_ref = self.demo.clone();
-        let demo_state_ref = self.demo_state.clone();
+        // let demo_state_ref = self.demo_state.clone();
         let demo_id_ref = self.demo_id.clone();
 
         // cancel current loading process (drop resources it allocated already)
@@ -310,7 +311,7 @@ impl WasmInterface {
                 match demo.render(webgpu, &surface_texture, demo_state.time_delta_sec()) {
                     Ok(_) => {}
                     Err(wgpu::SurfaceError::Lost) => {
-                        webgpu_config.try_borrow()
+                        let _ = webgpu_config.try_borrow()
                             .inspect(|config| webgpu_surface.configure(&webgpu.device, &config));
                     }
                     Err(wgpu::SurfaceError::OutOfMemory) => return, // just quit rendering
@@ -341,6 +342,7 @@ impl WasmInterface {
     }
 }
 
+#[allow(unused)]
 struct FrameStateRef<'a> {
     demo_state_history: &'a mut renderer::DemoStateHistory,
     demo_history_playback: &'a mut renderer::DemoHistoryPlayback,

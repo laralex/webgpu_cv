@@ -1,6 +1,6 @@
-use wgpu::{BindGroupLayout, Device, Surface, SurfaceError, SurfaceTexture, TextureView};
+use wgpu::{Device, SurfaceTexture};
 
-use super::uniform::{PushConstantsCompatibility, BindGroup};
+use super::uniform::BindGroup;
 
 pub struct Utils;
 
@@ -44,6 +44,7 @@ impl Utils {
       Utils::make_device_descriptor(wgpu::Features::PUSH_CONSTANTS)
    }
 
+   #[allow(unused)]
    pub fn downlevel_device_descriptor() -> wgpu::DeviceDescriptor<'static> {
       Utils::make_device_descriptor(wgpu::Features::empty())
    }
@@ -60,24 +61,13 @@ impl Utils {
       }
    }
 
+   #[allow(unused)]
    pub fn supports_push_constants(device: &wgpu::Device, required_range: std::ops::Range<u32>) -> bool {
       device.features().contains(wgpu::Features::PUSH_CONSTANTS)
          && device.limits().max_push_constant_size > required_range.end
          && false // NOTE: currently WGSL doesn't support push_constants in shaders, so forcing disable to not accidentally use push constants
    }
 
-   // pub fn make_uniform<T: Sized>(device: &wgpu::Device, visibility: wgpu::ShaderStages) -> BindGroup {
-   //    let num_bytes = std::mem::size_of::<T>() as u32;
-   //    let mut required_limits = device.limits();
-   //    required_limits.max_push_constant_size = num_bytes;
-   //    BindGroup::new(&device, visibility, num_bytes as u64)
-   // }
-
-   // pub fn bind_group<'a, 'b: 'a>(render_pass: &'a mut wgpu::RenderPass<'b>, queue: &wgpu::Queue, uniform: &'b BindGroup, data: &[u8], bind_group_index: u32) {
-   //    let BindGroup{buffers: buffer, bind_group, ..} = uniform;
-   //    queue.write_buffer(&buffer, 0, bytemuck::cast_slice(data));
-   //    render_pass.set_bind_group(bind_group_index, &bind_group, &[]);
-   // }
 }
 
 pub struct PipelineLayoutBuilder<'a> {
@@ -102,6 +92,7 @@ impl<'a> PipelineLayoutBuilder<'a> {
       self
    }
 
+   #[allow(unused)]
    pub fn with_push_constant(mut self, range: wgpu::PushConstantRange) -> Self {
       self.push_constant_ranges.push(range);
       self

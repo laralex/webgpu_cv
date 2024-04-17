@@ -72,7 +72,6 @@ impl SimpleFuture for DemoLoadingProcess {
             let device = &self.webgpu.as_ref().device;
             let vertex_shader = Utils::make_vertex_shader(device, VERTEX_SHADER_SRC);
             let fragment_shader = Utils::make_fragment_shader(device, FRAGMENT_SHADER_SRC);
-            std::mem::drop(device);
             self.vertex_shader = Some(vertex_shader);
             self.fragment_shader = Some(fragment_shader);
             self.stage_percent = 0.6;
@@ -129,7 +128,8 @@ impl SimpleFuture for DemoLoadingProcess {
             let graphics_level = self.graphics_level;
             let webgpu = self.webgpu.clone();
             self.loaded_demo.as_mut().unwrap()
-                  .start_switching_graphics_level(webgpu.as_ref(), graphics_level);
+                  .start_switching_graphics_level(webgpu.as_ref(), graphics_level)
+                  .expect("WebGPU surface error");
             self.stage_percent = 0.75;
             self.stage = SwitchGraphicsLevel;
             std::task::Poll::Pending
@@ -311,7 +311,6 @@ impl GraphicsSwitchingProcess {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pretty_assertions::assert_eq;
 
     #[test]
     fn shaders_compile() {

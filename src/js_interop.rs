@@ -1,3 +1,5 @@
+#![cfg(feature = "web")]
+
 use wasm_bindgen::{closure::Closure, JsCast};
 use web_sys;
 
@@ -9,6 +11,7 @@ macro_rules! js_log {
 }
 pub(crate) use js_log;
 
+#[allow(unused)]
 pub fn now_sec() -> f64 {
    web_sys::window()
        .expect("should have a Window")
@@ -17,6 +20,7 @@ pub fn now_sec() -> f64 {
        .now() * 0.001
 }
 
+#[allow(unused)]
 pub fn window() -> web_sys::Window {
     web_sys::window().expect("no global `window` exists")
 }
@@ -36,12 +40,14 @@ pub fn set_frame_timeout(window: &web_sys::Window, f: &Closure<dyn FnMut()>, tim
         .expect("must've registered `set_frame_timeout`");
 }
 
+#[allow(unused)]
 pub fn document() -> web_sys::Document {
     window()
         .document()
         .expect("should have a document on window")
 }
 
+#[allow(unused)]
 pub fn body() -> web_sys::HtmlElement {
     document().body().expect("document should have a body")
 }

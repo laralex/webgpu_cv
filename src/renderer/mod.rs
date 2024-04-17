@@ -1,5 +1,4 @@
 pub mod stub_demo;
-pub use stub_demo::Demo as StubDemo;
 pub mod webgpu;
 pub use webgpu::Webgpu;
 pub mod demo_state;
@@ -11,14 +10,15 @@ mod preprocessor;
 use crate::GraphicsLevel;
 use wgpu::SurfaceTexture;
 
-use std::{cell::Cell, pin::Pin, rc::Rc};
+use std::{pin::Pin, rc::Rc};
 
-#[cfg(feature = "web")]
+//#[cfg(feature = "web")]
 pub mod wasm {
 
 use super::*;
-use crate::wasm::DemoId;
+use crate::DemoId;
 
+#[allow(unused)]
 pub fn start_loading_demo<'a>(id: DemoId, webgpu: Rc<Webgpu>, color_target_format: wgpu::TextureFormat, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture> {
    match id {
       DemoId::Triangle =>
@@ -39,7 +39,7 @@ pub fn start_loading_demo<'a>(id: DemoId, webgpu: Rc<Webgpu>, color_target_forma
 
 } // mod wasm
 
-pub trait IDemo : Drop {
+pub trait IDemo {
    fn tick(&mut self, state: &ExternalState);
    fn start_switching_graphics_level(&mut self, webgpu: &Webgpu, level: GraphicsLevel) -> Result<(), wgpu::SurfaceError>;
    fn poll_switching_graphics_level(&mut self, webgpu: &Webgpu) -> Result<std::task::Poll<()>, wgpu::SurfaceError>;
@@ -54,15 +54,6 @@ pub trait SimpleFuture {
    // std::future::Future uses std::task::Context<'_>
    // we use a mock argument        Self::Context
    fn simple_poll(self: Pin<&mut Self>, cx: &mut Self::Context) -> std::task::Poll<Self::Output>;
-}
-
-impl<T,C> SimpleFuture for Box<dyn SimpleFuture<Output=T, Context=C>> {
-    type Output=T;
-    type Context=C;
-
-    fn simple_poll(mut self: Pin<&mut Self>, cx: &mut Self::Context) -> std::task::Poll<Self::Output> {
-        self.as_mut().simple_poll(cx)
-    }
 }
 
 pub trait Progress {

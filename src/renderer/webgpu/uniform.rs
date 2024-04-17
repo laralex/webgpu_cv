@@ -79,8 +79,3 @@ impl<'a> BindGroupBuilfer<'a> {
       }
    }
 }
-      
-pub enum PushConstantsCompatibility {
-   Uniform(BindGroup, u32),
-   PushConstant(wgpu::PushConstantRange),
-}

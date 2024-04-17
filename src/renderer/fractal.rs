@@ -8,7 +8,7 @@ use crate::GraphicsLevel;
 use super::preprocessor::Preprocessor;
 use super::webgpu::buffer::{Buffer, UniformBuffer};
 use super::webgpu::utils::PipelineLayoutBuilder;
-use super::webgpu::uniform::{BindGroup, BindGroupBuilfer, PushConstantsCompatibility};
+use super::webgpu::uniform::BindGroup;
 use super::{DemoLoadingFuture, Dispose, ExternalState, IDemo, Progress, SimpleFuture, Webgpu};
 
 const VERTEX_SHADER_SRC:   &str = include_str!("shaders/triangle_fullscreen.vs.wgsl");
@@ -167,7 +167,6 @@ impl DemoLoadingProcess {
       let vertex_shader = Utils::make_vertex_shader(device, VERTEX_SHADER_SRC);
       let fragment_shader_default = Utils::make_fragment_shader(device, fs_code_default);
       let fragment_shader_antialiasing = Utils::make_fragment_shader(device, fs_code_antialiazing);
-      std::mem::drop(device);
       self.vertex_shader = Some(vertex_shader);
       self.fragment_shader_default = Some(fragment_shader_default);
       self.fragment_shader_antialiasing = Some(fragment_shader_antialiasing);
@@ -276,7 +275,8 @@ impl DemoLoadingProcess {
       });
       let webgpu = self.webgpu.clone();
       self.loaded_demo.as_mut().unwrap()
-            .start_switching_graphics_level(webgpu.as_ref(), self.graphics_level);
+            .start_switching_graphics_level(webgpu.as_ref(), self.graphics_level)
+            .expect("WebGPU surface error");
    }
 }
 
@@ -287,7 +287,7 @@ struct FractalRenderPipelines {
 pub struct Demo {
    render_pipelines: FractalRenderPipelines,
    use_antialiasing: bool,
-   num_rendered_vertices: i32,
+   num_rendered_vertices: u32,
    pending_graphics_level_switch: Option<GraphicsSwitchingProcess>,
    pending_write_stable_uniform: bool,
    fractal_uniform_data: FractalUniformData,
@@ -373,7 +373,7 @@ impl IDemo for Demo {
          const FRACTAL_UNIFORM_BIND_GROUP_INDEX: u32 = 1;
          render_pass.set_bind_group(DEMO_UNIFORM_BIND_GROUP_INDEX, &self.demo_uniform.bind_group, &[]);
          render_pass.set_bind_group(FRACTAL_UNIFORM_BIND_GROUP_INDEX, &self.fractal_uniform.bind_group, &[]);
-         render_pass.draw(0..3, 0..1); // self.num_rendered>vertices
+         render_pass.draw(0..self.num_rendered_vertices, 0..1); // self.num_rendered>vertices
       }
    
       // submit will accept anything that implements IntoIter
@@ -403,17 +403,9 @@ impl IDemo for Demo {
          .map_or(0.0, |s| s.progress())
    }
 
-   fn drop_demo(&mut self, webgpu: &Webgpu) {
+   fn drop_demo(&mut self, _webgpu: &Webgpu) {
       #[cfg(feature = "web")]
       web_sys::console::log_2(&"Rust demo drop custom".into(), &std::module_path!().into());
-   }
-}
-
-
-impl Drop for Demo {
-   fn drop(&mut self) {
-      #[cfg(feature = "web")]
-      web_sys::console::log_2(&"Rust demo drop".into(), &std::module_path!().into());
    }
 }
 

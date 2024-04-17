@@ -76,6 +76,7 @@ pub struct ExternalStateData {
    pub debug_mode: Option<u16>,
 }
 
+#[allow(unused)]
 impl ExternalState {
    pub fn data(&self) -> ExternalStateData {
       ExternalStateData {
@@ -231,6 +232,7 @@ pub struct DemoStateHistory {
    history_head_idx: usize,
 }
 
+#[allow(unused)]
 impl DemoStateHistory {
    pub fn new() -> Self {
        let history = vec![Default::default(); 256];
@@ -266,6 +268,7 @@ pub struct DemoHistoryPlayback {
    frame_lock_timestamp_ms: Option<f64>,
 }
 
+#[allow(unused)]
 impl DemoHistoryPlayback {
    pub fn new() -> Self {
       Self {

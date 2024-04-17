@@ -4,10 +4,6 @@ pub use utils::*;
 pub mod draw;
 pub mod uniform;
 
-use web_sys::HtmlCanvasElement;
-struct SurfaceView {
-   texture: Option<wgpu::SurfaceTexture>,
-}
 pub struct Webgpu {
    // pub surface: wgpu::Surface<'static>,
    pub device: wgpu::Device,
@@ -16,7 +12,7 @@ pub struct Webgpu {
 
 impl Webgpu {
    #[cfg(feature = "web")]
-   pub async fn new(canvas: HtmlCanvasElement) -> (Self, wgpu::Surface<'static>, wgpu::SurfaceConfiguration) {
+   pub async fn new(canvas: web_sys::HtmlCanvasElement) -> (Self, wgpu::Surface<'static>, wgpu::SurfaceConfiguration) {
       // The instance is a handle to our GPU
       // Backends::all => Vulkan + Metal + DX12 + Browser WebGPU
 
@@ -44,11 +40,12 @@ impl Webgpu {
          None, // Trace path
       ).await;
       if let Err(e) = device_result {
-         web_sys::console::log_1(
-            &"Failed to request a webgpu device with default features, fallbacking to more compatible features".into());
+         web_sys::console::log_2(
+            &"Failed to get a webgpu device with default features".into(), &e.to_string().into());
+         // fallback to more compatible features
          device_result = adapter.request_device(
             &Utils::downlevel_device_descriptor(),
-            None, // Trace path
+            None,
          ).await
       }
       let (device, queue) = device_result.expect("Failed to request wgpu device");
@@ -76,6 +73,7 @@ impl Webgpu {
       ( Self { device, queue }, surface, config )
    }
 
+   #[allow(unused)]
    pub async fn new_offscreen() -> Self {
       let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
          backends: wgpu::Backends::GL,

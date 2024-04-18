@@ -443,7 +443,7 @@ impl GraphicsSwitchingProcess {
    pub fn poll(demo: &mut Demo, _webgpu: &Webgpu) -> std::task::Poll<()> {
       let self_ = demo.pending_graphics_level_switch.as_mut().unwrap();
       (demo.fractal_uniform_data.num_iterations, demo.use_antialiasing) = match self_.graphics_level {
-        GraphicsLevel::Minimal => (25, false),
+        GraphicsLevel::Minimal => (50, false),
         GraphicsLevel::Low => (250, false),
         GraphicsLevel::Medium => (500, true),
         GraphicsLevel::High => (1000, true),

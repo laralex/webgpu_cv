@@ -446,17 +446,17 @@ function IntroPopup({onclose}) {
    }});
    return () =>  {
       const languagePicker = LanguagePicker(CURRENT_LANGUAGE, CURRENT_FONT_FAMILY, /* vertical */ false, undefined, 'ui_language_intro');
-      return closed.val ? null : div({class: "popup font-large retro-box zmax checkerboard-background"},
-         div({class: "message font-Large flex-row", style:"gap:1rem;"}, languagePicker.control, languagePicker.label),
+      return closed.val ? null : div({class: "intro-popup popup font-large zmax checkerboard-background flex-column"}, // retro-box
+         div({class: "message font-Large flex-row", style:"gap:1rem;padding-bottom:1rem;"}, languagePicker.control, languagePicker.label),
          div({
             class: () => (needAnimation.val ? " animated-appear " : "") + " flex-column",
             onanimationend: () => needAnimation.val = false, // to prevent animation repeat when language switched
          },
-         span({class: "message bold font-LARGE"}, localizeUi("intro_hi")),
-         span({class: "message"}, localizeUi("intro_enjoy_resume")),
-         span({class: "message"}, localizeUi("intro_using")), // ""
-         div({class: "flex-row wide"},
-            div({class: "message flex-column", style: "margin-right: 1.5em;"},
+         span({class: "message bold font-huge"}, localizeUi("intro_hi")),
+         span({class: "message font-Large"}, localizeUi("intro_enjoy_resume")),
+         span({class: "message font-Large"}, localizeUi("intro_using")), // ""
+         div({class: "flex-column wide font-Large"},
+            div({class: "flex-column"},
                span(a({href: "https://www.rust-lang.org/", target: "_blank"}, "Rust"), " + ", a({href: "https://en.wikipedia.org/wiki/WebGPU", target: "_blank"}, "WebGPU")),
                span(localizeUi("intro_3d")),
                div({class: "flex-row"},
@@ -466,7 +466,7 @@ function IntroPopup({onclose}) {
                      img({src: "../assets/webgpu-horizontal.svg", height:"70"}, "WebGPU"))
                ),
             ),
-            div({class: "message flex-column", style: "margin-left: 1.5em;"},
+            div({class: "flex-column"},
                span(a({href: "https://en.wikipedia.org/wiki/JavaScript", target: "_blank"}, "JavaScript"), " + ", a({href: "https://vanjs.org/", target: "_blank"}, "VanJS")),
                span(localizeUi("intro_frontend")),
                div({class: "flex-row"},
@@ -478,8 +478,10 @@ function IntroPopup({onclose}) {
                ),
             ),
          ),
-         div({class: "controls"},
-            button({class: "btn popup-btn font-large", onclick: (e) => closed.val = true }, localizeUi("intro_close")),
+         div({class: "controls flex-column flex-center", style: "margin-top:2rem;"},
+            div({class: "arrow zmax"}, span(), span(), span()),
+            button({class: "btn popup-btn font-huge", onclick: (e) => closed.val = true }, localizeUi("intro_close")),
+            // div({class: "arrow"}, span(), span(), span()),
          ),
       )
    }
@@ -487,8 +489,8 @@ function IntroPopup({onclose}) {
 
 function ControlsPopup({onclose}) {
    const closed = van.state(false);
-   return () => closed.val ? null :div({class: "popup font-large retro-box checkerboard-background zmax"},
-      div({class: "flex-column"},
+   return () => closed.val ? null :div({class: "intro-popup popup font-large checkerboard-background zmax"}, // retro-box
+      div({class: "flex-column font-Large"},
          div({class: "flex-row"},
             div({class: "message flex-column flex-center ", style: "margin: 1em;"},
                img({src: "../assets/mouse-wheel-up-down.svg", height:"200"}),
@@ -510,7 +512,8 @@ function ControlsPopup({onclose}) {
          ),
       ),
       div({class: "controls"},
-         button({class: "btn popup-btn font-large", onclick: (e) => { 
+         div({class: "arrow zmax"}, span(), span(), span()),
+         button({class: "btn popup-btn font-huge", onclick: (e) => { 
             closed.val = true;
             if (onclose !== undefined) { onclose(); }
          }}, localizeUi("controls_close")))
@@ -602,7 +605,7 @@ function configureFromFont(fontFamily = null, currentLanguage = null) {
       {fontSize: '13pt', sidebarWidthRem: 30, cardDescriptionBasis: '13rem', relativeBasis: '1.0rem'};
    console.log("-- FONT " + actualFontFamily + " : " + fontData.fontSize);
    document.documentElement.style.setProperty('--font-size-main', fontData.fontSize);
-   document.documentElement.style.setProperty('--sidebar-width', fontData.sidebarWidth + "rem");
+   document.documentElement.style.setProperty('--sidebar-width', fontData.sidebarWidthRem + "rem");
    // SIDEBAR_WIDTH_OVERRIDE.val = fontData.sidebarWidth;
    SIDEBAR_WIDTH_FONT_PX.val = Util.remToPx(fontData.sidebarWidthRem);
    document.documentElement.style.setProperty('--card-description-basis', fontData.cardDescriptionBasis);
@@ -825,7 +828,7 @@ window.onload = function() {
       if (IS_TUTORIAL_SHOWN.val == false) {
          return;
       }
-      van.add(document.body, ControlsPopup({onclose: () => {
+      van.add(document.getElementById("controls-container"), ControlsPopup({onclose: () => {
          van.add(document.getElementById("resize-tooltip"), ResizeTooltip({
             timeoutMillisec: 7000,
             onclose: () => {}
@@ -834,9 +837,8 @@ window.onload = function() {
       }}));
    });
    
-   if (IS_INTRO_SHOWN.val == true) {
-      console.log('@@@', IS_INTRO_SHOWN.val);
-      van.add(document.body, IntroPopup({onclose: () => {
+   if (true || IS_INTRO_SHOWN.val == true) {
+      van.add(document.getElementById("intro-container"), IntroPopup({onclose: () => {
          IS_TUTORIAL_SHOWN.val = true;
          IS_INTRO_SHOWN.val = false;
       }}));
@@ -872,7 +874,9 @@ window.onload = function() {
       window.addEventListener('wheel', event => {
          let wheelSpeed = callbackScrollSpeed(event);
          const ELEMENT_SCROLL_SPEED = BUILD_DATA.debug ? 0.3 : 0.15;
-         scrollCallback(event, wheelSpeed * ELEMENT_SCROLL_SPEED);
+         if (!IS_INTRO_SHOWN.val) {
+            scrollCallback(event, wheelSpeed * ELEMENT_SCROLL_SPEED);
+         }
       }, { capture: true, passive: false });
    });
 

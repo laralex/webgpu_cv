@@ -1,8 +1,15 @@
 :root {
 }
 
+/* .sidebar-container {
+   display: flex;
+   position: relative;
+   min-width: var(--sidebar-width);
+} */
+
 #sidebar {
    /* position: absolute; */
+   position: relative;
    display: flex;
    flex-direction: column;
    flex: 1 1 var(--sidebar-width);

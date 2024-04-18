@@ -63,7 +63,7 @@ export const UI_STRINGS = (function getLocalization() {
       demo_procedural_generation: {en: "Procedural mesh generation" },
       intro_hi: {en: "Hi, I'm Alexey :)", ru: "Привет, меня зовут Лёша :)", kr: "안녕하세요! 저는 \"료샤\"라고 합니다 :)"},
       intro_enjoy_resume: {en: "Enjoy my interactive résumé !", ru: "Вы наткнулись на мое интерактивное резюме", kr: "제 이력서를 방문해줘서 반갑습니다!"},
-      intro_using: {en: "I made everything from scratch, using", ru: "Все здесь разработано мной с нуля, используя", kr: "여기에 모두 것을 저 스스로 만들었습니다."},
+      intro_using: {en: "I made everything from scratch, using", ru: "Все здесь разработано мной с нуля:", kr: "여기에 모두 것을 저 스스로 만들었습니다."},
       intro_3d: {en: "for 3D graphics", ru: "для 3D графики", kr: "(3D 그래픽)"},
       intro_frontend: {en: "for reactive front-end", ru: "для реактивного фронтенда", kr: "(웹사이트)"},
       intro_close: {en: "Wow!", ru: "Вау!", kr: "와!"},

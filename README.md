@@ -2,6 +2,7 @@
 WebGL2 + Rust + JS (VanJS) + GitHub actions CI
 
 Known issues:
+- show the intro on top of cv sidebar
 - No chapters content
    - publication WACV 2024
    - project web-site

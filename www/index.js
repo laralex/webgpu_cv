@@ -487,8 +487,14 @@ function IntroPopup({onclose}) {
    }
 }
 
-function ControlsPopup({onclose}) {
+function ControlsPopup({timeoutMillisec = null, onclose = () => {}}) {
    const closed = van.state(false);
+   if (timeoutMillisec) {
+      setTimeout(() => {
+         closed.val = true;
+         onclose();
+      }, timeoutMillisec);
+   }
    return () => closed.val ? null :div({class: "intro-popup popup font-large checkerboard-background zmax"}, // retro-box
       div({class: "flex-column font-Large"},
          div({class: "flex-row"},
@@ -828,7 +834,7 @@ window.onload = function() {
       if (IS_TUTORIAL_SHOWN.val == false) {
          return;
       }
-      van.add(document.getElementById("controls-container"), ControlsPopup({onclose: () => {
+      van.add(document.getElementById("controls-container"), ControlsPopup({timeoutMillisec: 12000, onclose: () => {
          van.add(document.getElementById("resize-tooltip"), ResizeTooltip({
             timeoutMillisec: 7000,
             onclose: () => {}

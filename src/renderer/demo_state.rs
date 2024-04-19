@@ -23,6 +23,7 @@ pub struct KeyboardState {
 
 #[derive(Clone, Default)]
 struct DerivedDynamicState {
+   pub time_since_startup_sec: f64,
    pub time_now_sec:   f64,
    pub time_prev_sec:  f64,
    pub time_delta_sec: f64,
@@ -46,10 +47,13 @@ pub struct ExternalState {
    // dynamic
    mouse: Rc<Cell<MouseState>>,
    keyboard: Rc<Cell<KeyboardState>>,
+   time_delta_limit_ms: f64,
+   time_of_startup_ms: f64,
+   time_of_tick_ms: f64,
+
    time_now_ms:    f64,
    time_prev_ms:   f64,
    time_delta_ms:  f64,
-   time_delta_limit_ms: f64,
    frame_idx: usize,
    derived: DerivedDynamicState,
 
@@ -64,10 +68,11 @@ pub struct ExternalStateData {
    // dynamic
    pub mouse: MouseState,
    pub keyboard: KeyboardState,
+   pub time_delta_limit_ms: f64,
+
    pub time_now_ms:    f64,
    pub time_prev_ms:   f64,
    pub time_delta_ms:  f64,
-   pub time_delta_limit_ms: f64,
    pub frame_idx: usize,
 
    // stable
@@ -78,19 +83,34 @@ pub struct ExternalStateData {
 
 #[allow(unused)]
 impl ExternalState {
+
+   pub fn new(time_of_startup_ms: f64) -> Self {
+      let mut state = ExternalState::default();
+      state.time_of_startup_ms = time_of_startup_ms;
+      state
+   }
+
    pub fn data(&self) -> ExternalStateData {
       ExternalStateData {
          mouse: self.mouse.get(),
          keyboard: self.keyboard.get(),
+         time_delta_limit_ms: self.time_delta_limit_ms.clone(),
          time_now_ms: self.time_now_ms.clone(),
          time_prev_ms: self.time_prev_ms.clone(),
          time_delta_ms: self.time_delta_ms.clone(),
-         time_delta_limit_ms: self.time_delta_limit_ms.clone(),
          frame_idx: self.frame_idx.clone(),
          screen_size: self.stable.screen_size.clone(),
          graphics_level: self.stable.graphics_level.clone(),
          debug_mode: self.stable.debug_mode.clone(),
       }
+   }
+
+   pub fn reset(&mut self) {
+      self.time_now_ms = Default::default();
+      self.time_prev_ms = Default::default();
+      self.time_delta_ms = Default::default();
+      self.frame_idx = Default::default();
+      self.update_derived_state();
    }
 
    pub fn mouse_unit_position(&self) -> (f32, f32) {
@@ -108,6 +128,7 @@ impl ExternalState {
       
       let current_mouse = self.mouse.get();
       self.derived = DerivedDynamicState {
+         time_since_startup_sec: (self.time_of_tick_ms - self.time_of_startup_ms)*0.001,
          time_now_sec: now,
          time_prev_sec: then,
          time_delta_sec: delta,
@@ -132,12 +153,15 @@ impl ExternalState {
 
    pub fn mouse(&self) -> &Rc<Cell<MouseState>> { &self.mouse }
    pub fn keyboard(&self) -> &Rc<Cell<KeyboardState>> { &self.keyboard }
+   pub fn time_of_startup_ms(&self) -> f64 { self.time_of_startup_ms }
+   pub fn time_of_tick_ms(&self) -> f64 { self.time_of_tick_ms }
    pub fn time_now_ms(&self) -> f64 { self.time_now_ms }
    pub fn time_prev_ms(&self) -> f64 { self.time_prev_ms }
    pub fn time_delta_ms(&self) -> f64 { self.time_delta_ms }
    pub fn time_delta_limit_ms(&self) -> f64 { self.time_delta_limit_ms }
    pub fn frame_idx(&self) -> usize { self.frame_idx }
-
+   
+   pub fn time_since_startup_ms(&self) -> f64 { self.derived.time_since_startup_sec }
    pub fn time_now_sec(&self) -> f64 { self.derived.time_now_sec }
    pub fn time_prev_sec(&self) -> f64 { self.derived.time_prev_sec }
    pub fn time_delta_sec(&self) -> f64 { self.derived.time_delta_sec }
@@ -173,9 +197,10 @@ impl ExternalState {
 
    pub fn tick(&mut self, tick_timestamp_ms: f64) {
       self.frame_idx += 1;
-      self.time_delta_ms = tick_timestamp_ms - self.time_prev_ms;
+      self.time_delta_ms = tick_timestamp_ms - self.time_of_tick_ms;
+      self.time_of_tick_ms = tick_timestamp_ms;
       self.time_prev_ms  = self.time_now_ms;
-      self.time_now_ms   = tick_timestamp_ms;
+      self.time_now_ms   += self.time_delta_ms;
       self.update_derived_state();
    }
 
@@ -209,18 +234,20 @@ impl Default for ExternalState {
       Self {
          mouse: Rc::new(Cell::new(Default::default())),
          keyboard: Rc::new(Cell::new(Default::default())),
+         time_delta_limit_ms: Default::default(),
+         time_of_startup_ms: Default::default(),
+         time_of_tick_ms: Default::default(),
+         time_delta_ms: Default::default(),
+         time_now_ms: Default::default(),
+         time_prev_ms: Default::default(),
+         frame_idx: Default::default(),
+         derived: Default::default(),
+         is_stable_updated: true,
          stable: StableState {
             screen_size: (1, 1),
             graphics_level: Default::default(),
             debug_mode: Default::default(),
          } ,
-         is_stable_updated: true,
-         time_delta_ms: Default::default(),
-         time_delta_limit_ms: Default::default(),
-         time_now_ms: Default::default(),
-         time_prev_ms: Default::default(),
-         frame_idx: Default::default(),
-         derived: Default::default(),
          derived_stable: Default::default(),
       }
    }

@@ -1,3 +1,4 @@
+use std::ops::Rem;
 use std::rc::Rc;
 use wgpu::{ShaderStages, SurfaceTexture};
 use bytemuck;
@@ -251,9 +252,10 @@ impl DemoLoadingProcess {
          num_rendered_vertices: 3,
          pending_graphics_level_switch: None,
          pending_write_stable_uniform: true,
+         default_fractal_zoom: 2.0,
          fractal_uniform_data: FractalUniformData {
             fractal_center: [-1.1900443, 0.3043895],
-            fractal_zoom: 2.0,
+            fractal_zoom: 0.0,
             num_iterations: 1000,
          },
          fractal_buffer_offset: 0,
@@ -290,6 +292,7 @@ pub struct Demo {
    num_rendered_vertices: u32,
    pending_graphics_level_switch: Option<GraphicsSwitchingProcess>,
    pending_write_stable_uniform: bool,
+   default_fractal_zoom: f32,
    fractal_uniform_data: FractalUniformData,
    fractal_uniform_buffer: UniformBuffer,
    fractal_uniform: BindGroup,
@@ -327,7 +330,9 @@ struct DemoDynamicUniformData {
 
 impl IDemo for Demo {
    fn tick(&mut self, input: &ExternalState) {
-      self.fractal_uniform_data.fractal_zoom -= self.fractal_uniform_data.fractal_zoom * 0.25 * input.time_delta_sec() as f32;
+      const DEMO_LENGTH_SECONDS: f64 = 45.0;
+      let zoom_scale = (-0.3*input.time_now_sec().rem(DEMO_LENGTH_SECONDS)).exp() as f32;
+      self.fractal_uniform_data.fractal_zoom = self.default_fractal_zoom * zoom_scale;
       self.demo_stable_uniform_data.color_attachment_size = input.screen_size().into();
       self.demo_stable_uniform_data.aspect_ratio = input.aspect_ratio();
       self.demo_stable_uniform_data.is_debug = input.debug_mode().map_or(0.0, f32::from);

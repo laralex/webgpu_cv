@@ -196,7 +196,7 @@ impl WasmInterface {
         let loader_callback2 = loader_callback.clone();
         
         let demo_ref = self.demo.clone();
-        // let demo_state_ref = self.demo_state.clone();
+        let demo_state_ref = self.demo_state.clone();
         let demo_id_ref = self.demo_id.clone();
 
         // cancel current loading process (drop resources it allocated already)
@@ -242,6 +242,7 @@ impl WasmInterface {
                             demo_ref.borrow_mut().drop_demo(webgpu_ref.as_ref());
                             *demo_ref.borrow_mut() = new_demo;
                             *demo_id_ref.borrow_mut() = demo_id;
+                            demo_state_ref.borrow_mut().reset();
                             *loading_process_ref = None;
 
                             // wait +1 frame
@@ -287,10 +288,8 @@ impl WasmInterface {
             let webgpu = webgpu.as_ref();
             if let (
                 Ok(mut demo), Ok(mut demo_state), Ok(surface_texture),
-                // Ok(mut demo_state_history), Ok(mut demo_history_playback),
             ) = (
                 demo_clone.try_borrow_mut(), demo_state.try_borrow_mut(), webgpu_surface.get_current_texture(),
-                // demo_state_history.try_borrow_mut(), demo_history_playback.try_borrow_mut(),
             ) {
                 let keyboard = demo_state.keyboard().get();
                 let frame_state = FrameStateRef {

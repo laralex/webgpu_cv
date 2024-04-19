@@ -51,6 +51,8 @@ pub struct WasmInterface {
     demo: Rc<RefCell<Box<dyn IDemo>>>,
     demo_state: Rc<RefCell<ExternalState>>,
     demo_id: Rc<RefCell<DemoId>>,
+    previous_demo: Rc<RefCell<Box<dyn IDemo>>>,
+    previous_demo_id: Rc<RefCell<DemoId>>,
     pending_loading_demo: Rc<RefCell<Option<Pin<Box<dyn DemoLoadingFuture>>>>>,
     // canvas: Option<web_sys::HtmlCanvasElement>,
     // gl: Rc<web_sys::WebGl2RenderingContext>,
@@ -86,7 +88,6 @@ impl WasmInterface {
         let canvas = canvas.dyn_into::<web_sys::HtmlCanvasElement>()?;
         let demo_state = Rc::new(RefCell::new(renderer::ExternalState::default()));
         let pending_loading_demo = Rc::new(RefCell::new(None));
-        let demo_id = Rc::new(RefCell::new(DemoId::Stub));
         demo_loading_apply_progress(0.4);
         
         {
@@ -108,9 +109,11 @@ impl WasmInterface {
             webgpu: Rc::new(webgpu),
             webgpu_surface: Rc::new(webgpu_surface),
             webgpu_config: Rc::new(RefCell::new(webgpu_config)),
-            demo: Rc::new(RefCell::new(Box::new(renderer::stub_demo::Demo{}))),
             demo_state,
-            demo_id,
+            demo: Rc::new(RefCell::new(Box::new(renderer::stub_demo::Demo{}))),
+            demo_id: Rc::new(RefCell::new(DemoId::Stub)),
+            previous_demo: Rc::new(RefCell::new(Box::new(renderer::stub_demo::Demo{}))),
+            previous_demo_id: Rc::new(RefCell::new(DemoId::Stub)),
             pending_loading_demo,
             // demo_state_history: Rc::new(RefCell::new(renderer::DemoStateHistory::new())),
             // demo_history_playback: Rc::new(RefCell::new(renderer::DemoHistoryPlayback::new())),
@@ -195,9 +198,11 @@ impl WasmInterface {
         let loader_callback = Rc::new(RefCell::new(None));
         let loader_callback2 = loader_callback.clone();
         
-        let demo_ref = self.demo.clone();
         let demo_state_ref = self.demo_state.clone();
+        let demo_ref = self.demo.clone();
         let demo_id_ref = self.demo_id.clone();
+        let previous_demo_ref = self.previous_demo.clone();
+        let previous_demo_id_ref = self.previous_demo_id.clone();
 
         // cancel current loading process (drop resources it allocated already)
         demo_loading_finish();
@@ -205,6 +210,13 @@ impl WasmInterface {
 
         if demo_id == *self.demo_id.borrow() {
             // this demo is already fully loaded, don't need to load again
+            return;
+        }
+
+        if demo_id == *self.previous_demo_id.borrow() {
+            // this demo was the previous demo, and we cached it, so don't need to load it again
+            demo_ref.swap(&previous_demo_ref);
+            demo_id_ref.swap(&previous_demo_id_ref);
             return;
         }
 
@@ -239,7 +251,9 @@ impl WasmInterface {
                         std::task::Poll::Ready(new_demo) => {
                             // finished loading, assign the global state to new demo
                             demo_loading_apply_progress(loading_process.progress());
-                            demo_ref.borrow_mut().drop_demo(webgpu_ref.as_ref());
+                            previous_demo_ref.borrow_mut().drop_demo(webgpu_ref.as_ref());
+                            previous_demo_ref.swap(&demo_ref);
+                            previous_demo_id_ref.swap(&demo_id_ref);
                             *demo_ref.borrow_mut() = new_demo;
                             *demo_id_ref.borrow_mut() = demo_id;
                             demo_state_ref.borrow_mut().reset();

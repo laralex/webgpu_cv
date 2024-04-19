@@ -89,6 +89,8 @@ function loadCookies() {
    setState('showIntro', IS_INTRO_SHOWN);
    setState('sidebarWidth', SIDEBAR_WIDTH_OVERRIDE_PX);
    setState('debugMode', CURRENT_DEBUG_MODE);
+   console.log("Cookie", IS_INTRO_SHOWN.val === "true", IS_INTRO_SHOWN.val);
+   IS_INTRO_SHOWN.val = IS_INTRO_SHOWN.val === "true" || IS_INTRO_SHOWN.val === true;
 }
 
 function clearCookies() {
@@ -843,16 +845,12 @@ window.onload = function() {
       }}));
    });
    
+   console.log("Load ", IS_INTRO_SHOWN.val);
    if (IS_INTRO_SHOWN.val == true) {
       van.add(document.getElementById("intro-container"), IntroPopup({onclose: () => {
          IS_TUTORIAL_SHOWN.val = true;
          IS_INTRO_SHOWN.val = false;
       }}));
-      const addAppearAnimation = (el) => Util.addClass(el, 'animated-appear');
-      // document.querySelectorAll(".card-container")
-      //    .forEach(addAppearAnimation);
-      // document.querySelectorAll(".badgescard")
-      //    .forEach(addAppearAnimation);
    }
    const myPhoto = document.getElementById('my-photo');
    loadBuildData().finally(() => {

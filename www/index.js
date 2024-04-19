@@ -6,7 +6,7 @@ const CANVAS_ID = "main-canvas";
 
 const SIDEBAR_WIDTH_OVERRIDE_PX = van.state(0);
 const SIDEBAR_WIDTH_FONT_PX = van.state(0);
-const CURRENT_GRAPHICS_LEVEL = van.state(GraphicsLevel.Low);
+const CURRENT_GRAPHICS_LEVEL = van.state(GraphicsLevel.Medium);
 const CURRENT_FPS_LIMIT = van.state(45);
 const CURRENT_FONT_FAMILY = van.state("\"Share Tech\"");
 const CURRENT_DEBUG_MODE = van.state(null);
@@ -843,7 +843,7 @@ window.onload = function() {
       }}));
    });
    
-   if (true || IS_INTRO_SHOWN.val == true) {
+   if (IS_INTRO_SHOWN.val == true) {
       van.add(document.getElementById("intro-container"), IntroPopup({onclose: () => {
          IS_TUTORIAL_SHOWN.val = true;
          IS_INTRO_SHOWN.val = false;

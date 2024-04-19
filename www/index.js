@@ -447,11 +447,16 @@ function IntroPopup({onclose}) {
    return () =>  {
       const languagePicker = LanguagePicker(CURRENT_LANGUAGE, CURRENT_FONT_FAMILY, /* vertical */ false, undefined, 'ui_language_intro');
       return closed.val ? null : div({class: "intro-popup popup font-large zmax checkerboard-background flex-column"}, // retro-box
-         div({class: "message font-Large flex-row", style:"gap:1rem;padding-bottom:1rem;"}, languagePicker.control, languagePicker.label),
+         div({class: "message font-Large flex-row", style:"gap:1rem;"}, languagePicker.control, languagePicker.label),
          div({
             class: () => (needAnimation.val ? " animated-appear " : "") + " flex-column",
             onanimationend: () => needAnimation.val = false, // to prevent animation repeat when language switched
          },
+         div({class: "controls flex-column flex-center", style: "padding:0.5rem 0 2rem 0;"},
+            div({class: "arrow zmax"}, span(), span(), span()),
+            button({class: "btn popup-btn font-LARGE", onclick: (e) => closed.val = true }, localizeUi("intro_close")),
+            // div({class: "arrow"}, span(), span(), span()),
+         ),
          span({class: "message bold font-huge"}, localizeUi("intro_hi")),
          span({class: "message font-Large"}, localizeUi("intro_enjoy_resume")),
          span({class: "message font-Large"}, localizeUi("intro_using")), // ""
@@ -477,11 +482,6 @@ function IntroPopup({onclose}) {
                ),
                ),
             ),
-         ),
-         div({class: "controls flex-column flex-center", style: "margin-top:2rem;"},
-            div({class: "arrow zmax"}, span(), span(), span()),
-            button({class: "btn popup-btn font-huge", onclick: (e) => closed.val = true }, localizeUi("intro_close")),
-            // div({class: "arrow"}, span(), span(), span()),
          ),
       )
    }
@@ -519,7 +519,7 @@ function ControlsPopup({timeoutMillisec = null, onclose = () => {}}) {
       ),
       div({class: "controls"},
          div({class: "arrow zmax"}, span(), span(), span()),
-         button({class: "btn popup-btn font-huge", onclick: (e) => { 
+         button({class: "btn popup-btn font-LARGE", onclick: (e) => { 
             closed.val = true;
             if (onclose !== undefined) { onclose(); }
          }}, localizeUi("controls_close")))

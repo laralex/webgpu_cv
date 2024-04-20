@@ -1,5 +1,5 @@
 use gpp;
-
+use std::hash::Hash;
 pub struct Preprocessor {
    context: gpp::Context,
 }
@@ -31,5 +31,17 @@ impl Preprocessor {
          // Err(gpp::Error::UnexpectedCommand { command }) => None,
          // Err(gpp::Error::IoError(e)) => None,
       }
+   }
+}
+
+impl Hash for Preprocessor {
+   fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+      // NOTE: doesn't consider order of values in macros
+      // which might be different for different instsantiations of Preprocessor (idk)
+      self.context.macros.iter()
+         .for_each(|(k, v)| {
+            k.hash(state);
+            v.hash(state);
+         });
    }
 }

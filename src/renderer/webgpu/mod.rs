@@ -1,6 +1,10 @@
 pub mod buffer;
 pub mod utils;
+use std::{cell::RefCell, rc::Rc};
+
 pub use utils::*;
+
+use super::{preprocessor::Preprocessor, shader_loader::{FragmentShaderVariant, ShaderLoader, VertexShaderVariant}};
 pub mod draw;
 pub mod uniform;
 
@@ -9,6 +13,7 @@ pub struct Webgpu {
    // pub surface: wgpu::Surface<'static>,
    pub device: wgpu::Device,
    pub queue: wgpu::Queue,
+   shader_loader: RefCell<ShaderLoader>,
 }
 
 impl Webgpu {
@@ -101,8 +106,8 @@ impl Webgpu {
       };
 
       surface.configure(&device, &config);
-
-      ( canvas, Self { device, queue }, surface, config )
+      let shader_loader = RefCell::new(ShaderLoader::new());
+      ( canvas, Self { device, queue, shader_loader }, surface, config )
    }
 
    #[allow(unused)]
@@ -123,9 +128,18 @@ impl Webgpu {
          .request_device(&Utils::default_device_descriptor(), None)
          .await
          .unwrap();
-      Self {device, queue}
+
+      let shader_loader = RefCell::new(ShaderLoader::new());
+      Self {device, queue, shader_loader}
    }
 
+   pub fn get_vertex_shader(&self, variant: VertexShaderVariant, preprocessor: Option<&mut Preprocessor>) -> Rc<wgpu::ShaderModule> {
+      self.shader_loader.borrow_mut().get_vertex_shader(&self.device, variant, preprocessor)
+   }
+
+   pub fn get_fragment_shader(&self, variant: FragmentShaderVariant, preprocessor: Option<&mut Preprocessor>) -> Rc<wgpu::ShaderModule> {
+      self.shader_loader.borrow_mut().get_fragment_shader(&self.device, variant, preprocessor)
+   }
    // pub fn surface_configure(&self, config: &wgpu::SurfaceConfiguration) {
    //    self.surface.configure(&self.device, config);
    // }

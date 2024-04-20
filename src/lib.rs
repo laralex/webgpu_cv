@@ -90,7 +90,7 @@ impl WasmInterface {
 
         let pending_loading_demo = Rc::new(RefCell::new(None));
         let (canvas, webgpu, webgpu_surface, webgpu_config) = Webgpu::new_with_canvas(
-            wgpu::PowerPreference::HighPerformance
+            wgpu::PowerPreference::None,
         ).await;
         demo_loading_apply_progress(0.5);
 
@@ -227,6 +227,7 @@ impl WasmInterface {
             // this demo was the previous demo, and we cached it, so don't need to load it again
             demo_ref.swap(&previous_demo_ref);
             demo_id_ref.swap(&previous_demo_id_ref);
+            demo_state_ref.borrow_mut().reset();
             return;
         }
 

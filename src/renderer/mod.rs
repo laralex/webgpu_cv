@@ -1,5 +1,6 @@
 pub mod stub_demo;
 pub mod webgpu;
+pub mod shader_loader;
 pub use webgpu::Webgpu;
 pub mod demo_state;
 pub use demo_state::*;

@@ -17,10 +17,12 @@ impl Utils {
       })
    }
 
+   #[allow(unused)]
    pub fn make_vertex_shader(device: &Device, shader_code: &str) -> wgpu::ShaderModule {
       Utils::make_shader(device, shader_code, "Vertex Shader")
    }
-
+   
+   #[allow(unused)]
    pub fn make_fragment_shader(device: &Device, shader_code: &str) -> wgpu::ShaderModule {
       Utils::make_shader(device,  shader_code, "Fragment Shader")
    }

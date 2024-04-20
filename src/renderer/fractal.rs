@@ -7,13 +7,15 @@ use crate::renderer::webgpu::Utils;
 use crate::GraphicsLevel;
 
 use super::preprocessor::Preprocessor;
+use super::shader_loader::{FragmentShaderVariant, VertexShaderVariant};
 use super::webgpu::buffer::{Buffer, UniformBuffer};
 use super::webgpu::utils::PipelineLayoutBuilder;
 use super::webgpu::uniform::BindGroup;
 use super::{DemoLoadingFuture, Dispose, ExternalState, IDemo, Progress, SimpleFuture, Webgpu};
 
-const VERTEX_SHADER_SRC:   &str = include_str!("shaders/triangle_fullscreen.vs.wgsl");
-const FRAGMENT_SHADER_SRC: &str = include_str!("shaders/mandelbrot.fs.wgsl");
+const VERTEX_SHADER_VARIANT: VertexShaderVariant = VertexShaderVariant::TriangleFullscreen;
+// const FRAGMENT_SHADER_VARIANT: FragmentShaderVariant = FragmentShaderVariant::Uv;
+const FRAGMENT_SHADER_VARIANT: FragmentShaderVariant = FragmentShaderVariant::FractalMandelbrot;
 
 #[derive(Default)]
 enum DemoLoadingStage {
@@ -31,9 +33,9 @@ struct DemoLoadingProcess {
    graphics_level: GraphicsLevel,
    color_target_format: wgpu::TextureFormat,
    render_pipelines: Option<FractalRenderPipelines>,
-   vertex_shader: Option<wgpu::ShaderModule>,
-   fragment_shader_default: Option<wgpu::ShaderModule>,
-   fragment_shader_antialiasing: Option<wgpu::ShaderModule>,
+   vertex_shader: Option<Rc<wgpu::ShaderModule>>,
+   fragment_shader_default: Option<Rc<wgpu::ShaderModule>>,
+   fragment_shader_antialiasing: Option<Rc<wgpu::ShaderModule>>,
    fractal_uniform: Option<BindGroup>,
    fractal_uniform_buffer: Option<UniformBuffer>,
    demo_uniform: Option<BindGroup>,
@@ -160,14 +162,12 @@ impl DemoLoadingProcess {
    }
 
    fn compile_shaders(&mut self) {
+      
       let mut preprocessor = Preprocessor::new();
-      let fs_code_default = &preprocessor.process(FRAGMENT_SHADER_SRC).unwrap();
+      let vertex_shader = self.webgpu.get_vertex_shader(VERTEX_SHADER_VARIANT, None);
+      let fragment_shader_default = self.webgpu.get_fragment_shader(FRAGMENT_SHADER_VARIANT, Some(&mut preprocessor));
       preprocessor.define("USE_ANTIALIASING", "1");
-      let fs_code_antialiazing = &preprocessor.process(FRAGMENT_SHADER_SRC).unwrap();
-      let device = &self.webgpu.as_ref().device;
-      let vertex_shader = Utils::make_vertex_shader(device, VERTEX_SHADER_SRC);
-      let fragment_shader_default = Utils::make_fragment_shader(device, fs_code_default);
-      let fragment_shader_antialiasing = Utils::make_fragment_shader(device, fs_code_antialiazing);
+      let fragment_shader_antialiasing = self.webgpu.get_fragment_shader(FRAGMENT_SHADER_VARIANT, Some(&mut preprocessor));
       self.vertex_shader = Some(vertex_shader);
       self.fragment_shader_default = Some(fragment_shader_default);
       self.fragment_shader_antialiasing = Some(fragment_shader_antialiasing);

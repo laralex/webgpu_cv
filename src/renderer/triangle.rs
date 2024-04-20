@@ -3,10 +3,11 @@ use wgpu::SurfaceTexture;
 
 use crate::renderer::webgpu::Utils;
 
+use super::shader_loader::{FragmentShaderVariant, VertexShaderVariant};
 use super::{DemoLoadingFuture, Dispose, ExternalState, GraphicsLevel, IDemo, Progress, SimpleFuture, Webgpu};
 
-const VERTEX_SHADER_SRC:   &str = include_str!("shaders/triangle_colored.vs.wgsl");
-const FRAGMENT_SHADER_SRC: &str = include_str!("shaders/vertex_color.fs.wgsl");
+const VERTEX_SHADER_VARIANT:   VertexShaderVariant   = VertexShaderVariant::TriangleColored;
+const FRAGMENT_SHADER_VARIANT: FragmentShaderVariant = FragmentShaderVariant::VertexColor;
 
 #[derive(Default)]
 enum DemoLoadingStage {
@@ -23,8 +24,8 @@ struct DemoLoadingProcess {
    graphics_level: GraphicsLevel,
    color_target_format: wgpu::TextureFormat,
    render_pipeline: Option<wgpu::RenderPipeline>,
-   vertex_shader: Option<wgpu::ShaderModule>,
-   fragment_shader: Option<wgpu::ShaderModule>,
+   vertex_shader: Option<Rc<wgpu::ShaderModule>>,
+   fragment_shader: Option<Rc<wgpu::ShaderModule>>,
    webgpu: Rc<Webgpu>,
    loaded_demo: Option<Demo>,
 }
@@ -68,10 +69,8 @@ impl SimpleFuture for DemoLoadingProcess {
       use DemoLoadingStage::*;
       match self.stage {
          CompileShaders => {
-            
-            let device = &self.webgpu.as_ref().device;
-            let vertex_shader = Utils::make_vertex_shader(device, VERTEX_SHADER_SRC);
-            let fragment_shader = Utils::make_fragment_shader(device, FRAGMENT_SHADER_SRC);
+            let vertex_shader = self.webgpu.get_vertex_shader(VERTEX_SHADER_VARIANT, None);
+            let fragment_shader = self.webgpu.get_fragment_shader(FRAGMENT_SHADER_VARIANT, None);
             self.vertex_shader = Some(vertex_shader);
             self.fragment_shader = Some(fragment_shader);
             self.stage_percent = 0.6;
@@ -315,8 +314,8 @@ mod tests {
     #[test]
     fn shaders_compile() {
         let webgpu = futures::executor::block_on(Webgpu::new_offscreen());
-        Utils::make_vertex_shader(&webgpu.device, VERTEX_SHADER_SRC);
-        Utils::make_fragment_shader(&webgpu.device, FRAGMENT_SHADER_SRC);
+        webgpu.get_vertex_shader(VERTEX_SHADER_VARIANT, None);
+        webgpu.get_fragment_shader(FRAGMENT_SHADER_VARIANT, None);
     }
 
 }

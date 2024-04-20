@@ -4,6 +4,7 @@ use wgpu::{ShaderStages, SurfaceTexture};
 use bytemuck;
 
 use crate::renderer::webgpu::Utils;
+use crate::timer::ScopedTimer;
 use crate::GraphicsLevel;
 
 use super::preprocessor::Preprocessor;
@@ -88,9 +89,16 @@ impl SimpleFuture for DemoLoadingProcess {
       use DemoLoadingStage::*;
       match self.stage {
          CreateShaders => {
-            self.compile_shaders();
+            if self.vertex_shader.is_none() {
+               self.compile_shader_vert();
+            } else if self.fragment_shader_default.is_none() {
+               self.compile_shader_frag_default();
+            } else if self.fragment_shader_antialiasing.is_none() {
+               self.compile_shader_frag_aa();
+            } else {
+               self.stage = CreateUniforms;
+            }
             self.stage_percent += 0.1;
-            self.stage = CreateUniforms;
             std::task::Poll::Pending
          },
          CreateUniforms => {
@@ -161,19 +169,36 @@ impl DemoLoadingProcess {
       }
    }
 
+   #[allow(unused)]
    fn compile_shaders(&mut self) {
-      
-      let mut preprocessor = Preprocessor::new();
+      self.compile_shader_vert();
+      self.compile_shader_frag_default();
+      self.compile_shader_frag_aa();
+   }
+
+   fn compile_shader_vert(&mut self) {
+      let _t = ScopedTimer::new("compile_shader_vert");
       let vertex_shader = self.webgpu.get_vertex_shader(VERTEX_SHADER_VARIANT, None);
+      self.vertex_shader = Some(vertex_shader);
+   }
+
+   fn compile_shader_frag_default(&mut self) {
+      let _t = ScopedTimer::new("compile_shader_frag_default");
+      let mut preprocessor = Preprocessor::new();
       let fragment_shader_default = self.webgpu.get_fragment_shader(FRAGMENT_SHADER_VARIANT, Some(&mut preprocessor));
+      self.fragment_shader_default = Some(fragment_shader_default);
+   }
+
+   fn compile_shader_frag_aa(&mut self) {
+      let _t = ScopedTimer::new("compile_shader_frag_aa");
+      let mut preprocessor = Preprocessor::new();
       preprocessor.define("USE_ANTIALIASING", "1");
       let fragment_shader_antialiasing = self.webgpu.get_fragment_shader(FRAGMENT_SHADER_VARIANT, Some(&mut preprocessor));
-      self.vertex_shader = Some(vertex_shader);
-      self.fragment_shader_default = Some(fragment_shader_default);
       self.fragment_shader_antialiasing = Some(fragment_shader_antialiasing);
    }
 
    fn create_uniforms(&mut self) {
+      let _t = ScopedTimer::new("create_uniforms");
       let uniform_visibility = ShaderStages::FRAGMENT;
       let uniform_usage = wgpu::BufferUsages::COPY_DST;
       self.demo_stable_buffer_offset = 0;
@@ -203,6 +228,7 @@ impl DemoLoadingProcess {
    }
 
    fn create_pipelines(&mut self) {
+      let _t = ScopedTimer::new("create_pipelines");
       let render_pipeline_layout = PipelineLayoutBuilder::new()
          .with(self.demo_uniform.as_ref().unwrap())
          .with(self.fractal_uniform.as_ref().unwrap())
@@ -217,6 +243,7 @@ impl DemoLoadingProcess {
    }
 
    fn create_render_pipeline(&self, label: &str, layout: &wgpu::PipelineLayout, vs: &wgpu::ShaderModule, fs: &wgpu::ShaderModule) -> wgpu::RenderPipeline {
+      let _t = ScopedTimer::new("create_render_pipeline");
       self.webgpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
          label: Some(label),
          layout: Some(&layout),

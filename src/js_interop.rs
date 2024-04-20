@@ -1,7 +1,7 @@
 #![cfg(feature = "web")]
 
 use wasm_bindgen::{closure::Closure, JsCast};
-use web_sys;
+use web_sys::{self, Performance};
 
 // A macro to provide `println!(..)`-style syntax for `console.log` logging.
 macro_rules! js_log {
@@ -11,13 +11,16 @@ macro_rules! js_log {
 }
 pub(crate) use js_log;
 
-#[allow(unused)]
-pub fn now_sec() -> f64 {
-   web_sys::window()
+pub fn performance() -> Performance {
+    web_sys::window()
        .expect("should have a Window")
        .performance()
        .expect("should have a Performance")
-       .now() * 0.001
+}
+
+#[allow(unused)]
+pub fn now_sec() -> f64 {
+    performance().now() * 0.001
 }
 
 #[allow(unused)]

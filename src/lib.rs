@@ -1,5 +1,6 @@
 mod js_interop;
 mod renderer;
+mod timer;
 
 use wasm_bindgen::prelude::*;
 

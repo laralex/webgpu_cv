@@ -8,7 +8,7 @@ use super::{preprocessor::Preprocessor, shader_loader::{FragmentShaderVariant, S
 pub mod draw;
 pub mod uniform;
 
-
+const USE_SHADER_CACHE: bool = true;
 pub struct Webgpu {
    // pub surface: wgpu::Surface<'static>,
    pub device: wgpu::Device,
@@ -20,7 +20,10 @@ impl Webgpu {
    #[cfg(feature = "web")]
    pub async fn new_with_canvas(power_preference: wgpu::PowerPreference) -> (web_sys::HtmlCanvasElement, Self, wgpu::Surface<'static>, wgpu::SurfaceConfiguration){
       use wasm_bindgen::JsCast;
+      use crate::timer::ScopedTimer;
+
       let try_init_webgpu = |backend| async move {
+         let _t = ScopedTimer::new("webgpu::try_init_webgpu");
          let document = web_sys::window().unwrap().document().unwrap();
          let canvas = document.create_element("canvas").unwrap();
          let canvas = canvas.dyn_into::<web_sys::HtmlCanvasElement>().unwrap();
@@ -68,6 +71,7 @@ impl Webgpu {
          }
          web_sys::console::log_2(&"Failed to create wgpu surface for backend:".into(), &backend_name.into());
       }
+      let _t = ScopedTimer::new("webgpu::new_with_canvas");
       let (canvas, _instance, surface, adapter) = webgpu_artifacts
          .expect("No wgpu backends are available. Can't start the application");
       let (width, height) = (canvas.width(), canvas.height()); // TODO: newly created, maybe pass size, or resize in init_fn
@@ -106,7 +110,7 @@ impl Webgpu {
       };
 
       surface.configure(&device, &config);
-      let shader_loader = RefCell::new(ShaderLoader::new());
+      let shader_loader = RefCell::new(ShaderLoader::new(USE_SHADER_CACHE));
       ( canvas, Self { device, queue, shader_loader }, surface, config )
    }
 
@@ -129,7 +133,7 @@ impl Webgpu {
          .await
          .unwrap();
 
-      let shader_loader = RefCell::new(ShaderLoader::new());
+      let shader_loader = RefCell::new(ShaderLoader::new(USE_SHADER_CACHE));
       Self {device, queue, shader_loader}
    }
 

@@ -9,7 +9,7 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 default = [ ]
-web = ["console_error_panic_hook", "wgpu/webgl"]
+web = ["console_error_panic_hook", "wgpu/webgl", "wgpu/webgpu"]
 
 [dependencies]
 wasm-bindgen = "0.2.92"

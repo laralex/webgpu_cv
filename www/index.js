@@ -801,8 +801,6 @@ window.onload = function() {
       }
    })
    configureFromFont(CURRENT_FONT_FAMILY.val, CURRENT_LANGUAGE.val); // other elements' relative sizes depend on this configuration
-   const configureCanvas = getCanvasConvigurationFunc(CANVAS_ID);
-   configureResizingBorder(configureCanvas);
    configureFullscreenSwitch();
    // configureTextDeselection();
    van.add(document.getElementById("canvas-controls"), FullscreenButton({extraClasses: "fullscreen-button", height: "80"}));
@@ -910,10 +908,12 @@ window.onload = function() {
       demo_loading_apply_progress(0.0);
       await init('./wasm/index_bg.wasm');
 
-      // And afterwards we can use all the functionality defined in wasm.
+      // Canvas is created and owned by WasmInterface
       demo_loading_apply_progress(0.1);
       WASM_INSTANCE = await new WasmInterface(CANVAS_ID, CURRENT_GRAPHICS_LEVEL.val);
       demo_loading_apply_progress(0.5);
+      const configureCanvas = getCanvasConvigurationFunc(CANVAS_ID);
+      configureResizingBorder(configureCanvas);
       configureCanvas();
       WASM_INSTANCE.setFpsLimit(CURRENT_FPS_LIMIT.val);
       WASM_INSTANCE.setDebugMode(CURRENT_DEBUG_MODE.val);

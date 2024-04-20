@@ -4,7 +4,7 @@ pub use utils::*;
 pub mod draw;
 pub mod uniform;
 
-use wasm_bindgen::{JsCast, JsValue};
+
 pub struct Webgpu {
    // pub surface: wgpu::Surface<'static>,
    pub device: wgpu::Device,
@@ -13,43 +13,39 @@ pub struct Webgpu {
 
 impl Webgpu {
    #[cfg(feature = "web")]
-   pub async fn new_with_canvas<F>(canvas_init_fn: &mut F, power_preference: wgpu::PowerPreference) -> (web_sys::HtmlCanvasElement, Self, wgpu::Surface<'static>, wgpu::SurfaceConfiguration) where F: Clone + FnMut(&web_sys::HtmlCanvasElement)-> Result<(), JsValue>{
-      // let (mut canvas_width, mut canvas_height);
-      let mut try_init_webgpu = |backend| {
-         let mut canvas_init_fn = canvas_init_fn.clone();
-         async move {
-            let document = web_sys::window().unwrap().document().unwrap();
-            let canvas = document.create_element("canvas").unwrap();
-            let canvas = canvas.dyn_into::<web_sys::HtmlCanvasElement>().unwrap();
+   pub async fn new_with_canvas(power_preference: wgpu::PowerPreference) -> (web_sys::HtmlCanvasElement, Self, wgpu::Surface<'static>, wgpu::SurfaceConfiguration){
+      use wasm_bindgen::JsCast;
+      let try_init_webgpu = |backend| async move {
+         let document = web_sys::window().unwrap().document().unwrap();
+         let canvas = document.create_element("canvas").unwrap();
+         let canvas = canvas.dyn_into::<web_sys::HtmlCanvasElement>().unwrap();
 
-            let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-               backends: backend, ..Default::default() });
-            canvas_init_fn(&canvas)
-               .expect("Failed to execute callback on newly created canvas");
-            // # Safety
-            // The surface needs to live as long as the window that created it.
-            let surface = instance.create_surface(wgpu::SurfaceTarget::Canvas(canvas.clone()))
-               .map_err(|e| web_sys::console::log_2(&"Failed to create wgpu surface: ".into(), &e.to_string().into()))
-               .ok();
-            if surface.is_none() {
-               canvas.remove();
-               return None;
-            }
-            
-            let adapter = instance.request_adapter(
-               &wgpu::RequestAdapterOptions {
-                  power_preference,
-                  compatible_surface: Some(&surface.as_ref().unwrap()),
-                  force_fallback_adapter: false,
-               },
-            ).await;
-            if adapter.is_none() {
-               canvas.remove();
-               return None;
-            }
-
-            Some((canvas, instance, surface.unwrap(), adapter.unwrap()))
+         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+            backends: backend, ..Default::default() });
+         
+         // # Safety
+         // The surface needs to live as long as the window that created it.
+         let surface = instance.create_surface(wgpu::SurfaceTarget::Canvas(canvas.clone()))
+            .map_err(|e| web_sys::console::log_2(&"Failed to create wgpu surface: ".into(), &e.to_string().into()))
+            .ok();
+         if surface.is_none() {
+            canvas.remove();
+            return None;
          }
+         
+         let adapter = instance.request_adapter(
+            &wgpu::RequestAdapterOptions {
+               power_preference,
+               compatible_surface: Some(&surface.as_ref().unwrap()),
+               force_fallback_adapter: false,
+            },
+         ).await;
+         if adapter.is_none() {
+            canvas.remove();
+            return None;
+         }
+
+         Some((canvas, instance, surface.unwrap(), adapter.unwrap()))
       };
       
       let mut webgpu_artifacts = None;
@@ -67,7 +63,7 @@ impl Webgpu {
          }
          web_sys::console::log_2(&"Failed to create wgpu surface for backend:".into(), &backend_name.into());
       }
-      let (canvas, instance, surface, adapter) = webgpu_artifacts
+      let (canvas, _instance, surface, adapter) = webgpu_artifacts
          .expect("No wgpu backends are available. Can't start the application");
       let (width, height) = (canvas.width(), canvas.height()); // TODO: newly created, maybe pass size, or resize in init_fn
 

@@ -32,6 +32,7 @@ use self::renderer::KeyboardState;
 
 use super::*;
 use renderer::{DemoLoadingFuture, ExternalState, IDemo, MouseState, Webgpu};
+use web_sys::Element;
 use std::pin::Pin;
 use std::{cell::{RefCell, Cell}, rc::Rc};
 
@@ -45,6 +46,8 @@ extern "C" {
 
 #[wasm_bindgen]
 pub struct WasmInterface {
+    #[allow(unused)]
+    canvas: web_sys::HtmlCanvasElement,
     webgpu: Rc<Webgpu>,
     webgpu_surface: Rc<wgpu::Surface<'static>>,
     webgpu_config: Rc<RefCell<wgpu::SurfaceConfiguration>>,
@@ -77,15 +80,28 @@ impl From<u32> for GraphicsLevel {
 impl WasmInterface {
 
     #[wasm_bindgen(constructor)]
-    pub async fn new(canvas_dom_id: &str, level: GraphicsLevel) -> Result<WasmInterface, JsValue> {
+    pub async fn new(canvas_dom_id: &str, canvas_parent_element: JsValue, level: GraphicsLevel) -> Result<WasmInterface, JsValue> {
         #[cfg(feature = "console_error_panic_hook")]
         console_error_panic_hook::set_once();
         js_interop::js_log!("WASM Startup");
 
         let demo_state = Rc::new(RefCell::new(renderer::ExternalState::default()));
-        let mut configure_canvas = |canvas:&web_sys::HtmlCanvasElement| -> Result<(), JsValue> {
+        demo_loading_apply_progress(0.1);
+
+        let pending_loading_demo = Rc::new(RefCell::new(None));
+        let (canvas, webgpu, webgpu_surface, webgpu_config) = Webgpu::new_with_canvas(
+            wgpu::PowerPreference::HighPerformance
+        ).await;
+        demo_loading_apply_progress(0.5);
+
+        {
             // callbacks wired with JS canvas
             canvas.set_id(canvas_dom_id);
+            canvas_parent_element.dyn_into::<Element>()
+                .expect("Invalid argument canvas_parent_element, must be DOM element")
+                .append_child(&canvas)
+                .expect("Failed to add canvas to given parent DOM element");
+
             let mut demo_state_mut = demo_state.borrow_mut();
             demo_state_mut.set_graphics_level(level);
             configure_mousedown(&canvas, demo_state_mut.mouse().clone())?;
@@ -93,26 +109,13 @@ impl WasmInterface {
             configure_mousemove(&canvas, demo_state_mut.mouse().clone())?;
             configure_keydown(demo_state_mut.keyboard().clone())?;
             configure_keyup(demo_state_mut.keyboard().clone())?;
-            Ok(())
-        };
-
-        demo_loading_apply_progress(0.1);
-        
-        let pending_loading_demo = Rc::new(RefCell::new(None));
-        let (canvas, webgpu, webgpu_surface, webgpu_config) = Webgpu::new_with_canvas(
-            &mut configure_canvas,
-            wgpu::PowerPreference::HighPerformance
-        ).await;
-
-        demo_loading_apply_progress(0.4);
-        
-        
+        }
 
         demo_loading_apply_progress(0.6);
-        
         demo_loading_finish();
 
         Ok(Self {
+            canvas,
             webgpu: Rc::new(webgpu),
             webgpu_surface: Rc::new(webgpu_surface),
             webgpu_config: Rc::new(RefCell::new(webgpu_config)),

@@ -2,7 +2,6 @@
 const {div, button, i, label, img, svg, path, input, details, summary, p, li, a, option, select, span, ul, h1, h2, h3} = van.tags
 
 const ADD_PARALLAX = true;
-const CANVAS_ID = "main-canvas";
 
 const SIDEBAR_WIDTH_OVERRIDE_PX = van.state(0);
 const SIDEBAR_WIDTH_FONT_PX = van.state(0);
@@ -910,9 +909,12 @@ window.onload = function() {
 
       // Canvas is created and owned by WasmInterface
       demo_loading_apply_progress(0.1);
-      WASM_INSTANCE = await new WasmInterface(CANVAS_ID, CURRENT_GRAPHICS_LEVEL.val);
+      const canvas_id = "main-canvas";
+      WASM_INSTANCE = await new WasmInterface(canvas_id,
+         document.getElementById("canvas-wrapper"),
+         CURRENT_GRAPHICS_LEVEL.val);
       demo_loading_apply_progress(0.5);
-      const configureCanvas = getCanvasConvigurationFunc(CANVAS_ID);
+      const configureCanvas = getCanvasConvigurationFunc(canvas_id);
       configureResizingBorder(configureCanvas);
       configureCanvas();
       WASM_INSTANCE.setFpsLimit(CURRENT_FPS_LIMIT.val);

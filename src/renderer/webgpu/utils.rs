@@ -85,6 +85,14 @@ impl<'a> PipelineLayoutBuilder<'a> {
       }
    }
 
+   pub fn from_uniform_iter(iter: impl Iterator<Item=&'a BindGroup>) -> Self {
+      let mut s = Self::new();
+      for uniform_group in iter {
+         s = s.with(uniform_group);
+      }
+      s
+   }
+
    pub fn with(self, uniform_group: &'a BindGroup) -> Self {
       self.with_uniform_group(uniform_group)
    }
@@ -100,14 +108,24 @@ impl<'a> PipelineLayoutBuilder<'a> {
       self
    }
 
-   pub fn build(self, device: &wgpu::Device, label: Option<&str>) -> wgpu::PipelineLayout {
-      // let bind_group_layouts: Vec<&wgpu::BindGroupLayout> = self.uniform_group_layouts.iter()
-      //    .map(|u| u)
-      //    .collect::<Vec<_>>();
-      device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+   pub fn build_descriptor(&'a self, label: Option<&'a str>) -> wgpu::PipelineLayoutDescriptor {
+      wgpu::PipelineLayoutDescriptor {
          label,
          bind_group_layouts: &self.uniform_group_layouts,
          push_constant_ranges: &self.push_constant_ranges,
-      })
+      }
+   }
+
+   #[allow(unused)]
+   pub fn build(&'a self, device: &wgpu::Device, label: Option<&'a str>) -> wgpu::PipelineLayout {
+      // let bind_group_layouts: Vec<&wgpu::BindGroupLayout> = self.uniform_group_layouts.iter()
+      //    .map(|u| u)
+      //    .collect::<Vec<_>>();
+      let layout_descriptor = wgpu::PipelineLayoutDescriptor {
+         label,
+         bind_group_layouts: &self.uniform_group_layouts,
+         push_constant_ranges: &self.push_constant_ranges,
+      };
+      device.create_pipeline_layout(&layout_descriptor)
    }
 }

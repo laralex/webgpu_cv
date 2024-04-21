@@ -7,6 +7,7 @@ use crate::renderer::webgpu::Utils;
 use crate::timer::ScopedTimer;
 use crate::GraphicsLevel;
 
+use super::pipeline_loader::RenderPipelineFlatDescriptor;
 use super::preprocessor::Preprocessor;
 use super::shader_loader::{FragmentShaderVariant, VertexShaderVariant};
 use super::webgpu::buffer::{Buffer, UniformBuffer};
@@ -37,9 +38,8 @@ struct DemoLoadingProcess {
    vertex_shader: Option<Rc<wgpu::ShaderModule>>,
    fragment_shader_default: Option<Rc<wgpu::ShaderModule>>,
    fragment_shader_antialiasing: Option<Rc<wgpu::ShaderModule>>,
-   fractal_uniform: Option<BindGroup>,
+   uniform_groups: Option<Vec<BindGroup>>,
    fractal_uniform_buffer: Option<UniformBuffer>,
-   demo_uniform: Option<BindGroup>,
    demo_uniform_buffer: Option<UniformBuffer>,
    demo_stable_buffer_offset: u64,
    demo_dynamic_buffer_offset: u64,
@@ -55,7 +55,7 @@ impl Dispose for DemoLoadingProcess {
             // shouldn't free its resources
          },
          _ => {
-            self.fractal_uniform.take();
+            self.uniform_groups.take();
             self.render_pipelines.take();
             self.vertex_shader.take();
             self.fragment_shader_default.take();
@@ -158,9 +158,8 @@ impl DemoLoadingProcess {
          vertex_shader: Default::default(),
          fragment_shader_default: Default::default(),
          fragment_shader_antialiasing: Default::default(),
-         fractal_uniform: Default::default(),
+         uniform_groups: Default::default(),
          fractal_uniform_buffer: Default::default(),
-         demo_uniform: Default::default(),
          demo_uniform_buffer: Default::default(),
          demo_stable_buffer_offset: Default::default(),
          demo_dynamic_buffer_offset: Default::default(),
@@ -211,65 +210,71 @@ impl DemoLoadingProcess {
           uniform_usage, Some("Demo Bind Buffer"));
       let fractal_buffer = Buffer::new_uniform::<DemoDynamicUniformData>(
          &self.webgpu.device, uniform_usage, Some("Fractal Bind Buffer"));
-      self.demo_uniform = Some(BindGroup::builder()
+      let demo_uniform_group = BindGroup::builder()
          .with_uniform_buffer_range(0, uniform_visibility,
             &demo_buffer.buffer, (self.demo_stable_buffer_offset, demo_stable_uniform_size))
          .with_uniform_buffer_range(1, uniform_visibility,
             &demo_buffer.buffer, (self.demo_dynamic_buffer_offset, demo_dynamic_uniform_size))
-         .build(&self.webgpu.device, Some("Demo Bind Group"), None)
-      );
+         .build(&self.webgpu.device, Some("Demo Bind Group"), None);
       self.demo_uniform_buffer = Some(demo_buffer);
 
-      self.fractal_uniform = Some(BindGroup::builder()
+      let fractal_uniform_group = BindGroup::builder()
          .with_uniform_buffer(0, uniform_visibility, &fractal_buffer.buffer)
-         .build(&self.webgpu.device, Some("Fractal Bind Group"), None)
-      );
+         .build(&self.webgpu.device, Some("Fractal Bind Group"), None);
       self.fractal_uniform_buffer = Some(fractal_buffer);
+
+      self.uniform_groups = Some(vec![demo_uniform_group, fractal_uniform_group]);
    }
 
    fn create_pipelines(&mut self) {
       let _t = ScopedTimer::new("create_pipelines");
-      let render_pipeline_layout = PipelineLayoutBuilder::new()
-         .with(self.demo_uniform.as_ref().unwrap())
-         .with(self.fractal_uniform.as_ref().unwrap())
-         .build(&self.webgpu.device, Some("Render Pipeline Layout"));
+      let builder = PipelineLayoutBuilder::from_uniform_iter(self.uniform_groups.as_ref().unwrap().iter());
+      let pipeline_layout_descr = builder.build_descriptor(Some("Render Pipeline Layout"));
+      
       let vs = self.vertex_shader.take().unwrap();
       let fs = self.fragment_shader_default.take().unwrap();
       let fs_aa = self.fragment_shader_antialiasing.take().unwrap();
       self.render_pipelines = Some(FractalRenderPipelines{
-         default: self.create_render_pipeline("Render Pipeline - Default", &render_pipeline_layout, &vs, &fs),
-         antiialiasing: self.create_render_pipeline("Render Pipeline - AA", &render_pipeline_layout, &vs, &fs_aa),
+         default: self.create_render_pipeline("Render Pipeline - Default",
+            &pipeline_layout_descr, &vs, &fs),
+         antiialiasing: self.create_render_pipeline("Render Pipeline - AA",
+            &pipeline_layout_descr, &vs, &fs_aa),
       })
    }
 
-   fn create_render_pipeline(&self, label: &str, layout: &wgpu::PipelineLayout, vs: &wgpu::ShaderModule, fs: &wgpu::ShaderModule) -> wgpu::RenderPipeline {
+   fn create_render_pipeline(&self, label: &str, layout_descriptor: &wgpu::PipelineLayoutDescriptor, vs: &wgpu::ShaderModule, fs: &wgpu::ShaderModule) -> Rc<wgpu::RenderPipeline> {
       let _t = ScopedTimer::new("create_render_pipeline");
-      self.webgpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-         label: Some(label),
-         layout: Some(&layout),
-         vertex: wgpu::VertexState {
-               module: vs,
-               entry_point: "vs_main",
-               buffers: &[],
+      let render_pipeline_layout = self.webgpu.device.create_pipeline_layout(&layout_descriptor);
+      self.webgpu.get_pipeline(&RenderPipelineFlatDescriptor::new(
+         // &self.uniform_groups,
+         layout_descriptor,
+         &wgpu::RenderPipelineDescriptor {
+            label: Some(label),
+            layout: Some(&render_pipeline_layout),
+            vertex: wgpu::VertexState {
+                  module: vs,
+                  entry_point: "vs_main",
+                  buffers: &[],
+            },
+            fragment: Some(wgpu::FragmentState {
+                  module: fs,
+                  entry_point: "fs_main",
+                  targets: &[Some(wgpu::ColorTargetState {
+                     format: self.color_target_format,
+                     blend: Some(wgpu::BlendState::REPLACE),
+                     write_mask: wgpu::ColorWrites::ALL,
+                  })],
+            }),
+            primitive: Utils::default_primitive_state(),
+            depth_stencil: None, // 1.
+            multisample: wgpu::MultisampleState {
+               count: 1,
+               mask: !0,
+               alpha_to_coverage_enabled: false,
+            },
+            multiview: None,
          },
-         fragment: Some(wgpu::FragmentState {
-               module: fs,
-               entry_point: "fs_main",
-               targets: &[Some(wgpu::ColorTargetState {
-                  format: self.color_target_format,
-                  blend: Some(wgpu::BlendState::REPLACE),
-                  write_mask: wgpu::ColorWrites::ALL,
-               })],
-         }),
-         primitive: Utils::default_primitive_state(),
-         depth_stencil: None, // 1.
-         multisample: wgpu::MultisampleState {
-            count: 1,
-            mask: !0,
-            alpha_to_coverage_enabled: false,
-         },
-         multiview: None,
-      })
+      ))
    }
 
    fn switch_graphics_level(&mut self) {
@@ -287,7 +292,7 @@ impl DemoLoadingProcess {
          },
          fractal_buffer_offset: 0,
          fractal_uniform_buffer: self.fractal_uniform_buffer.take().unwrap(),
-         fractal_uniform: self.fractal_uniform.take().unwrap(),
+         uniform_groups: self.uniform_groups.take().unwrap(),
          demo_stable_uniform_data: DemoStableUniformData {
             color_attachment_size: [1, 1],
             aspect_ratio: 1.0,
@@ -300,7 +305,6 @@ impl DemoLoadingProcess {
          },
          demo_dynamic_buffer_offset: self.demo_dynamic_buffer_offset,
          demo_uniform_buffer: self.demo_uniform_buffer.take().unwrap(),
-         demo_uniform: self.demo_uniform.take().unwrap(),
       });
       let webgpu = self.webgpu.clone();
       self.loaded_demo.as_mut().unwrap()
@@ -310,8 +314,8 @@ impl DemoLoadingProcess {
 }
 
 struct FractalRenderPipelines {
-   default: wgpu::RenderPipeline,
-   antiialiasing: wgpu::RenderPipeline
+   default: Rc<wgpu::RenderPipeline>,
+   antiialiasing: Rc<wgpu::RenderPipeline>,
 }
 pub struct Demo {
    render_pipelines: FractalRenderPipelines,
@@ -320,16 +324,15 @@ pub struct Demo {
    pending_graphics_level_switch: Option<GraphicsSwitchingProcess>,
    pending_write_stable_uniform: bool,
    default_fractal_zoom: f32,
+   uniform_groups: Vec<BindGroup>,
    fractal_uniform_data: FractalUniformData,
    fractal_uniform_buffer: UniformBuffer,
-   fractal_uniform: BindGroup,
    fractal_buffer_offset: u64,
    demo_stable_uniform_data: DemoStableUniformData,
    demo_stable_buffer_offset: u64,
    demo_dynamic_uniform_data: DemoDynamicUniformData,
    demo_dynamic_buffer_offset: u64,
    demo_uniform_buffer: UniformBuffer,
-   demo_uniform: BindGroup,
 }
 
 #[repr(C)]
@@ -403,8 +406,8 @@ impl IDemo for Demo {
          );
          const DEMO_UNIFORM_BIND_GROUP_INDEX: u32 = 0;
          const FRACTAL_UNIFORM_BIND_GROUP_INDEX: u32 = 1;
-         render_pass.set_bind_group(DEMO_UNIFORM_BIND_GROUP_INDEX, &self.demo_uniform.bind_group, &[]);
-         render_pass.set_bind_group(FRACTAL_UNIFORM_BIND_GROUP_INDEX, &self.fractal_uniform.bind_group, &[]);
+         render_pass.set_bind_group(DEMO_UNIFORM_BIND_GROUP_INDEX, &self.uniform_groups[0].bind_group, &[]);
+         render_pass.set_bind_group(FRACTAL_UNIFORM_BIND_GROUP_INDEX, &self.uniform_groups[1].bind_group, &[]);
          render_pass.draw(0..self.num_rendered_vertices, 0..1); // self.num_rendered>vertices
       }
    
@@ -445,6 +448,11 @@ impl Demo {
    pub fn start_loading<'a>(webgpu: Rc<Webgpu>, color_target_format: wgpu::TextureFormat, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture> {
       Box::new(DemoLoadingProcess::new(webgpu, color_target_format, graphics_level))
    }
+
+   pub fn make_command_buffers(&mut self) {
+      // precache encoder.begin_render_pass into internal textures here
+      // can't precache render into backbuffer, because it requires a ref to TextureView
+   }
 }
 
 pub struct GraphicsSwitchingProcess {
@@ -482,6 +490,7 @@ impl GraphicsSwitchingProcess {
         GraphicsLevel::Ultra => (1500, true),
       };
       self_.progress = 1.0;
+      demo.make_command_buffers();
       std::task::Poll::Ready(())
    }
 }

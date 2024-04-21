@@ -29,6 +29,8 @@ pub enum DemoId {
 #[cfg(feature = "web")]
 mod wasm {
 
+use crate::timer::ScopedTimer;
+
 use self::renderer::KeyboardState;
 
 use super::*;
@@ -85,6 +87,8 @@ impl WasmInterface {
         #[cfg(feature = "console_error_panic_hook")]
         console_error_panic_hook::set_once();
         js_interop::js_log!("WASM Startup");
+
+        let _t = ScopedTimer::new("WasmInterface::new");
 
         let demo_state = Rc::new(RefCell::new(renderer::ExternalState::default()));
         demo_loading_apply_progress(0.1);
@@ -270,7 +274,6 @@ impl WasmInterface {
                             *demo_id_ref.borrow_mut() = demo_id;
                             demo_state_ref.borrow_mut().reset();
                             *loading_process_ref = None;
-
                             // wait +1 frame
                             js_interop::request_animation_frame(&js_interop::window(), &finish_after_1_frame);
                         }

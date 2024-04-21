@@ -4,16 +4,18 @@ use std::{cell::RefCell, rc::Rc};
 
 pub use utils::*;
 
-use super::{preprocessor::Preprocessor, shader_loader::{FragmentShaderVariant, ShaderLoader, VertexShaderVariant}};
+use super::{pipeline_loader::{PipelineLoader, RenderPipelineFlatDescriptor}, preprocessor::Preprocessor, shader_loader::{FragmentShaderVariant, ShaderLoader, VertexShaderVariant}};
 pub mod draw;
 pub mod uniform;
 
 const USE_SHADER_CACHE: bool = true;
+const USE_PIPELINE_CACHE: bool = true;
 pub struct Webgpu {
    // pub surface: wgpu::Surface<'static>,
    pub device: wgpu::Device,
    pub queue: wgpu::Queue,
    shader_loader: RefCell<ShaderLoader>,
+   pipeline_loader: RefCell<PipelineLoader>,
 }
 
 impl Webgpu {
@@ -111,7 +113,8 @@ impl Webgpu {
 
       surface.configure(&device, &config);
       let shader_loader = RefCell::new(ShaderLoader::new(USE_SHADER_CACHE));
-      ( canvas, Self { device, queue, shader_loader }, surface, config )
+      let pipeline_loader = RefCell::new(PipelineLoader::new(USE_PIPELINE_CACHE));
+      ( canvas, Self { device, queue, shader_loader, pipeline_loader }, surface, config )
    }
 
    #[allow(unused)]
@@ -134,7 +137,8 @@ impl Webgpu {
          .unwrap();
 
       let shader_loader = RefCell::new(ShaderLoader::new(USE_SHADER_CACHE));
-      Self {device, queue, shader_loader}
+      let pipeline_loader = RefCell::new(PipelineLoader::new(USE_PIPELINE_CACHE));
+      Self {device, queue, shader_loader, pipeline_loader}
    }
 
    pub fn get_vertex_shader(&self, variant: VertexShaderVariant, preprocessor: Option<&mut Preprocessor>) -> Rc<wgpu::ShaderModule> {
@@ -144,7 +148,8 @@ impl Webgpu {
    pub fn get_fragment_shader(&self, variant: FragmentShaderVariant, preprocessor: Option<&mut Preprocessor>) -> Rc<wgpu::ShaderModule> {
       self.shader_loader.borrow_mut().get_fragment_shader(&self.device, variant, preprocessor)
    }
-   // pub fn surface_configure(&self, config: &wgpu::SurfaceConfiguration) {
-   //    self.surface.configure(&self.device, config);
-   // }
+
+   pub fn get_pipeline(&self, flat_descriptor: &RenderPipelineFlatDescriptor) -> Rc<wgpu::RenderPipeline> {
+      self.pipeline_loader.borrow_mut().get_pipeline(&self.device, flat_descriptor)
+   }
 }

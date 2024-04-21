@@ -2,12 +2,14 @@ use std::{collections::HashMap, hash::{Hash, Hasher, BuildHasher}, rc::Rc};
 
 use super::{preprocessor::Preprocessor, webgpu::utils::Utils};
 
+#[allow(unused)]
 #[derive(Clone, Copy, Hash, Eq, PartialEq)]
 pub enum VertexShaderVariant {
    TriangleFullscreen,
    TriangleColored,
 }
 
+#[allow(unused)]
 #[derive(Clone, Copy, Hash, Eq, PartialEq)]
 pub enum FragmentShaderVariant {
    VertexColor,
@@ -49,8 +51,6 @@ impl ShaderLoader {
       self.loaded_vertex_shaders.insert(hash, shader.clone());
       shader
    }
-
-   //;
    
    pub fn get_fragment_shader(&mut self, device: &wgpu::Device, variant: FragmentShaderVariant, preprocessor: Option<&mut Preprocessor>) -> Rc<wgpu::ShaderModule> {
       let mut hash = 0;

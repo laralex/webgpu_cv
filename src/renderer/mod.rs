@@ -1,9 +1,10 @@
 pub mod stub_demo;
 pub mod webgpu;
-pub mod shader_loader;
 pub use webgpu::Webgpu;
 pub mod demo_state;
 pub use demo_state::*;
+mod pipeline_loader;
+mod shader_loader;
 mod triangle;
 mod fractal;
 mod preprocessor;

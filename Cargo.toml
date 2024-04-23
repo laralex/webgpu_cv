@@ -7,18 +7,29 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[[bin]]
+name = "windowed_demos"
+path = "src/bin.rs"
+
 [features]
 default = [ ]
 web = ["console_error_panic_hook", "wgpu/webgl", "wgpu/webgpu"]
 
 [dependencies]
-wasm-bindgen = "0.2.92"
-wasm-bindgen-futures = "0.4.42"
+cfg-if = "1"
 wgpu = { version = "0.19.3" }
-futures = "0.3.30"
-js-sys = "0.3"
 bytemuck = { version = "1.15.0", features = [ "derive" ] }
-gpp = "0.6.2"
+gpp = "0.6"
+glam = "0.25"
+wasm-bindgen = "0.2.92"
+log = "0.4"
+futures = "0.3"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = { version = "0.1.7", optional = true }
+wasm-bindgen-futures = "0.4.42"
+js-sys = "0.3"
+console_log = "1.0.0"
 web-sys = { version = "0.3", features = [
     "console",
     "Document",
@@ -30,8 +41,11 @@ web-sys = { version = "0.3", features = [
     "Response",
     "MouseEvent",
     "KeyboardEvent" ] }
-glam = "0.25.0"
-console_error_panic_hook = { version = "0.1.7", optional = true }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+env_logger = "0.11"
+winit = "0.29"
+
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"

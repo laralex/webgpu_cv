@@ -9,6 +9,13 @@ Known issues:
 - Demos overall:
    - fullscreen with F11 is weird (js error in firefox)
    - dynamic resolution confgurable per demo / pixel budget of the screen
+   - standalone app without wasm (for faster debugging)
+   - simple draw abstractions:
+      - blit texture
+      - axes
+      - lines
+      - dots
+      - text from premade atlas
    - demo panic - progress bar gets stuck
    - debug render mode (maybe visualize demo state in JS)
       - frame idx

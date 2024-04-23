@@ -276,7 +276,7 @@ impl DemoStateHistory {
        }
        let state_idx = (self.history_head_idx + self.history.len()) - offset_back - 1;
        let state_idx = state_idx % self.history.len();
-       web_sys::console::log_3(&"sample_state".into(), &offset_back.into(), &self.history.len().into());
+       log::info!("sample_state {} {}", offset_back, self.history.len());
        Some(self.history[state_idx])
    }
 
@@ -312,12 +312,12 @@ impl DemoHistoryPlayback {
          // entering frame lock mode - remember current time, and don't advance it
          self.frame_lock_timestamp_ms = Some(lock_at_timestamp_ms);
          self.history_playback_offset = 0;
-         web_sys::console::log_1(&"Frame lock mode ON".into());
+         log::info!("Frame lock mode ON");
          true
      } else {
          // exiting frame lock mode - set current time to the previous real time (which advanced even in lock)
          self.frame_lock_timestamp_ms.take();
-         web_sys::console::log_1(&"Frame lock mode OFF".into());
+         log::info!("Frame lock mode OFF");
          false
      }
    }

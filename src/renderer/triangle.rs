@@ -43,7 +43,7 @@ impl Dispose for DemoLoadingProcess {
             self.fragment_shader.take();
             self.stage = DemoLoadingStage::Ready;
             self.loaded_demo.take();
-            web_sys::console::log_2(&"Rust loading drop: TriangleDemo".into(), &self.stage_percent.into());
+            log::info!("Rust loading drop: TriangleDemo {}", self.stage_percent);
          },
       }
    }
@@ -239,7 +239,7 @@ impl IDemo for Demo {
    }
 
    fn start_switching_graphics_level(&mut self, _webgpu: &Webgpu, graphics_level: GraphicsLevel) -> Result<(), wgpu::SurfaceError> {
-      web_sys::console::log_2(&"Rust start_switching_graphics_level".into(), &std::module_path!().into());
+      log::info!("Rust start_switching_graphics_level {}", std::module_path!());
       self.pending_graphics_level_switch = Some(GraphicsSwitchingProcess{
          progress: 0.0,
          graphics_level,
@@ -264,7 +264,7 @@ impl IDemo for Demo {
    }
 
    fn drop_demo(&mut self, _webgpu: &Webgpu) {
-      web_sys::console::log_2(&"Rust demo drop".into(), &std::module_path!().into());
+      log::info!("Rust demo drop {}", std::module_path!());
    }
 }
 
@@ -275,7 +275,7 @@ pub struct GraphicsSwitchingProcess {
 
 impl Dispose for GraphicsSwitchingProcess {
    fn dispose(&mut self) {
-      web_sys::console::log_2(&"Rust graphics switching drop".into(), &std::module_path!().into());
+      log::info!("Rust graphics switching drop {}", std::module_path!());
    }
 }
 

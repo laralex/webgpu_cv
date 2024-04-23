@@ -61,7 +61,7 @@ impl IDemo for Demo {
    }
 
    fn drop_demo(&mut self, _webgpu: &Webgpu) {
-      web_sys::console::log_2(&"Rust demo drop".into(), &std::module_path!().into());
+      log::info!("Rust demo drop {}", std::module_path!());
    }
 }
 

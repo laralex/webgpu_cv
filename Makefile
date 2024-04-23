@@ -4,7 +4,8 @@ RUST_TARGET?=wasm32-unknown-unknown
 SERVE_DIR?=www
 SERVE_WASM_DIR?=${SERVE_DIR}/wasm
 CARGO_TOOLCHAIN?=+stable
-CARGO_FLAGS?=--target=${RUST_TARGET}
+CARGO_WIN?=--bins
+CARGO_WEB?=--lib --target=${RUST_TARGET} --features web
 WASM_BINDGEN_FLAGS?=--target=web --omit-default-module-path --out-dir ${SERVE_WASM_DIR} --out-name index
 
 .PHONY: install
@@ -14,13 +15,21 @@ install:
 	cargo install -f wasm-bindgen-cli
 	cargo install wasm-opt --locked
 
+.PHONY: cargo_win_debug
+cargo_win_debug:
+	cargo $(CARGO_TOOLCHAIN) build $(CARGO_WIN)
+
+.PHONY: cargo_win
+cargo_win:
+	cargo $(CARGO_TOOLCHAIN) build --release $(CARGO_WIN)
+
 .PHONY: cargo_debug
-cargo_debug:
-	cargo $(CARGO_TOOLCHAIN) build $(CARGO_FLAGS) --features web
+cargo_web_debug:
+	cargo $(CARGO_TOOLCHAIN) build $(CARGO_WEB)
 
 .PHONY: cargo
-cargo:
-	cargo $(CARGO_TOOLCHAIN) build --release $(CARGO_FLAGS) --features web
+cargo_web:
+	cargo $(CARGO_TOOLCHAIN) build --release $(CARGO_WEB)
 
 .PHONY: test_shaders
 test_shaders:
@@ -34,12 +43,12 @@ test:
 		-- --test-threads=2
 
 .PHONY: wasm_debug
-wasm_debug: cargo_debug
+wasm_debug: cargo_web_debug
 #--keep-debug
 	wasm-bindgen $(WASM_BINDGEN_FLAGS) target/${RUST_TARGET}/debug/${WASM_NAME}.wasm
 
 .PHONY: wasm
-wasm: cargo
+wasm: cargo_web
 	wasm-bindgen $(WASM_BINDGEN_FLAGS) target/${RUST_TARGET}/release/${WASM_NAME}.wasm
 
 .PHONY: wasm_ci
@@ -71,6 +80,10 @@ codegen:
 .PHONY: codegen_debug
 codegen_debug:
 	BUILD_TYPE=debug $(MAKE) codegen
+
+.PHONY: build_win
+build_win: cargo_win_debug
+	cargo run --bin windowed_demos
 
 .PHONY: build_debug
 build_debug: wasm_debug test_shaders

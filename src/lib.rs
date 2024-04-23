@@ -1,6 +1,7 @@
 mod js_interop;
 mod renderer;
 mod timer;
+mod env;
 
 use wasm_bindgen::prelude::*;
 
@@ -29,6 +30,7 @@ pub enum DemoId {
 #[cfg(feature = "web")]
 mod wasm {
 
+use crate::env::log_init;
 use crate::timer::ScopedTimer;
 
 use self::renderer::KeyboardState;
@@ -84,8 +86,7 @@ impl WasmInterface {
 
     #[wasm_bindgen(constructor)]
     pub async fn new(canvas_dom_id: &str, canvas_parent_element: JsValue, level: GraphicsLevel) -> Result<WasmInterface, JsValue> {
-        #[cfg(feature = "console_error_panic_hook")]
-        console_error_panic_hook::set_once();
+        log_init();
         js_interop::js_log!("WASM Startup");
 
         let _t = ScopedTimer::new("WasmInterface::new");

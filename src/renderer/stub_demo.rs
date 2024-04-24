@@ -1,7 +1,8 @@
 use std::task::Poll;
+use futures::Future;
 use wgpu::SurfaceTexture;
 
-use super::{webgpu::Utils, DemoLoadingFuture, Dispose, ExternalState, GraphicsLevel, IDemo, Progress, SimpleFuture, Webgpu};
+use super::{webgpu::Utils, DemoLoadingFuture, DemoLoadingSimpleFuture, Dispose, ExternalState, GraphicsLevel, IDemo, Progress, SimpleFuture, Webgpu};
 
 pub struct Demo;
 
@@ -87,6 +88,17 @@ impl SimpleFuture for DemoLoadingProcess {
       Poll::Ready(Box::new(Demo{}))
    }
 }
+
+impl Future for DemoLoadingProcess {
+   type Output = Box<dyn IDemo>;
+   
+   fn poll(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
+      let mut cx = ();
+      self.simple_poll(&mut cx)
+   }
+}
+
+impl DemoLoadingSimpleFuture for DemoLoadingProcess {}
 
 impl DemoLoadingFuture for DemoLoadingProcess {}
 

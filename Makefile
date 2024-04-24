@@ -33,13 +33,13 @@ cargo_web:
 
 .PHONY: test_shaders
 test_shaders:
-	cargo $(CARGO_TOOLCHAIN) test shaders --no-fail-fast -j 2 \
+	cargo $(CARGO_TOOLCHAIN) test shaders --no-fail-fast -j 2 --features web \
 		-- --test-threads=2
 
 .PHONY: test
 test:
 # wasm-pack test --node
-	cargo $(CARGO_TOOLCHAIN) test --lib --no-fail-fast -j 2 \
+	cargo $(CARGO_TOOLCHAIN) test --lib --no-fail-fast -j 2 --features web \
 		-- --test-threads=2
 
 .PHONY: wasm_debug

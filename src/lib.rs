@@ -1,7 +1,7 @@
-mod js_interop;
-mod renderer;
-mod timer;
-mod env;
+pub mod js_interop;
+pub mod renderer;
+pub mod timer;
+pub mod env;
 
 use wasm_bindgen::prelude::*;
 
@@ -31,12 +31,13 @@ pub enum DemoId {
 mod wasm {
 
 use crate::env::log_init;
+use crate::renderer::{handle_keyboard, FrameStateRef};
 use crate::timer::ScopedTimer;
 
 use self::renderer::KeyboardState;
 
 use super::*;
-use renderer::{DemoLoadingFuture, ExternalState, IDemo, MouseState, Webgpu};
+use renderer::{DemoLoadingSimpleFuture, ExternalState, IDemo, MouseState, Webgpu};
 use web_sys::Element;
 use std::pin::Pin;
 use std::{cell::{RefCell, Cell}, rc::Rc};
@@ -61,7 +62,7 @@ pub struct WasmInterface {
     demo_id: Rc<RefCell<DemoId>>,
     previous_demo: Rc<RefCell<Box<dyn IDemo>>>,
     previous_demo_id: Rc<RefCell<DemoId>>,
-    pending_loading_demo: Rc<RefCell<Option<Pin<Box<dyn DemoLoadingFuture>>>>>,
+    pending_loading_demo: Rc<RefCell<Option<Pin<Box<dyn DemoLoadingSimpleFuture>>>>>,
     // canvas: Option<web_sys::HtmlCanvasElement>,
     // gl: Rc<web_sys::WebGl2RenderingContext>,
     // demo_state_history: Rc<RefCell<renderer::DemoStateHistory>>, //::new();
@@ -311,8 +312,8 @@ impl WasmInterface {
         // let demo_history_playback = self.demo_history_playback.clone();
         let mut demo_state_history = renderer::DemoStateHistory::new();
         let mut demo_history_playback = renderer::DemoHistoryPlayback::new();
-        let window = js_interop::window();
         let mut previous_timestamp_ms = 0.0;
+        let window = js_interop::window();
         *engine_tick2.borrow_mut() = Some(Closure::new(move |now_timestamp_ms: f64| {
             // engine step
             let webgpu = webgpu.as_ref();
@@ -368,31 +369,6 @@ impl WasmInterface {
         let window = js_interop::window();
         js_interop::request_animation_frame(&window, engine_tick2.borrow().as_ref().unwrap());
         Ok(())
-    }
-}
-
-#[allow(unused)]
-struct FrameStateRef<'a> {
-    demo_state_history: &'a mut renderer::DemoStateHistory,
-    demo_history_playback: &'a mut renderer::DemoHistoryPlayback,
-    demo_state: &'a mut renderer::ExternalState,
-    previous_timestamp_ms: f64,
-    now_timestamp_ms: f64,
-}
-
-fn handle_keyboard<'a>(keyboard: KeyboardState, state: FrameStateRef<'a>) {
-    if keyboard.m < 0.0 {
-        if state.demo_history_playback.toggle_frame_lock(state.previous_timestamp_ms) == false {
-            // canceling frame lock, resume time
-            let frame_idx = 0;
-            state.demo_state.override_time(state.previous_timestamp_ms, frame_idx);
-        }
-    }
-    if keyboard.comma < 0.0 || keyboard.comma > 0.0 && keyboard.shift {
-        state.demo_history_playback.advance_back(&state.demo_state_history);
-    }
-    if keyboard.dot < 0.0 || keyboard.dot > 0.0 && keyboard.shift {
-        state.demo_history_playback.advance_forward(&state.demo_state_history);
     }
 }
 

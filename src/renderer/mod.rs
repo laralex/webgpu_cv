@@ -1,12 +1,13 @@
 pub mod stub_demo;
 pub mod webgpu;
+use futures::Future;
 pub use webgpu::Webgpu;
 pub mod demo_state;
 pub use demo_state::*;
 mod pipeline_loader;
 mod shader_loader;
-mod triangle;
-mod fractal;
+pub mod triangle;
+pub mod fractal;
 mod preprocessor;
 
 use crate::GraphicsLevel;
@@ -21,7 +22,7 @@ use super::*;
 use crate::DemoId;
 
 #[allow(unused)]
-pub fn start_loading_demo<'a>(id: DemoId, webgpu: Rc<Webgpu>, color_target_format: wgpu::TextureFormat, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture> {
+pub fn start_loading_demo<'window>(id: DemoId, webgpu: Rc<Webgpu<'window>>, color_target_format: wgpu::TextureFormat, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture + 'window> {
    match id {
       DemoId::Triangle =>
          triangle::Demo::start_loading(webgpu, color_target_format, graphics_level),
@@ -67,4 +68,5 @@ pub trait Dispose {
    fn dispose(&mut self);
 }
 
-pub trait DemoLoadingFuture : SimpleFuture<Output=Box<dyn IDemo>, Context=()> + Dispose + Progress {}
+pub trait DemoLoadingSimpleFuture : SimpleFuture<Output=Box<dyn IDemo>, Context=()> + Dispose + Progress {}
+pub trait DemoLoadingFuture : Future<Output=Box<dyn IDemo>> + Unpin + DemoLoadingSimpleFuture {}

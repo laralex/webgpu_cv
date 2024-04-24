@@ -340,3 +340,29 @@ impl DemoHistoryPlayback {
       }
    }
 }
+
+
+#[allow(unused)]
+pub struct FrameStateRef<'a> {
+    pub demo_state_history: &'a mut DemoStateHistory,
+    pub demo_history_playback: &'a mut DemoHistoryPlayback,
+    pub demo_state: &'a mut ExternalState,
+    pub previous_timestamp_ms: f64,
+    pub now_timestamp_ms: f64,
+}
+
+pub fn handle_keyboard<'a>(keyboard: KeyboardState, state: FrameStateRef<'a>) {
+   if keyboard.m < 0.0 {
+       if state.demo_history_playback.toggle_frame_lock(state.previous_timestamp_ms) == false {
+           // canceling frame lock, resume time
+           let frame_idx = 0;
+           state.demo_state.override_time(state.previous_timestamp_ms, frame_idx);
+       }
+   }
+   if keyboard.comma < 0.0 || keyboard.comma > 0.0 && keyboard.shift {
+       state.demo_history_playback.advance_back(&state.demo_state_history);
+   }
+   if keyboard.dot < 0.0 || keyboard.dot > 0.0 && keyboard.shift {
+       state.demo_history_playback.advance_forward(&state.demo_state_history);
+   }
+}

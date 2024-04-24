@@ -1,6 +1,6 @@
 pub mod buffer;
 pub mod utils;
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, marker::PhantomData, rc::Rc};
 
 pub use utils::*;
 
@@ -10,15 +10,20 @@ pub mod uniform;
 
 const USE_SHADER_CACHE: bool = true;
 const USE_PIPELINE_CACHE: bool = true;
-pub struct Webgpu {
+pub struct Webgpu<'window> {
    // pub surface: wgpu::Surface<'static>,
    pub device: wgpu::Device,
    pub queue: wgpu::Queue,
    shader_loader: RefCell<ShaderLoader>,
    pipeline_loader: RefCell<PipelineLoader>,
+   #[cfg(not(feature = "web"))]
+   pub surface: wgpu::Surface<'window>,
+   // #[cfg(not(feature = "web"))]
+   // pub config: wgpu::SurfaceConfiguration,
+   _phantom: PhantomData<&'window ()>,
 }
 
-impl Webgpu {
+impl<'window> Webgpu<'window> {
    #[cfg(feature = "web")]
    pub async fn new_with_canvas(power_preference: wgpu::PowerPreference) -> (web_sys::HtmlCanvasElement, Self, wgpu::Surface<'static>, wgpu::SurfaceConfiguration){
       use wasm_bindgen::JsCast;
@@ -117,6 +122,59 @@ impl Webgpu {
       ( canvas, Self { device, queue, shader_loader, pipeline_loader }, surface, config )
    }
 
+   #[cfg(not(feature = "web"))]
+   pub async fn new_with_winit(window: &'window winit::window::Window) -> ( Self, wgpu::SurfaceConfiguration ) {
+      let size = window.inner_size();
+
+      let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+         backends: wgpu::Backends::all(),
+         ..Default::default()
+      });
+      
+      // # Safety
+      // The surface needs to live as long as the window that created it.
+      let surface = unsafe { instance.create_surface(window) }.unwrap();
+
+      let adapter = instance.request_adapter(
+         &wgpu::RequestAdapterOptions {
+               power_preference: wgpu::PowerPreference::default(),
+               compatible_surface: Some(&surface),
+               force_fallback_adapter: false,
+         },
+      ).await.unwrap();
+
+      let (device, queue) = adapter
+         .request_device(&Utils::default_device_descriptor(), None)
+         .await.unwrap();
+
+      let surface_caps = surface.get_capabilities(&adapter);
+      // Shader code in this tutorial assumes an sRGB surface texture. Using a different
+      // one will result in all the colors coming out darker. If you want to support non
+      // sRGB surfaces, you'll need to account for that when drawing to the frame.
+      let surface_format = surface_caps.formats.iter()
+         .copied()
+         .filter(|f| f.is_srgb())
+         .next()
+         .unwrap_or(surface_caps.formats[0]);
+      let config = wgpu::SurfaceConfiguration {
+         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+         format: surface_format,
+         width: size.width,
+         height: size.height,
+         present_mode: surface_caps.present_modes[0],
+         alpha_mode: surface_caps.alpha_modes[0],
+         view_formats: vec![],
+         desired_maximum_frame_latency: 2,
+      };
+      surface.configure(&device, &config);
+
+      let shader_loader = RefCell::new(ShaderLoader::new(USE_SHADER_CACHE));
+      let pipeline_loader = RefCell::new(PipelineLoader::new(USE_PIPELINE_CACHE));
+      let _phantom = PhantomData{};
+      ( Self { device, queue, shader_loader, pipeline_loader, surface, _phantom }, config )
+   }
+
+   #[cfg(feature = "web")]
    #[allow(unused)]
    pub async fn new_offscreen() -> Self {
       let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {

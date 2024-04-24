@@ -1,5 +1,8 @@
 use std::ops::Rem;
 use std::rc::Rc;
+use std::task::Waker;
+use futures::future::Pending;
+use futures::Future;
 use wgpu::{ShaderStages, SurfaceTexture};
 use bytemuck;
 
@@ -13,7 +16,7 @@ use super::shader_loader::{FragmentShaderVariant, VertexShaderVariant};
 use super::webgpu::buffer::{Buffer, UniformBuffer};
 use super::webgpu::utils::PipelineLayoutBuilder;
 use super::webgpu::uniform::BindGroup;
-use super::{DemoLoadingFuture, Dispose, ExternalState, IDemo, Progress, SimpleFuture, Webgpu};
+use super::{DemoLoadingFuture, DemoLoadingSimpleFuture, Dispose, ExternalState, IDemo, Progress, SimpleFuture, Webgpu};
 
 const VERTEX_SHADER_VARIANT: VertexShaderVariant = VertexShaderVariant::TriangleFullscreen;
 // const FRAGMENT_SHADER_VARIANT: FragmentShaderVariant = FragmentShaderVariant::Uv;
@@ -29,7 +32,7 @@ enum DemoLoadingStage {
    SwitchGraphicsLevel,
 }
 
-struct DemoLoadingProcess {
+struct DemoLoadingProcess<'window> {
    stage: DemoLoadingStage,
    stage_percent: f32,
    graphics_level: GraphicsLevel,
@@ -43,11 +46,11 @@ struct DemoLoadingProcess {
    demo_uniform_buffer: Option<UniformBuffer>,
    demo_stable_buffer_offset: u64,
    demo_dynamic_buffer_offset: u64,
-   webgpu: Rc<Webgpu>,
+   webgpu: Rc<Webgpu<'window>>,
    loaded_demo: Option<Demo>,
 }
 
-impl Dispose for DemoLoadingProcess {
+impl<'window> Dispose for DemoLoadingProcess<'window> {
    fn dispose(&mut self) {
       match self.stage {
          DemoLoadingStage::Ready => {
@@ -69,19 +72,19 @@ impl Dispose for DemoLoadingProcess {
    }
 }
 
-impl Drop for DemoLoadingProcess {
+impl<'window> Drop for DemoLoadingProcess<'window> {
    fn drop(&mut self) {
       self.dispose();
    }
 }
 
-impl Progress for DemoLoadingProcess {
+impl<'window> Progress for DemoLoadingProcess<'window> {
     fn progress(&self) -> f32 {
         self.stage_percent
     }
 }
 
-impl SimpleFuture for DemoLoadingProcess {
+impl<'window> SimpleFuture for DemoLoadingProcess<'window> {
    type Output = Box<dyn IDemo>;
    type Context = ();
 
@@ -145,10 +148,27 @@ impl SimpleFuture for DemoLoadingProcess {
    }
 }
 
-impl DemoLoadingFuture for DemoLoadingProcess {}
+impl<'window> Future for DemoLoadingProcess<'window> {
+   type Output = Box<dyn IDemo>;
+   
+   fn poll(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
+      match self.as_mut().simple_poll(&mut ()) {
+         std::task::Poll::Pending => {
+            cx.waker().wake_by_ref();
+            std::task::Poll::Pending
+         }
+         poll => poll,
+      }
+   }
+}
 
-impl DemoLoadingProcess {
-   fn new(webgpu: Rc<Webgpu>, color_target_format: wgpu::TextureFormat, graphics_level: GraphicsLevel) -> Self {
+impl<'window> DemoLoadingSimpleFuture for DemoLoadingProcess<'window> {}
+
+impl<'window> DemoLoadingFuture for DemoLoadingProcess<'window> {}
+
+
+impl<'window> DemoLoadingProcess<'window> {
+   fn new(webgpu: Rc<Webgpu<'window>>, color_target_format: wgpu::TextureFormat, graphics_level: GraphicsLevel) -> Self {
       Self {
          stage: Default::default(),
          stage_percent: 0.0,
@@ -445,7 +465,7 @@ impl IDemo for Demo {
 }
 
 impl Demo {
-   pub fn start_loading<'a>(webgpu: Rc<Webgpu>, color_target_format: wgpu::TextureFormat, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture> {
+   pub fn start_loading<'window>(webgpu: Rc<Webgpu<'window>>, color_target_format: wgpu::TextureFormat, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture+ 'window> {
       Box::new(DemoLoadingProcess::new(webgpu, color_target_format, graphics_level))
    }
 

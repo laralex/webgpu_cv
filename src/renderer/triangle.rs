@@ -163,9 +163,14 @@ impl<'window> SimpleFuture for DemoLoadingProcess<'window> {
 impl<'window> Future for DemoLoadingProcess<'window> {
    type Output = Box<dyn IDemo>;
    
-   fn poll(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
-      let mut cx = ();
-      self.simple_poll(&mut cx)
+   fn poll(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
+      match self.as_mut().simple_poll(&mut ()) {
+         std::task::Poll::Pending => {
+            cx.waker().wake_by_ref();
+            std::task::Poll::Pending
+         }
+         poll => poll,
+      }
    }
 }
 

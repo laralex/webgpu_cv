@@ -10,6 +10,8 @@ Known issues:
    - fullscreen with F11 is weird (js error in firefox)
    - dynamic resolution confgurable per demo / pixel budget of the screen
    - standalone app without wasm (for faster debugging)
+      - compiles for eternity
+      - keyboard events
    - simple draw abstractions:
       - blit texture
       - axes

@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use std::time::Instant;
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 use my_wasm::env::log_init;
 use my_wasm::renderer::{stub_demo, fractal, DemoHistoryPlayback, DemoStateHistory, ExternalState, IDemo};
@@ -98,8 +98,8 @@ async fn run() {
    let window = WindowBuilder::new().build(&event_loop).unwrap();
    let mut state = State::new(&window).await;
    let window_ref = &window;
+   let time_begin = SystemTime::now();
    event_loop.set_control_flow(ControlFlow::Poll);
-   let mut previous_instant = Instant::now();
    event_loop.run(move |event, elwt| match event {
       Event::WindowEvent {
          ref event,
@@ -126,8 +126,11 @@ async fn run() {
          _ => {}
       },
       Event::AboutToWait => {
-         let now_instant = Instant::now();
-         let now_timestamp_ms = now_instant.elapsed().as_nanos() as f64 * 0.001;
+         let now = SystemTime::now();
+         let now_timestamp_ms = SystemTime::now()
+            .duration_since(time_begin)
+            .unwrap()
+            .as_micros() as f64 * 0.001;
          state.update(now_timestamp_ms);
          match state.render() {
             Ok(_) => {}

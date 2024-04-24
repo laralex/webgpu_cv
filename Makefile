@@ -4,7 +4,7 @@ RUST_TARGET?=wasm32-unknown-unknown
 SERVE_DIR?=www
 SERVE_WASM_DIR?=${SERVE_DIR}/wasm
 CARGO_TOOLCHAIN?=+stable
-CARGO_WIN?=--bins
+CARGO_WIN?=--bin windowed_demos
 CARGO_WEB?=--lib --target=${RUST_TARGET} --features web
 WASM_BINDGEN_FLAGS?=--target=web --omit-default-module-path --out-dir ${SERVE_WASM_DIR} --out-name index
 

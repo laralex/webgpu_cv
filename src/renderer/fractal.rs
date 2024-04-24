@@ -1,7 +1,5 @@
 use std::ops::Rem;
 use std::rc::Rc;
-use std::task::Waker;
-use futures::future::Pending;
 use futures::Future;
 use wgpu::{ShaderStages, SurfaceTexture};
 use bytemuck;

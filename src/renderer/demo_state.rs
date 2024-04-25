@@ -350,6 +350,7 @@ pub struct FrameStateRef<'a> {
 }
 
 pub fn handle_keyboard<'a>(keyboard: KeyboardState, state: FrameStateRef<'a>) {
+   println!("handle_keyboard {}", keyboard.m);
    if keyboard.m < 0.0 {
        if state.demo_history_playback.toggle_frame_lock(state.previous_timestamp_ms) == false {
            // canceling frame lock, resume time

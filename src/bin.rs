@@ -3,6 +3,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
+use my_renderer::renderer::handle_keyboard;
 use my_renderer::{DemoId, GraphicsLevel};
 use my_renderer::env::log_init;
 use my_renderer::renderer::{FrameStateRef, webgpu::Webgpu, stub_demo, fractal, DemoHistoryPlayback, DemoStateHistory, ExternalState, IDemo};
@@ -48,6 +49,7 @@ impl<'window> State<'window> {
 
    fn update(&mut self, now_timestamp_ms: f64) {
       {
+         let keyboard = self.demo_state.keyboard().borrow().clone();
          let frame_state = FrameStateRef {
             demo_state_history: &mut self.demo_state_history,
             demo_history_playback: &mut self.demo_history_playback,
@@ -55,19 +57,22 @@ impl<'window> State<'window> {
             previous_timestamp_ms: self.previous_timestamp_ms,
             now_timestamp_ms,
          };
-         let keyboard = self.demo_state.keyboard().borrow();
-         //handle_keyboard(keyboard, frame_state);
+         handle_keyboard(keyboard, frame_state);
       }
 
       let tick_timestamp_ms = self.demo_history_playback.playback_timestamp_ms().unwrap_or(now_timestamp_ms);
       self.demo_state.tick(tick_timestamp_ms);
       self.demo.tick(&self.demo_state);
-
       self.previous_timestamp_ms = now_timestamp_ms;
+   }
+
+   fn frame_cleanup(&mut self) {
       if !self.demo_history_playback.is_playing_back() {
          self.demo_state_history.store_state(self.demo_state.data());
       }
+      self.demo_state.dismiss_events();
    }
+
    fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
       let surface_texture = self.webgpu_surface.get_current_texture()?;
 
@@ -75,7 +80,6 @@ impl<'window> State<'window> {
 
       // swap buffers
       surface_texture.present();
-      self.demo_state.dismiss_events();
       Ok(())
    }
    fn reconfigure(&mut self) {
@@ -115,21 +119,34 @@ async fn run() {
          ref event,
          window_id,
       } if window_id == window_ref.id() => match event {
-         WindowEvent::CloseRequested
-         | WindowEvent::KeyboardInput {
-            event:
-                  KeyEvent {
-                     state: ElementState::Pressed,
-                     logical_key: Key::Named(NamedKey::Escape),
-                     ..
-                  },
-            ..
-         } => elwt.exit(),
+         WindowEvent::CloseRequested => elwt.exit(), 
          WindowEvent::KeyboardInput { event: KeyEvent {
             state: ElementState::Pressed,
-            logical_key: Key::Named(NamedKey::Control), .. },
+            logical_key, physical_key, .. },
             ..
-         } => state.demo_state.keyboard().borrow_mut().ctrl = true,
+         } => match (logical_key, physical_key) {
+            (Key::Named(NamedKey::Escape), _) => elwt.exit(),
+            (Key::Named(NamedKey::Control), _) => state.demo_state.keyboard().borrow_mut().ctrl = true,
+            (Key::Named(NamedKey::Shift), _) => state.demo_state.keyboard().borrow_mut().shift = true,
+            (Key::Named(NamedKey::Alt), _) => state.demo_state.keyboard().borrow_mut().alt = true,
+            (_, PhysicalKey::Code(KeyCode::KeyM)) => state.demo_state.keyboard().borrow_mut().m = 1.0,
+            (_, PhysicalKey::Code(KeyCode::Comma)) => state.demo_state.keyboard().borrow_mut().comma = 1.0,
+            (_, PhysicalKey::Code(KeyCode::Period)) => state.demo_state.keyboard().borrow_mut().dot = 1.0,
+            _ => {},
+         },
+         WindowEvent::KeyboardInput { event: KeyEvent {
+            state: ElementState::Released,
+            logical_key, physical_key, .. },
+            ..
+         } => match (logical_key, physical_key) {
+            (Key::Named(NamedKey::Control), _) => state.demo_state.keyboard().borrow_mut().ctrl = false,
+            (Key::Named(NamedKey::Shift), _) => state.demo_state.keyboard().borrow_mut().shift = false,
+            (Key::Named(NamedKey::Alt), _) => state.demo_state.keyboard().borrow_mut().alt = false,
+            (_, PhysicalKey::Code(KeyCode::KeyM)) => state.demo_state.keyboard().borrow_mut().m = -1.0,
+            (_, PhysicalKey::Code(KeyCode::Comma)) => state.demo_state.keyboard().borrow_mut().comma = -1.0,
+            (_, PhysicalKey::Code(KeyCode::Period)) => state.demo_state.keyboard().borrow_mut().dot = -1.0,
+            _ => {},
+         },
          WindowEvent::Resized(physical_size) => {
             state.resize((physical_size.width, physical_size.height));
          }
@@ -155,6 +172,7 @@ async fn run() {
             // All other errors (Outdated, Timeout) should be resolved by the next frame
             Err(e) => eprintln!("{:?}", e),
          }
+         state.frame_cleanup();
          window_ref.request_redraw();
       },
        _ => {}

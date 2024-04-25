@@ -323,6 +323,7 @@ impl WasmInterface {
                 demo_clone.try_borrow_mut(), demo_state.try_borrow_mut(), webgpu_surface.get_current_texture(),
             ) {
                 {
+                    let keyboard = demo_state.keyboard().borrow().clone();
                     let frame_state = FrameStateRef {
                         demo_state_history: &mut demo_state_history,
                         demo_history_playback: &mut demo_history_playback,
@@ -330,8 +331,7 @@ impl WasmInterface {
                         previous_timestamp_ms,
                         now_timestamp_ms,
                     };
-                    // let keyboard = demo_state.keyboard().borrow();
-                    // handle_keyboard(*keyboard, frame_state);
+                    handle_keyboard(keyboard, frame_state);
                 }
 
                 // engine tick

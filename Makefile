@@ -4,9 +4,10 @@ RUST_TARGET?=wasm32-unknown-unknown
 SERVE_DIR?=www
 SERVE_WASM_DIR?=${SERVE_DIR}/wasm
 CARGO_TOOLCHAIN?=+stable
-CARGO_WIN?=--bin windowed_demos
+CARGO_WIN?=--bin windowed_demos --features win
 CARGO_WEB?=--lib --target=${RUST_TARGET} --features web
 WASM_BINDGEN_FLAGS?=--target=web --omit-default-module-path --out-dir ${SERVE_WASM_DIR} --out-name index
+CARGO_BUILD_COMMAND?=build
 
 .PHONY: install
 install:
@@ -17,30 +18,31 @@ install:
 
 .PHONY: cargo_win_debug
 cargo_win_debug:
-	cargo $(CARGO_TOOLCHAIN) build $(CARGO_WIN)
+	cargo $(CARGO_TOOLCHAIN) $(CARGO_BUILD_COMMAND) $(CARGO_WIN)
 
 .PHONY: cargo_win
 cargo_win:
-	cargo $(CARGO_TOOLCHAIN) build --release $(CARGO_WIN)
+	cargo $(CARGO_TOOLCHAIN) $(CARGO_BUILD_COMMAND) --release $(CARGO_WIN)
 
 .PHONY: cargo_debug
 cargo_web_debug:
-	cargo $(CARGO_TOOLCHAIN) build $(CARGO_WEB)
+	cargo $(CARGO_TOOLCHAIN) $(CARGO_BUILD_COMMAND) $(CARGO_WEB)
 
-.PHONY: cargo
+.PHONY: cargo_web
 cargo_web:
-	cargo $(CARGO_TOOLCHAIN) build --release $(CARGO_WEB)
+	cargo $(CARGO_TOOLCHAIN) $(CARGO_BUILD_COMMAND) --release $(CARGO_WEB)
 
 .PHONY: test_shaders
 test_shaders:
-	cargo $(CARGO_TOOLCHAIN) test shaders --no-fail-fast -j 2 --features web \
-		-- --test-threads=2
+	cargo $(CARGO_TOOLCHAIN) test --no-run --locked
+	cargo $(CARGO_TOOLCHAIN) test shaders --no-fail-fast -j 2 \
+		-- --test-threads=2 --nocapture --quiet
 
 .PHONY: test
 test:
 # wasm-pack test --node
-	cargo $(CARGO_TOOLCHAIN) test --lib --no-fail-fast -j 2 --features web \
-		-- --test-threads=2
+	cargo $(CARGO_TOOLCHAIN) test --lib --no-fail-fast -j 2 \
+		-- --test-threads=2 --nocapture --quiet
 
 .PHONY: wasm_debug
 wasm_debug: cargo_web_debug
@@ -83,7 +85,6 @@ codegen_debug:
 
 .PHONY: build_win
 build_win: cargo_win_debug
-	cargo run --bin windowed_demos
 
 .PHONY: build_debug
 build_debug: wasm_debug test_shaders
@@ -94,6 +95,10 @@ build_ci: wasm_ci codegen pdf_link
 
 .PHONY: build
 build: wasm test_shaders codegen pdf_link wasm_opt
+
+.PHONY: try_build_all
+try_build_all: CARGO_BUILD_COMMAND=check
+try_build_all: test build_win build_debug
 
 # ===== DEVELOPER DEPLOYMENT
 .PHONY: kill_server
@@ -120,3 +125,7 @@ app_debug: build_debug server_py
 
 .PHONY: app
 app: build server_py
+
+.PHONY: app_win
+app_win: build_win
+	cargo run $(CARGO_WIN)

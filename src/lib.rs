@@ -34,7 +34,7 @@ use crate::env::log_init;
 use crate::renderer::{handle_keyboard, FrameStateRef};
 use crate::timer::ScopedTimer;
 
-use self::renderer::KeyboardState;
+use self::renderer::{DemoLoadingFuture, KeyboardState};
 
 use super::*;
 use renderer::{DemoLoadingSimpleFuture, ExternalState, IDemo, MouseState, Webgpu};
@@ -62,7 +62,7 @@ pub struct WasmInterface {
     demo_id: Rc<RefCell<DemoId>>,
     previous_demo: Rc<RefCell<Box<dyn IDemo>>>,
     previous_demo_id: Rc<RefCell<DemoId>>,
-    pending_loading_demo: Rc<RefCell<Option<Pin<Box<dyn DemoLoadingSimpleFuture>>>>>,
+    pending_loading_demo: Rc<RefCell<Option<Pin<Box<dyn DemoLoadingFuture>>>>>,
     // canvas: Option<web_sys::HtmlCanvasElement>,
     // gl: Rc<web_sys::WebGl2RenderingContext>,
     // demo_state_history: Rc<RefCell<renderer::DemoStateHistory>>, //::new();
@@ -96,7 +96,7 @@ impl WasmInterface {
         demo_loading_apply_progress(0.1);
 
         let pending_loading_demo = Rc::new(RefCell::new(None));
-        let (canvas, webgpu, webgpu_surface, webgpu_config) = Webgpu::new_with_canvas(
+        let (canvas, webgpu, webgpu_surface) = Webgpu::new_with_canvas(
             wgpu::PowerPreference::None,
         ).await;
         demo_loading_apply_progress(0.5);
@@ -124,8 +124,8 @@ impl WasmInterface {
         Ok(Self {
             canvas,
             webgpu: Rc::new(webgpu),
-            webgpu_surface: Rc::new(webgpu_surface),
-            webgpu_config: Rc::new(RefCell::new(webgpu_config)),
+            webgpu_surface: Rc::new(webgpu_surface.surface),
+            webgpu_config: Rc::new(RefCell::new(webgpu_surface.config)),
             demo_state,
             demo: Rc::new(RefCell::new(Box::new(renderer::stub_demo::Demo{}))),
             demo_id: Rc::new(RefCell::new(DemoId::Stub)),

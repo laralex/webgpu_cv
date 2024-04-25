@@ -1,13 +1,13 @@
 #[allow(unused)]
 pub fn log_init() {
    cfg_if::cfg_if! {
-      if #[cfg(target_arch = "wasm32")] {
+      if #[cfg(feature = "web")] {
           use console_log;
           use log;
           #[cfg(feature = "console_error_panic_hook")]
           std::panic::set_hook(Box::new(console_error_panic_hook::hook));
           console_log::init_with_level(log::Level::Warn).expect("Couldn't initialize logger");
-      } else {
+      } else if #[cfg(feature = "env_logger")] {
           use env_logger;
           env_logger::init();
       }

@@ -1,8 +1,9 @@
 pub mod buffer;
 pub mod utils;
-use std::{cell::RefCell, marker::PhantomData, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 pub use utils::*;
+use wgpu::rwh::{HasDisplayHandle,HasWindowHandle};
 
 use super::{pipeline_loader::{PipelineLoader, RenderPipelineFlatDescriptor}, preprocessor::Preprocessor, shader_loader::{FragmentShaderVariant, ShaderLoader, VertexShaderVariant}};
 pub mod draw;
@@ -10,22 +11,27 @@ pub mod uniform;
 
 const USE_SHADER_CACHE: bool = true;
 const USE_PIPELINE_CACHE: bool = true;
-pub struct Webgpu<'window> {
+pub struct Webgpu {
    // pub surface: wgpu::Surface<'static>,
    pub device: wgpu::Device,
    pub queue: wgpu::Queue,
    shader_loader: RefCell<ShaderLoader>,
    pipeline_loader: RefCell<PipelineLoader>,
-   #[cfg(not(feature = "web"))]
-   pub surface: wgpu::Surface<'window>,
    // #[cfg(not(feature = "web"))]
-   // pub config: wgpu::SurfaceConfiguration,
-   _phantom: PhantomData<&'window ()>,
+   // pub surface: wgpu::Surface<'window>,
+   // #[cfg(not(feature = "web"))]
+   
+   // _phantom: PhantomData<&'window ()>,
 }
 
-impl<'window> Webgpu<'window> {
+pub struct WebgpuSurface<'window> {
+   pub surface: wgpu::Surface<'window>,
+   pub config: wgpu::SurfaceConfiguration,
+}
+
+impl Webgpu {
    #[cfg(feature = "web")]
-   pub async fn new_with_canvas(power_preference: wgpu::PowerPreference) -> (web_sys::HtmlCanvasElement, Self, wgpu::Surface<'static>, wgpu::SurfaceConfiguration){
+   pub async fn new_with_canvas(power_preference: wgpu::PowerPreference) -> (web_sys::HtmlCanvasElement, Self, WebgpuSurface<'static>){
       use wasm_bindgen::JsCast;
       use crate::timer::ScopedTimer;
 
@@ -119,11 +125,12 @@ impl<'window> Webgpu<'window> {
       surface.configure(&device, &config);
       let shader_loader = RefCell::new(ShaderLoader::new(USE_SHADER_CACHE));
       let pipeline_loader = RefCell::new(PipelineLoader::new(USE_PIPELINE_CACHE));
-      ( canvas, Self { device, queue, shader_loader, pipeline_loader }, surface, config )
+      ( canvas, Self { device, queue, shader_loader, pipeline_loader }, WebgpuSurface{surface, config} )
    }
 
-   #[cfg(not(feature = "web"))]
-   pub async fn new_with_winit(window: &'window winit::window::Window) -> ( Self, wgpu::SurfaceConfiguration ) {
+   #[cfg(feature = "win")]
+   pub async fn new_with_winit(window: &winit::window::Window) -> ( Self, WebgpuSurface<'static> ) {
+      // let window = window.read().unwrap();
       let size = window.inner_size();
 
       let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
@@ -133,7 +140,10 @@ impl<'window> Webgpu<'window> {
       
       // # Safety
       // The surface needs to live as long as the window that created it.
-      let surface = instance.create_surface(window).unwrap();
+      let surface = unsafe { instance.create_surface_unsafe(wgpu::SurfaceTargetUnsafe::RawHandle { 
+         raw_display_handle: window.display_handle().unwrap().into(), 
+         raw_window_handle: window.window_handle().unwrap().into(),
+      }) }.unwrap();
 
       let adapter = instance.request_adapter(
          &wgpu::RequestAdapterOptions {
@@ -170,11 +180,9 @@ impl<'window> Webgpu<'window> {
 
       let shader_loader = RefCell::new(ShaderLoader::new(USE_SHADER_CACHE));
       let pipeline_loader = RefCell::new(PipelineLoader::new(USE_PIPELINE_CACHE));
-      let _phantom = PhantomData{};
-      ( Self { device, queue, shader_loader, pipeline_loader, surface, _phantom }, config )
+      ( Self { device, queue, shader_loader, pipeline_loader }, WebgpuSurface{ surface, config } )
    }
 
-   #[cfg(feature = "web")]
    #[allow(unused)]
    pub async fn new_offscreen() -> Self {
       let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
@@ -196,7 +204,7 @@ impl<'window> Webgpu<'window> {
 
       let shader_loader = RefCell::new(ShaderLoader::new(USE_SHADER_CACHE));
       let pipeline_loader = RefCell::new(PipelineLoader::new(USE_PIPELINE_CACHE));
-      Self {device, queue, shader_loader, pipeline_loader}
+      Self {device, queue, shader_loader, pipeline_loader }
    }
 
    pub fn get_vertex_shader(&self, variant: VertexShaderVariant, preprocessor: Option<&mut Preprocessor>) -> Rc<wgpu::ShaderModule> {

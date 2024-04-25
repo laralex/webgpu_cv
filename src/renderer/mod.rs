@@ -22,7 +22,7 @@ use super::*;
 use crate::DemoId;
 
 #[allow(unused)]
-pub fn start_loading_demo<'window>(id: DemoId, webgpu: Rc<Webgpu<'window>>, color_target_format: wgpu::TextureFormat, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture + 'window> {
+pub fn start_loading_demo(id: DemoId, webgpu: Rc<Webgpu>, color_target_format: wgpu::TextureFormat, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture> {
    match id {
       DemoId::Triangle =>
          triangle::Demo::start_loading(webgpu, color_target_format, graphics_level),

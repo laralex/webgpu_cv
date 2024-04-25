@@ -1,22 +1,16 @@
+use std::marker::PhantomData;
 use std::rc::Rc;
+use std::sync::Arc;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
-use my_wasm::env::log_init;
-use my_wasm::renderer::{stub_demo, fractal, DemoHistoryPlayback, DemoStateHistory, ExternalState, IDemo};
-use my_wasm::DemoId;
-// mod env;
-// use env::log_init;
-use my_wasm::{renderer::FrameStateRef, GraphicsLevel};
-use my_wasm::renderer::webgpu::Webgpu;
-
-
-use winit::{
-   event::*, event_loop::{ControlFlow, EventLoop}, keyboard::*, window::WindowBuilder
-};
+use my_renderer::{DemoId, GraphicsLevel};
+use my_renderer::env::log_init;
+use my_renderer::renderer::{FrameStateRef, webgpu::Webgpu, stub_demo, fractal, DemoHistoryPlayback, DemoStateHistory, ExternalState, IDemo};
 
 struct State<'window> {
    // pub window: winit::window::Window,
-   pub webgpu: Rc<Webgpu<'window>>,
+   pub webgpu: Rc<Webgpu>,
+   pub webgpu_surface: wgpu::Surface<'window>,
    pub webgpu_config: wgpu::SurfaceConfiguration,
    demo: Box<dyn IDemo>,
    demo_state: ExternalState,
@@ -27,17 +21,20 @@ struct State<'window> {
 }
 
 impl<'window> State<'window> {
-   async fn new(window: &'window winit::window::Window) -> Self {
+   #[cfg(feature = "win")]
+   async fn new(window: &winit::window::Window) -> Self {
       // let window = Box::new(window);
-      let (webgpu, webgpu_config) = Webgpu::new_with_winit(&window).await;
+      let (webgpu, surface) = Webgpu::new_with_winit(window).await;
       let webgpu = Rc::new(webgpu);
       let mut demo_state = ExternalState::default();
       demo_state.set_graphics_level(GraphicsLevel::Medium);
-      let color_target_format = webgpu_config.format;
+      demo_state.set_time_delta_limit_ms(1.0);
+      let color_target_format = surface.config.format;
       let demo = fractal::Demo::start_loading(webgpu.clone(), color_target_format, GraphicsLevel::Medium).await;
       Self {
          webgpu,
-         webgpu_config,
+         webgpu_surface: surface.surface,
+         webgpu_config: surface.config,
          demo_state,
          demo,
          demo_id: DemoId::Stub,
@@ -70,7 +67,7 @@ impl<'window> State<'window> {
       }
    }
    fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
-      let surface_texture = self.webgpu.surface.get_current_texture()?;
+      let surface_texture = self.webgpu_surface.get_current_texture()?;
 
       self.demo.render(&self.webgpu, &surface_texture, self.demo_state.time_delta_sec())?;
 
@@ -80,18 +77,29 @@ impl<'window> State<'window> {
       Ok(())
    }
    fn reconfigure(&mut self) {
-      self.webgpu.surface.configure(&self.webgpu.device, &self.webgpu_config);
+      self.webgpu_surface.configure(&self.webgpu.device, &self.webgpu_config);
    }
-   pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
-      if new_size.width > 0 && new_size.height > 0 {
-          self.webgpu_config.width = new_size.width;
-          self.webgpu_config.height = new_size.height;
-          self.webgpu.surface.configure(&self.webgpu.device, &self.webgpu_config);
+   pub fn resize(&mut self, (width, height): (u32, u32)) {
+      if width > 0 && height > 0 {
+         self.demo_state.set_screen_size((width, height));
+          self.webgpu_config.width = width;
+          self.webgpu_config.height = height;
+          self.webgpu_surface.configure(&self.webgpu.device, &self.webgpu_config);
       }
-  }
+   }
+   pub fn resize_factor(&mut self, scale_factor: f64) {
+      self.resize((
+         (self.webgpu_config.width as f64 * scale_factor) as u32,
+         (self.webgpu_config.height as f64 * scale_factor) as u32,
+      ));
+   }
 }
 
+#[cfg(feature = "win")]
 async fn run() {
+   use winit::{
+      event::*, event_loop::{ControlFlow, EventLoop}, keyboard::*, window::WindowBuilder
+   };
    log_init();
    let event_loop = EventLoop::new()
       .expect("Winit failed to initialize");
@@ -116,17 +124,14 @@ async fn run() {
             ..
          } => elwt.exit(),
          WindowEvent::Resized(physical_size) => {
-            state.resize(*physical_size);
+            state.resize((physical_size.width, physical_size.height));
          }
-         WindowEvent::ScaleFactorChanged { inner_size_writer, .. } => {
-            // new_inner_size is &&mut so we have to dereference it twice
-            // inner_size_writer.w
-            // state.resize(**new_inner_size);
+         WindowEvent::ScaleFactorChanged { scale_factor, .. } => {
+            state.resize_factor(*scale_factor);
          }
          _ => {}
       },
       Event::AboutToWait => {
-         let now = SystemTime::now();
          let now_timestamp_ms = SystemTime::now()
             .duration_since(time_begin)
             .unwrap()
@@ -151,5 +156,9 @@ async fn run() {
 }
 
 fn main() {
-   futures::executor::block_on(run());
+   cfg_if::cfg_if! {
+      if #[cfg(feature = "win")] {
+         futures::executor::block_on(run());
+      }
+   }
 }

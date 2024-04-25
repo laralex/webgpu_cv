@@ -103,8 +103,9 @@ impl<'window> State<'window> {
 
 #[cfg(feature = "win")]
 async fn run() {
-   use winit::{
-      event::*, event_loop::{ControlFlow, EventLoop}, keyboard::*, window::WindowBuilder
+   use futures::io::Window;
+use winit::{
+      dpi::PhysicalPosition, event::*, event_loop::{ControlFlow, EventLoop}, keyboard::*, window::WindowBuilder
    };
    log_init();
    let event_loop = EventLoop::new()
@@ -121,31 +122,50 @@ async fn run() {
       } if window_id == window_ref.id() => match event {
          WindowEvent::CloseRequested => elwt.exit(), 
          WindowEvent::KeyboardInput { event: KeyEvent {
-            state: ElementState::Pressed,
+            state: press_state,
             logical_key, physical_key, .. },
             ..
-         } => match (logical_key, physical_key) {
-            (Key::Named(NamedKey::Escape), _) => elwt.exit(),
-            (Key::Named(NamedKey::Control), _) => state.demo_state.keyboard().borrow_mut().ctrl = true,
-            (Key::Named(NamedKey::Shift), _) => state.demo_state.keyboard().borrow_mut().shift = true,
-            (Key::Named(NamedKey::Alt), _) => state.demo_state.keyboard().borrow_mut().alt = true,
-            (_, PhysicalKey::Code(KeyCode::KeyM)) => state.demo_state.keyboard().borrow_mut().m = 1.0,
-            (_, PhysicalKey::Code(KeyCode::Comma)) => state.demo_state.keyboard().borrow_mut().comma = 1.0,
-            (_, PhysicalKey::Code(KeyCode::Period)) => state.demo_state.keyboard().borrow_mut().dot = 1.0,
-            _ => {},
+         } => {
+            let is_pressed = ElementState::is_pressed(*press_state);
+            let press_value = if is_pressed { 1.0 } else { -1.0 };
+            let mut keyboard = state.demo_state.keyboard().borrow_mut();
+            match (logical_key, physical_key) {
+               (Key::Named(NamedKey::Escape), _) => elwt.exit(),
+               (Key::Named(NamedKey::Control), _) => keyboard.ctrl = is_pressed,
+               (Key::Named(NamedKey::Shift), _) => keyboard.shift = is_pressed,
+               (Key::Named(NamedKey::Alt), _) => keyboard.alt = is_pressed,
+               (_, PhysicalKey::Code(KeyCode::KeyM)) => keyboard.m = press_value,
+               (_, PhysicalKey::Code(KeyCode::Comma)) => keyboard.comma = press_value,
+               (_, PhysicalKey::Code(KeyCode::Period)) => keyboard.dot = press_value,
+               (_, PhysicalKey::Code(KeyCode::Backquote)) => keyboard.backquote = press_value,
+               (_, PhysicalKey::Code(digit)) if *digit >= KeyCode::Digit0 && *digit <= KeyCode::Digit9
+                  => keyboard.digits[*digit as usize - KeyCode::Digit0 as usize] = press_value,
+               _ => {},
+            }
          },
-         WindowEvent::KeyboardInput { event: KeyEvent {
-            state: ElementState::Released,
-            logical_key, physical_key, .. },
-            ..
-         } => match (logical_key, physical_key) {
-            (Key::Named(NamedKey::Control), _) => state.demo_state.keyboard().borrow_mut().ctrl = false,
-            (Key::Named(NamedKey::Shift), _) => state.demo_state.keyboard().borrow_mut().shift = false,
-            (Key::Named(NamedKey::Alt), _) => state.demo_state.keyboard().borrow_mut().alt = false,
-            (_, PhysicalKey::Code(KeyCode::KeyM)) => state.demo_state.keyboard().borrow_mut().m = -1.0,
-            (_, PhysicalKey::Code(KeyCode::Comma)) => state.demo_state.keyboard().borrow_mut().comma = -1.0,
-            (_, PhysicalKey::Code(KeyCode::Period)) => state.demo_state.keyboard().borrow_mut().dot = -1.0,
-            _ => {},
+         WindowEvent::MouseInput { state: press_state, button, .. } => {
+            let is_pressed = ElementState::is_pressed(*press_state);
+            let press_value = if is_pressed { 1.0 } else { -1.0 };
+            let mut mouse = state.demo_state.mouse().borrow_mut();
+            match button {
+               MouseButton::Left => { mouse.left = press_value; },
+               MouseButton::Middle => { mouse.middle = press_value; },
+               MouseButton::Right => { mouse.right = press_value; },
+               _ => {},
+            }
+         },
+         WindowEvent::MouseWheel { delta, phase: TouchPhase::Moved, .. } => match delta {
+            MouseScrollDelta::LineDelta(to_right, to_bottom) => {
+               let to_up = (-to_bottom).clamp(-1.0, 1.0); // TODO: maybe need to divide by some min/max
+               state.demo_state.mouse().borrow_mut().wheel = to_up;
+            },
+            MouseScrollDelta::PixelDelta(PhysicalPosition{x: to_right_px, y: to_bottom_px}) => {
+               let to_up = (-0.02_f64 * to_bottom_px).clamp(-1.0, 1.0) as f32;
+               state.demo_state.mouse().borrow_mut().wheel = to_up;
+            },
+         },
+         WindowEvent::CursorMoved { position, .. } => {
+            state.demo_state.mouse().borrow_mut().canvas_position_px = (position.x as i32, position.y as i32);
          },
          WindowEvent::Resized(physical_size) => {
             state.resize((physical_size.width, physical_size.height));

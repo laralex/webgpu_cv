@@ -19,6 +19,9 @@ pub struct KeyboardState {
    pub shift: bool,
    pub alt: bool,
    pub ctrl: bool,
+   pub backquote: f32,
+   pub digits: [f32; 10], // 0 1 2 3 4 5 6 7 8 9
+   pub fkeys: [f32; 12],
 }
 
 #[derive(Clone, Default)]
@@ -220,6 +223,14 @@ impl ExternalState {
       ExternalState::dismiss_input_event(&mut current_keyboard_state.m);
       ExternalState::dismiss_input_event(&mut current_keyboard_state.comma);
       ExternalState::dismiss_input_event(&mut current_keyboard_state.dot);
+      ExternalState::dismiss_input_event(&mut current_keyboard_state.backquote);
+      
+      for i in 0..current_keyboard_state.digits.len() {
+         ExternalState::dismiss_input_event(&mut current_keyboard_state.digits[i]);
+      }
+      for i in 0..current_keyboard_state.fkeys.len() {
+         ExternalState::dismiss_input_event(&mut current_keyboard_state.fkeys[i]);
+      }
    }
 
    fn dismiss_input_event(input_axis: &mut f32) {
@@ -350,7 +361,6 @@ pub struct FrameStateRef<'a> {
 }
 
 pub fn handle_keyboard<'a>(keyboard: KeyboardState, state: FrameStateRef<'a>) {
-   println!("handle_keyboard {}", keyboard.m);
    if keyboard.m < 0.0 {
        if state.demo_history_playback.toggle_frame_lock(state.previous_timestamp_ms) == false {
            // canceling frame lock, resume time
@@ -363,5 +373,14 @@ pub fn handle_keyboard<'a>(keyboard: KeyboardState, state: FrameStateRef<'a>) {
    }
    if keyboard.dot < 0.0 || keyboard.dot > 0.0 && keyboard.shift {
        state.demo_history_playback.advance_forward(&state.demo_state_history);
+   }
+   if keyboard.backquote < 0.0 && keyboard.ctrl {
+      state.demo_state.set_debug_mode(None);
+   }
+   for i in 0..keyboard.digits.len() {
+      if keyboard.digits[i] < 0.0 && keyboard.ctrl {
+         state.demo_state.set_debug_mode(Some(i as u16));
+         println!("DEBUG MODE {}", i);
+      }
    }
 }

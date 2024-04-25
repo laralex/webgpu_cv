@@ -234,7 +234,7 @@ impl WasmInterface {
             // this demo was the previous demo, and we cached it, so don't need to load it again
             demo_ref.swap(&previous_demo_ref);
             demo_id_ref.swap(&previous_demo_id_ref);
-            demo_state_ref.borrow_mut().reset();
+            demo_state_ref.as_ref().borrow_mut().reset();
             return;
         }
 
@@ -244,7 +244,7 @@ impl WasmInterface {
             Box::into_pin(renderer::wasm::start_loading_demo(demo_id,
                 self.webgpu.clone(),
                 self.webgpu_config.borrow().format,
-                self.demo_state.borrow().graphics_level())));
+                self.demo_state.as_ref().borrow().graphics_level())));
 
         let webgpu_ref = self.webgpu.clone();
 
@@ -322,15 +322,17 @@ impl WasmInterface {
             ) = (
                 demo_clone.try_borrow_mut(), demo_state.try_borrow_mut(), webgpu_surface.get_current_texture(),
             ) {
-                let keyboard = demo_state.keyboard().get();
-                let frame_state = FrameStateRef {
-                    demo_state_history: &mut demo_state_history,
-                    demo_history_playback: &mut demo_history_playback,
-                    demo_state: &mut demo_state,
-                    previous_timestamp_ms,
-                    now_timestamp_ms,
-                };
-                handle_keyboard(keyboard, frame_state);
+                {
+                    let frame_state = FrameStateRef {
+                        demo_state_history: &mut demo_state_history,
+                        demo_history_playback: &mut demo_history_playback,
+                        demo_state: &mut demo_state,
+                        previous_timestamp_ms,
+                        now_timestamp_ms,
+                    };
+                    // let keyboard = demo_state.keyboard().borrow();
+                    // handle_keyboard(*keyboard, frame_state);
+                }
 
                 // engine tick
                 let tick_timestamp_ms = demo_history_playback.playback_timestamp_ms().unwrap_or(now_timestamp_ms);
@@ -372,13 +374,13 @@ impl WasmInterface {
     }
 }
 
-fn configure_keydown(keyboard_state: Rc<Cell<renderer::KeyboardState>>) -> Result<(), JsValue> {
+fn configure_keydown(keyboard_state: Rc<RefCell<renderer::KeyboardState>>) -> Result<(), JsValue> {
     let closure = Closure::<dyn FnMut(_)>::new(move |event: web_sys::KeyboardEvent| {
         // web_sys::console::log_2(&"Keycode".into(), &event.key_code().into());
         if event.default_prevented() {
             return; // Do nothing if the event was already processed
         }
-        let mut current_state = keyboard_state.get();
+        let mut current_state = keyboard_state.borrow_mut();
         match event.key_code() {
             77 => current_state.m = 1.0,
             188 => current_state.comma = 1.0,
@@ -388,7 +390,6 @@ fn configure_keydown(keyboard_state: Rc<Cell<renderer::KeyboardState>>) -> Resul
         current_state.shift = event.shift_key();
         current_state.ctrl = event.ctrl_key();
         current_state.alt = event.alt_key();
-        keyboard_state.set(current_state);
         event.prevent_default();
     });
     js_interop::document().add_event_listener_with_callback("keydown", closure.as_ref().unchecked_ref())?;
@@ -396,12 +397,12 @@ fn configure_keydown(keyboard_state: Rc<Cell<renderer::KeyboardState>>) -> Resul
     Ok(())
 }
 
-fn configure_keyup(keyboard_state: Rc<Cell<renderer::KeyboardState>>) -> Result<(), JsValue> {
+fn configure_keyup(keyboard_state: Rc<RefCell<renderer::KeyboardState>>) -> Result<(), JsValue> {
     let closure = Closure::<dyn FnMut(_)>::new(move |event: web_sys::KeyboardEvent| {
         if event.default_prevented() {
             return; // Do nothing if the event was already processed
         }
-        let mut current_state = keyboard_state.get();
+        let mut current_state = keyboard_state.as_ref().borrow_mut();
         match event.key_code() {
             77 => current_state.m = -1.0,
             188 => current_state.comma = -1.0,
@@ -411,7 +412,6 @@ fn configure_keyup(keyboard_state: Rc<Cell<renderer::KeyboardState>>) -> Result<
         current_state.shift = event.shift_key();
         current_state.ctrl = event.ctrl_key();
         current_state.alt = event.alt_key();
-        keyboard_state.set(current_state);
         event.prevent_default();
     });
     js_interop::document().add_event_listener_with_callback("keyup", closure.as_ref().unchecked_ref())?;
@@ -419,26 +419,23 @@ fn configure_keyup(keyboard_state: Rc<Cell<renderer::KeyboardState>>) -> Result<
     Ok(())
 }
 
-fn configure_mousemove(canvas: &web_sys::HtmlCanvasElement, mouse_state: Rc<Cell<renderer::MouseState>>) -> Result<(), JsValue> {
+fn configure_mousemove(canvas: &web_sys::HtmlCanvasElement, mouse_state: Rc<RefCell<renderer::MouseState>>) -> Result<(), JsValue> {
     let closure = Closure::<dyn FnMut(_)>::new(move |event: web_sys::MouseEvent| {
-        let current_state = mouse_state.get();
-        mouse_state.set(MouseState {
-            canvas_position_px: (event.offset_x(), event.offset_y()), // NOTE: origin at top-left
-            ..current_state
-        });
+        let mut current_state = mouse_state.as_ref().borrow_mut();
+        current_state.canvas_position_px = (event.offset_x(), event.offset_y()); // NOTE: origin at top-left
     });
     canvas.add_event_listener_with_callback("mousemove", closure.as_ref().unchecked_ref())?;
     closure.forget();
     Ok(())
 }
 
-fn configure_mousedown(canvas: &web_sys::HtmlCanvasElement, mouse_state: Rc<Cell<renderer::MouseState>>) -> Result<(), JsValue> {
+fn configure_mousedown(canvas: &web_sys::HtmlCanvasElement, mouse_state: Rc<RefCell<renderer::MouseState>>) -> Result<(), JsValue> {
     let closure = Closure::<dyn FnMut(_)>::new(move |event: web_sys::MouseEvent| {
-        let current_state = mouse_state.get();
+        let mut current_state = mouse_state.as_ref().borrow_mut();
         match event.button() {
-            0 => mouse_state.set(MouseState { left: 1.0, ..current_state }),
-            1 => mouse_state.set(MouseState { middle: 1.0, ..current_state }),
-            2 => mouse_state.set(MouseState { right: 1.0, ..current_state }),
+            0 => current_state.left = 1.0,
+            1 => current_state.middle = 1.0,
+            2 => current_state.right = 1.0,
             _ => {},
         }
     });
@@ -447,13 +444,13 @@ fn configure_mousedown(canvas: &web_sys::HtmlCanvasElement, mouse_state: Rc<Cell
     Ok(())
 }
 
-fn configure_mouseup(mouse_state: Rc<Cell<renderer::MouseState>>) -> Result<(), JsValue> {
+fn configure_mouseup(mouse_state: Rc<RefCell<renderer::MouseState>>) -> Result<(), JsValue> {
     let closure = Closure::<dyn FnMut(_)>::new(move |event: web_sys::MouseEvent| {
-        let current_state = mouse_state.get();
+        let mut current_state = mouse_state.as_ref().borrow_mut();
         match event.button() {
-            0 => mouse_state.set(MouseState { left: -1.0, ..current_state }),
-            1 => mouse_state.set(MouseState { middle: -1.0, ..current_state }),
-            2 => mouse_state.set(MouseState { right: -1.0, ..current_state }),
+            0 => current_state.left = -1.0,
+            1 => current_state.middle = -1.0,
+            2 => current_state.right = -1.0,
             _ => {},
         }
     });

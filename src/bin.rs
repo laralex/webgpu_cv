@@ -47,15 +47,17 @@ impl<'window> State<'window> {
    // fn window(&self) -> winit::window::Window { self.window }
 
    fn update(&mut self, now_timestamp_ms: f64) {
-      let keyboard = self.demo_state.keyboard().get();
-      let frame_state = FrameStateRef {
-         demo_state_history: &mut self.demo_state_history,
-         demo_history_playback: &mut self.demo_history_playback,
-         demo_state: &mut self.demo_state,
-         previous_timestamp_ms: self.previous_timestamp_ms,
-         now_timestamp_ms,
-      };
-      //handle_keyboard(keyboard, frame_state);
+      {
+         let frame_state = FrameStateRef {
+            demo_state_history: &mut self.demo_state_history,
+            demo_history_playback: &mut self.demo_history_playback,
+            demo_state: &mut self.demo_state,
+            previous_timestamp_ms: self.previous_timestamp_ms,
+            now_timestamp_ms,
+         };
+         let keyboard = self.demo_state.keyboard().borrow();
+         //handle_keyboard(keyboard, frame_state);
+      }
 
       let tick_timestamp_ms = self.demo_history_playback.playback_timestamp_ms().unwrap_or(now_timestamp_ms);
       self.demo_state.tick(tick_timestamp_ms);
@@ -123,6 +125,11 @@ async fn run() {
                   },
             ..
          } => elwt.exit(),
+         WindowEvent::KeyboardInput { event: KeyEvent {
+            state: ElementState::Pressed,
+            logical_key: Key::Named(NamedKey::Control), .. },
+            ..
+         } => state.demo_state.keyboard().borrow_mut().ctrl = true,
          WindowEvent::Resized(physical_size) => {
             state.resize((physical_size.width, physical_size.height));
          }

@@ -1,4 +1,4 @@
-use std::{cell::Cell, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 use crate::GraphicsLevel;
 
@@ -45,8 +45,8 @@ struct StableState {
 
 pub struct ExternalState {
    // dynamic
-   mouse: Rc<Cell<MouseState>>,
-   keyboard: Rc<Cell<KeyboardState>>,
+   mouse: Rc<RefCell<MouseState>>,
+   keyboard: Rc<RefCell<KeyboardState>>,
    time_delta_limit_ms: f64,
    time_of_startup_ms: f64,
    time_of_tick_ms: f64,
@@ -92,8 +92,8 @@ impl ExternalState {
 
    pub fn data(&self) -> ExternalStateData {
       ExternalStateData {
-         mouse: self.mouse.get(),
-         keyboard: self.keyboard.get(),
+         mouse: self.mouse.borrow().clone(),
+         keyboard: self.keyboard.borrow().clone(),
          time_delta_limit_ms: self.time_delta_limit_ms.clone(),
          time_now_ms: self.time_now_ms.clone(),
          time_prev_ms: self.time_prev_ms.clone(),
@@ -126,7 +126,7 @@ impl ExternalState {
       let then = self.time_prev_ms * 0.001;
       let delta = self.derived.time_now_sec - self.derived.time_prev_sec;
       
-      let current_mouse = self.mouse.get();
+      let mouse_canvas_position_px = self.mouse.borrow().canvas_position_px;
       self.derived = DerivedDynamicState {
          time_since_startup_sec: (self.time_of_tick_ms - self.time_of_startup_ms)*0.001,
          time_now_sec: now,
@@ -134,8 +134,8 @@ impl ExternalState {
          time_delta_sec: delta,
          frame_rate: (1.0 / delta) as f32,
          mouse_viewport_position_px: (
-            current_mouse.canvas_position_px.0,
-            self.stable.screen_size.1 as i32 - current_mouse.canvas_position_px.1
+            mouse_canvas_position_px.0,
+            self.stable.screen_size.1 as i32 - mouse_canvas_position_px.1
          ),
       };
       if self.is_stable_updated {
@@ -151,8 +151,8 @@ impl ExternalState {
    pub fn aspect_ratio(&self) -> f32 { self.derived_stable.aspect_ratio }
    pub fn is_stable_updated(&self) -> bool { self.is_stable_updated }
 
-   pub fn mouse(&self) -> &Rc<Cell<MouseState>> { &self.mouse }
-   pub fn keyboard(&self) -> &Rc<Cell<KeyboardState>> { &self.keyboard }
+   pub fn mouse(&self) -> &Rc<RefCell<MouseState>> { &self.mouse }
+   pub fn keyboard(&self) -> &Rc<RefCell<KeyboardState>> { &self.keyboard }
    pub fn time_of_startup_ms(&self) -> f64 { self.time_of_startup_ms }
    pub fn time_of_tick_ms(&self) -> f64 { self.time_of_tick_ms }
    pub fn time_now_ms(&self) -> f64 { self.time_now_ms }
@@ -211,17 +211,15 @@ impl ExternalState {
    pub fn dismiss_events(&mut self) {
       self.is_stable_updated = false;
 
-      let mut current_mouse_state = self.mouse.get();
+      let mut current_mouse_state = self.mouse.borrow_mut();
       ExternalState::dismiss_input_event(&mut current_mouse_state.left);
       ExternalState::dismiss_input_event(&mut current_mouse_state.middle);
       ExternalState::dismiss_input_event(&mut current_mouse_state.right);
-      self.mouse.set(current_mouse_state);
 
-      let mut current_keyboard_state = self.keyboard.get();
+      let mut current_keyboard_state = self.keyboard.borrow_mut();
       ExternalState::dismiss_input_event(&mut current_keyboard_state.m);
       ExternalState::dismiss_input_event(&mut current_keyboard_state.comma);
       ExternalState::dismiss_input_event(&mut current_keyboard_state.dot);
-      self.keyboard.set(current_keyboard_state);
    }
 
    fn dismiss_input_event(input_axis: &mut f32) {
@@ -232,8 +230,8 @@ impl ExternalState {
 impl Default for ExternalState {
    fn default() -> Self {
       Self {
-         mouse: Rc::new(Cell::new(Default::default())),
-         keyboard: Rc::new(Cell::new(Default::default())),
+         mouse: Rc::new(RefCell::new(Default::default())),
+         keyboard: Rc::new(RefCell::new(Default::default())),
          time_delta_limit_ms: Default::default(),
          time_of_startup_ms: Default::default(),
          time_of_tick_ms: Default::default(),

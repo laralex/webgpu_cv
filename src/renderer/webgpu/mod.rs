@@ -12,16 +12,10 @@ pub mod uniform;
 const USE_SHADER_CACHE: bool = true;
 const USE_PIPELINE_CACHE: bool = true;
 pub struct Webgpu {
-   // pub surface: wgpu::Surface<'static>,
    pub device: wgpu::Device,
    pub queue: wgpu::Queue,
    shader_loader: RefCell<ShaderLoader>,
    pipeline_loader: RefCell<PipelineLoader>,
-   // #[cfg(not(feature = "web"))]
-   // pub surface: wgpu::Surface<'window>,
-   // #[cfg(not(feature = "web"))]
-   
-   // _phantom: PhantomData<&'window ()>,
 }
 
 pub struct WebgpuSurface<'window> {

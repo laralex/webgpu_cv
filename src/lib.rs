@@ -382,9 +382,9 @@ fn configure_keydown(keyboard_state: Rc<RefCell<renderer::KeyboardState>>) -> Re
         }
         let mut current_state = keyboard_state.borrow_mut();
         match event.key_code() {
-            77 => current_state.m = 1.0,
-            188 => current_state.comma = 1.0,
-            190 => current_state.dot = 1.0,
+            77 => current_state.down_m(),
+            188 => current_state.down_comma(),
+            190 => current_state.down_dot(),
             _ => {},
         }
         current_state.shift = event.shift_key();
@@ -404,9 +404,9 @@ fn configure_keyup(keyboard_state: Rc<RefCell<renderer::KeyboardState>>) -> Resu
         }
         let mut current_state = keyboard_state.as_ref().borrow_mut();
         match event.key_code() {
-            77 => current_state.m = -1.0,
-            188 => current_state.comma = -1.0,
-            190 => current_state.dot = -1.0,
+            77 => current_state.up_m(),
+            188 => current_state.up_comma(),
+            190 => current_state.up_dot(),
             _ => {},
         }
         current_state.shift = event.shift_key();
@@ -433,9 +433,9 @@ fn configure_mousedown(canvas: &web_sys::HtmlCanvasElement, mouse_state: Rc<RefC
     let closure = Closure::<dyn FnMut(_)>::new(move |event: web_sys::MouseEvent| {
         let mut current_state = mouse_state.as_ref().borrow_mut();
         match event.button() {
-            0 => current_state.left = 1.0,
-            1 => current_state.middle = 1.0,
-            2 => current_state.right = 1.0,
+            0 => current_state.down_left(),
+            1 => current_state.down_middle(),
+            2 => current_state.down_right(),
             _ => {},
         }
     });
@@ -448,9 +448,9 @@ fn configure_mouseup(mouse_state: Rc<RefCell<renderer::MouseState>>) -> Result<(
     let closure = Closure::<dyn FnMut(_)>::new(move |event: web_sys::MouseEvent| {
         let mut current_state = mouse_state.as_ref().borrow_mut();
         match event.button() {
-            0 => current_state.left = -1.0,
-            1 => current_state.middle = -1.0,
-            2 => current_state.right = -1.0,
+            0 => current_state.up_left(),
+            1 => current_state.up_middle(),
+            2 => current_state.up_right(),
             _ => {},
         }
     });

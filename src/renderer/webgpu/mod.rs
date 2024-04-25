@@ -3,7 +3,6 @@ pub mod utils;
 use std::{cell::RefCell, rc::Rc};
 
 pub use utils::*;
-use wgpu::rwh::{HasDisplayHandle,HasWindowHandle};
 
 use super::{pipeline_loader::{PipelineLoader, RenderPipelineFlatDescriptor}, preprocessor::Preprocessor, shader_loader::{FragmentShaderVariant, ShaderLoader, VertexShaderVariant}};
 pub mod draw;
@@ -124,7 +123,7 @@ impl Webgpu {
 
    #[cfg(feature = "win")]
    pub async fn new_with_winit(window: &winit::window::Window) -> ( Self, WebgpuSurface<'static> ) {
-      // let window = window.read().unwrap();
+      use wgpu::rwh::{HasDisplayHandle,HasWindowHandle};
       let size = window.inner_size();
 
       let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {

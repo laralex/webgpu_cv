@@ -134,12 +134,12 @@ use winit::{
                (Key::Named(NamedKey::Control), _) => keyboard.ctrl = is_pressed,
                (Key::Named(NamedKey::Shift), _) => keyboard.shift = is_pressed,
                (Key::Named(NamedKey::Alt), _) => keyboard.alt = is_pressed,
-               (_, PhysicalKey::Code(KeyCode::KeyM)) => keyboard.m = press_value,
-               (_, PhysicalKey::Code(KeyCode::Comma)) => keyboard.comma = press_value,
-               (_, PhysicalKey::Code(KeyCode::Period)) => keyboard.dot = press_value,
-               (_, PhysicalKey::Code(KeyCode::Backquote)) => keyboard.backquote = press_value,
+               (_, PhysicalKey::Code(KeyCode::KeyM)) => keyboard.set_m(press_value),
+               (_, PhysicalKey::Code(KeyCode::Comma)) => keyboard.set_comma(press_value),
+               (_, PhysicalKey::Code(KeyCode::Period)) => keyboard.set_dot(press_value),
+               (_, PhysicalKey::Code(KeyCode::Backquote)) => keyboard.set_backquote(press_value),
                (_, PhysicalKey::Code(digit)) if *digit >= KeyCode::Digit0 && *digit <= KeyCode::Digit9
-                  => keyboard.digits[*digit as usize - KeyCode::Digit0 as usize] = press_value,
+                  => keyboard.set_digit(*digit as usize - KeyCode::Digit0 as usize, press_value),
                _ => {},
             }
          },
@@ -148,9 +148,9 @@ use winit::{
             let press_value = if is_pressed { 1.0 } else { -1.0 };
             let mut mouse = state.demo_state.mouse().borrow_mut();
             match button {
-               MouseButton::Left => { mouse.left = press_value; },
-               MouseButton::Middle => { mouse.middle = press_value; },
-               MouseButton::Right => { mouse.right = press_value; },
+               MouseButton::Left => { mouse.set_left(press_value); },
+               MouseButton::Middle => { mouse.set_middle(press_value); },
+               MouseButton::Right => { mouse.set_right(press_value); },
                _ => {},
             }
          },

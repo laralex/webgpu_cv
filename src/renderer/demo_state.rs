@@ -1,27 +1,115 @@
 use std::{cell::RefCell, rc::Rc};
-
+use paste::paste;
 use crate::GraphicsLevel;
+
+macro_rules! impl_button {
+   ($destination: ident, $key: ident, $idx: expr) => {
+      pub fn $key(&self) -> f32 { self.$destination[$idx as usize] }
+      paste!{pub fn [<down_ $key>](&mut self) { self.$destination[$idx as usize] = 1.0; } }
+      paste!{pub fn [<up_ $key>](&mut self) {
+         self.[<set_ $destination>]($idx as usize, -1.0);
+      }}
+      paste!{pub fn [<set_ $key>](&mut self, value: f32) {
+         self.[<set_ $destination>]($idx as usize, value);
+      }}
+      paste!{pub fn [<raw_idx_ $key>](&mut self) -> usize { $idx as usize } }
+   };
+}
+
+macro_rules! impl_buttons {
+   ($fn_name: ident, $destination: ident) => {
+      paste!{pub fn $fn_name(&mut self, raw_idx: usize, value: f32) {
+         self.$destination[raw_idx] = value;
+         if value < 0.0 {
+            self.[<$destination _to_dismiss>][self.[<$destination _to_dismiss_idx>]] = raw_idx;
+            self.[<$destination _to_dismiss_idx>] += 1;
+         }
+      }}
+   }
+}
 
 #[derive(Default, Clone, Copy)]
 pub struct MouseState {
-   pub left: f32,
-   pub middle: f32,
-   pub right: f32,
+   button: [f32; 8],
+   button_to_dismiss: [usize; 10],
+   button_to_dismiss_idx: usize,
    pub wheel: f32,
    pub canvas_position_px: (i32, i32), // origin at top-left
 }
 
+impl MouseState {
+   impl_buttons!(set_button, button);
+   impl_button!(button, left, 0);
+   impl_button!(button, middle, 0);
+   impl_button!(button, right, 0);
+}
+
 #[derive(Default, Clone, Copy)]
 pub struct KeyboardState {
-   pub m: f32,
-   pub comma: f32,
-   pub dot: f32,
    pub shift: bool,
    pub alt: bool,
    pub ctrl: bool,
-   pub backquote: f32,
-   pub digits: [f32; 10], // 0 1 2 3 4 5 6 7 8 9
-   pub fkeys: [f32; 12],
+   letter: [f32; 32],
+   letter_to_dismiss: [usize; 32],
+   letter_to_dismiss_idx: usize,
+   digit: [f32; 10], // 0 1 2 3 4 5 6 7 8 9
+   digit_to_dismiss: [usize; 10],
+   digit_to_dismiss_idx: usize,
+   punctuation: [f32; 32],
+   punctuation_to_dismiss: [usize; 32],
+   punctuation_to_dismiss_idx: usize,
+   fkey: [f32; 12],
+   fkey_to_dismiss: [usize; 12],
+   fkey_to_dismiss_idx: usize,
+}
+
+impl KeyboardState {
+   impl_buttons!(set_letter, letter);
+   impl_buttons!(set_digit, digit);
+   impl_buttons!(set_fkey, fkey);
+   impl_buttons!(set_punctuation, punctuation);
+
+   impl_button!(letter, a, 00);
+   impl_button!(letter, b, 01);
+   impl_button!(letter, c, 02);
+   impl_button!(letter, d, 03);
+   impl_button!(letter, e, 04);
+   impl_button!(letter, f, 05);
+   impl_button!(letter, g, 06);
+   impl_button!(letter, h, 07);
+   impl_button!(letter, i, 08);
+   impl_button!(letter, j, 09);
+   impl_button!(letter, k, 10);
+   impl_button!(letter, l, 11);
+   impl_button!(letter, m, 12);
+   impl_button!(letter, n, 13);
+   impl_button!(letter, o, 14);
+   impl_button!(letter, p, 15);
+   impl_button!(letter, q, 16);
+   impl_button!(letter, r, 17);
+   impl_button!(letter, s, 18);
+   impl_button!(letter, t, 19);
+   impl_button!(letter, u, 20);
+   impl_button!(letter, v, 21);
+   impl_button!(letter, w, 22);
+   impl_button!(letter, x, 23);
+   impl_button!(letter, y, 24);
+   impl_button!(letter, z, 25);
+
+   impl_button!(digit, d0, 0);
+   impl_button!(digit, d1, 1);
+   impl_button!(digit, d2, 2);
+   impl_button!(digit, d3, 3);
+   impl_button!(digit, d4, 4);
+   impl_button!(digit, d5, 5);
+   impl_button!(digit, d6, 6);
+   impl_button!(digit, d7, 7);
+   impl_button!(digit, d8, 8);
+   impl_button!(digit, d9, 9);
+
+   impl_button!(punctuation, backquote, 00);
+   impl_button!(punctuation, comma,     01);
+   impl_button!(punctuation, dot,       02);
 }
 
 #[derive(Clone, Default)]
@@ -214,23 +302,38 @@ impl ExternalState {
    pub fn dismiss_events(&mut self) {
       self.is_stable_updated = false;
 
-      let mut current_mouse_state = self.mouse.borrow_mut();
-      ExternalState::dismiss_input_event(&mut current_mouse_state.left);
-      ExternalState::dismiss_input_event(&mut current_mouse_state.middle);
-      ExternalState::dismiss_input_event(&mut current_mouse_state.right);
+      let mut mouse = self.mouse.borrow_mut();
+      for i in 0..mouse.button_to_dismiss_idx {
+         let state_idx = mouse.button_to_dismiss[i];
+         mouse.button[state_idx] = 0.0;
+      }
+      mouse.button_to_dismiss_idx = 0;
 
-      let mut current_keyboard_state = self.keyboard.borrow_mut();
-      ExternalState::dismiss_input_event(&mut current_keyboard_state.m);
-      ExternalState::dismiss_input_event(&mut current_keyboard_state.comma);
-      ExternalState::dismiss_input_event(&mut current_keyboard_state.dot);
-      ExternalState::dismiss_input_event(&mut current_keyboard_state.backquote);
-      
-      for i in 0..current_keyboard_state.digits.len() {
-         ExternalState::dismiss_input_event(&mut current_keyboard_state.digits[i]);
+      let mut keyboard = self.keyboard.borrow_mut();
+
+      for i in 0..keyboard.letter_to_dismiss_idx {
+         let state_idx = keyboard.letter_to_dismiss[i];
+         keyboard.letter[state_idx] = 0.0;
       }
-      for i in 0..current_keyboard_state.fkeys.len() {
-         ExternalState::dismiss_input_event(&mut current_keyboard_state.fkeys[i]);
+      keyboard.letter_to_dismiss_idx = 0;
+
+      for i in 0..keyboard.digit_to_dismiss_idx {
+         let state_idx = keyboard.digit_to_dismiss[i];
+         keyboard.digit[state_idx] = 0.0;
       }
+      keyboard.digit_to_dismiss_idx = 0;
+
+      for i in 0..keyboard.fkey_to_dismiss_idx {
+         let state_idx = keyboard.fkey_to_dismiss[i];
+         keyboard.fkey[state_idx] = 0.0;
+      }
+      keyboard.fkey_to_dismiss_idx = 0;
+
+      for i in 0..keyboard.punctuation_to_dismiss_idx {
+         let state_idx = keyboard.punctuation_to_dismiss[i];
+         keyboard.punctuation[state_idx] = 0.0;
+      }
+      keyboard.punctuation_to_dismiss_idx = 0;
    }
 
    fn dismiss_input_event(input_axis: &mut f32) {
@@ -361,24 +464,24 @@ pub struct FrameStateRef<'a> {
 }
 
 pub fn handle_keyboard<'a>(keyboard: KeyboardState, state: FrameStateRef<'a>) {
-   if keyboard.m < 0.0 {
+   if keyboard.m() < 0.0 {
        if state.demo_history_playback.toggle_frame_lock(state.previous_timestamp_ms) == false {
            // canceling frame lock, resume time
            let frame_idx = 0;
            state.demo_state.override_time(state.previous_timestamp_ms, frame_idx);
        }
    }
-   if keyboard.comma < 0.0 || keyboard.comma > 0.0 && keyboard.shift {
+   if keyboard.comma() < 0.0 || keyboard.comma() > 0.0 && keyboard.shift {
        state.demo_history_playback.advance_back(&state.demo_state_history);
    }
-   if keyboard.dot < 0.0 || keyboard.dot > 0.0 && keyboard.shift {
+   if keyboard.dot() < 0.0 || keyboard.dot() > 0.0 && keyboard.shift {
        state.demo_history_playback.advance_forward(&state.demo_state_history);
    }
-   if keyboard.backquote < 0.0 && keyboard.ctrl {
+   if keyboard.backquote() < 0.0 && keyboard.ctrl {
       state.demo_state.set_debug_mode(None);
    }
-   for i in 0..keyboard.digits.len() {
-      if keyboard.digits[i] < 0.0 && keyboard.ctrl {
+   for i in 0..keyboard.digit.len() {
+      if keyboard.digit[i] < 0.0 && keyboard.ctrl {
          state.demo_state.set_debug_mode(Some(i as u16));
          println!("DEBUG MODE {}", i);
       }

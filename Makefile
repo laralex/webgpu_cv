@@ -1,5 +1,5 @@
 PORT?=8081
-WASM_NAME?=my_wasm
+WASM_NAME?=my_renderer
 RUST_TARGET?=wasm32-unknown-unknown
 SERVE_DIR?=www
 SERVE_WASM_DIR?=${SERVE_DIR}/wasm

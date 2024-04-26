@@ -363,6 +363,7 @@ function configureResizingBorder(onResize) {
 
 function ResizeTooltip({timeoutMillisec, onclose = () => {}}) {
    const shouldHide = van.state(false);
+   console.log("@@@ ResizeTooltip");
    setTimeout(() => {
       shouldHide.val = true;
       onclose();
@@ -492,8 +493,10 @@ function ControlsPopup({timeoutMillisec = null, onclose = () => {}}) {
    const closed = van.state(false);
    if (timeoutMillisec) {
       setTimeout(() => {
-         closed.val = true;
-         onclose();
+         if (closed.val == false) {
+            closed.val = true;
+            onclose();
+         }
       }, timeoutMillisec);
    }
    return () => closed.val ? null :div({class: "intro-popup popup font-large checkerboard-background zmax"}, // retro-box
@@ -841,17 +844,17 @@ window.onload = function() {
          IS_TUTORIAL_SHOWN.val = false;
       }}));
    });
-   
-   console.log("Load ", IS_INTRO_SHOWN.val);
-   if (IS_INTRO_SHOWN.val == true) {
-      van.add(document.getElementById("intro-container"), IntroPopup({onclose: () => {
-         IS_TUTORIAL_SHOWN.val = true;
-         IS_INTRO_SHOWN.val = false;
-      }}));
-   }
+
    const myPhoto = document.getElementById('my-photo');
    loadBuildData().finally(() => {
       console.log("LOADED BUILD_DATA", BUILD_DATA);
+
+      if (!BUILD_DATA.debug && IS_INTRO_SHOWN.val == true) {
+         van.add(document.getElementById("intro-container"), IntroPopup({onclose: () => {
+            IS_TUTORIAL_SHOWN.val = true;
+            IS_INTRO_SHOWN.val = false;
+         }}));
+      }
 
       // show build data on hover of my photo
       myPhoto.title = getBuildDataString();

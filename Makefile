@@ -87,7 +87,7 @@ codegen_debug:
 build_win: cargo_win_debug
 
 .PHONY: build_debug
-build_debug: wasm_debug test_shaders
+build_debug: wasm_debug codegen_debug test_shaders
 
 # no `wasm_opt`
 .PHONY: build_ci

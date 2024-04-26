@@ -161,6 +161,7 @@ pub struct ExternalStateData {
    pub keyboard: KeyboardState,
    pub time_delta_limit_ms: f64,
 
+   pub time_tick_ms:   f64,
    pub time_now_ms:    f64,
    pub time_prev_ms:   f64,
    pub time_delta_ms:  f64,
@@ -186,6 +187,7 @@ impl ExternalState {
          mouse: self.mouse.borrow().clone(),
          keyboard: self.keyboard.borrow().clone(),
          time_delta_limit_ms: self.time_delta_limit_ms.clone(),
+         time_tick_ms: self.time_of_tick_ms.clone(),
          time_now_ms: self.time_now_ms.clone(),
          time_prev_ms: self.time_prev_ms.clone(),
          time_delta_ms: self.time_delta_ms.clone(),
@@ -215,7 +217,7 @@ impl ExternalState {
    pub fn update_derived_state(&mut self) {
       let now = self.time_now_ms * 0.001;
       let then = self.time_prev_ms * 0.001;
-      let delta = self.derived.time_now_sec - self.derived.time_prev_sec;
+      let delta = now - then;
       
       let mouse_canvas_position_px = self.mouse.borrow().canvas_position_px;
       self.derived = DerivedDynamicState {
@@ -245,7 +247,7 @@ impl ExternalState {
    pub fn mouse(&self) -> &Rc<RefCell<MouseState>> { &self.mouse }
    pub fn keyboard(&self) -> &Rc<RefCell<KeyboardState>> { &self.keyboard }
    pub fn time_of_startup_ms(&self) -> f64 { self.time_of_startup_ms }
-   pub fn time_of_tick_ms(&self) -> f64 { self.time_of_tick_ms }
+   // pub fn time_of_tick_ms(&self) -> f64 { self.time_of_tick_ms }
    pub fn time_now_ms(&self) -> f64 { self.time_now_ms }
    pub fn time_prev_ms(&self) -> f64 { self.time_prev_ms }
    pub fn time_delta_ms(&self) -> f64 { self.time_delta_ms }
@@ -278,11 +280,12 @@ impl ExternalState {
       self.is_stable_updated = true;
    }
 
-   pub fn override_time(&mut self, timestamp_ms: f64, frame_idx: usize) {
+   pub fn override_time(&mut self, tick_timestamp_ms: f64, now_time_ms: f64, frame_idx: usize) {
       self.frame_idx = frame_idx;
+      self.time_of_tick_ms = tick_timestamp_ms;
       self.time_delta_ms = 0.0; // .max(1)
-      self.time_prev_ms  = timestamp_ms;
-      self.time_now_ms   = timestamp_ms;
+      self.time_prev_ms  = now_time_ms;
+      self.time_now_ms   = now_time_ms;
       self.update_derived_state();
    }
 
@@ -293,6 +296,9 @@ impl ExternalState {
       self.time_prev_ms  = self.time_now_ms;
       self.time_now_ms   += self.time_delta_ms;
       self.update_derived_state();
+      if (self.time_delta_ms != 0.0) {
+         log::info!("dt {} {}", self.time_delta_ms, self.time_now_ms);
+      }
    }
 
    pub fn tick_from_delta(&mut self, tick_delta_ms: f64) {
@@ -405,6 +411,7 @@ impl DemoStateHistory {
 pub struct DemoHistoryPlayback {
    history_playback_offset: usize,
    frame_lock_timestamp_ms: Option<f64>,
+   frame_lock_time_ms: Option<f64>,
 }
 
 #[allow(unused)]
@@ -413,31 +420,38 @@ impl DemoHistoryPlayback {
       Self {
          history_playback_offset: 0,
          frame_lock_timestamp_ms: None,
+         frame_lock_time_ms: None,
       }
    }
 
    pub fn is_playing_back(&self) -> bool { self.frame_lock_timestamp_ms.is_some() }
    pub fn playback_timestamp_ms(&self) -> Option<f64> { self.frame_lock_timestamp_ms }
+   pub fn playback_time_ms(&self) -> Option<f64> { self.frame_lock_timestamp_ms }
 
-   pub fn toggle_frame_lock(&mut self, lock_at_timestamp_ms: f64) -> bool {
+   // returns time when the lock was locked: (global_timer_timestamp_millisec, local_time_millisec)
+   pub fn toggle_frame_lock(&mut self, lock_at_timestamp_ms: f64, lock_at_time_ms: f64) -> Option<(f64, f64)> {
       if self.frame_lock_timestamp_ms.is_none() {
          // entering frame lock mode - remember current time, and don't advance it
          self.frame_lock_timestamp_ms = Some(lock_at_timestamp_ms);
+         self.frame_lock_time_ms = Some(lock_at_time_ms);
          self.history_playback_offset = 0;
-         log::info!("Frame lock mode ON");
-         true
+         log::info!("Frame lock mode ON t:{}", lock_at_timestamp_ms);
+         None
      } else {
          // exiting frame lock mode - set current time to the previous real time (which advanced even in lock)
-         self.frame_lock_timestamp_ms.take();
-         log::info!("Frame lock mode OFF");
-         false
+         log::info!("Frame lock mode OFF t:{}", self.frame_lock_timestamp_ms.unwrap());
+         match (self.frame_lock_timestamp_ms.take(), self.frame_lock_time_ms.take()) {
+            (Some(lock_timestamp_ms), Some(lock_time_ms)) => Some((lock_timestamp_ms, lock_time_ms)),
+            _ => None,
+         }
      }
    }
 
    pub fn advance_back(&mut self, state_history: &DemoStateHistory) {
       if self.frame_lock_timestamp_ms.is_some() {
          if let Some(state) = state_history.sample_state(self.history_playback_offset + 1) {
-             self.frame_lock_timestamp_ms.replace(state.time_now_ms);
+             self.frame_lock_timestamp_ms.replace(state.time_tick_ms);
+             self.frame_lock_time_ms.replace(state.time_now_ms);
              self.history_playback_offset += 1;
          }
       }
@@ -446,7 +460,8 @@ impl DemoHistoryPlayback {
    pub fn advance_forward(&mut self, state_history: &DemoStateHistory) {
       if self.frame_lock_timestamp_ms.is_some() && self.history_playback_offset > 0 {
          if let Some(state) = state_history.sample_state(self.history_playback_offset - 1) {
-            self.frame_lock_timestamp_ms.replace(state.time_now_ms);
+            self.frame_lock_timestamp_ms.replace(state.time_tick_ms);
+            self.frame_lock_time_ms.replace(state.time_now_ms);
             self.history_playback_offset -= 1;
          }
       }
@@ -465,10 +480,11 @@ pub struct FrameStateRef<'a> {
 
 pub fn handle_keyboard<'a>(keyboard: KeyboardState, state: FrameStateRef<'a>) {
    if keyboard.m() < 0.0 {
-       if state.demo_history_playback.toggle_frame_lock(state.previous_timestamp_ms) == false {
+       let lock_dropped = state.demo_history_playback.toggle_frame_lock(state.now_timestamp_ms, state.demo_state.time_now_ms());
+       if let Some((_, resume_time_ms)) = lock_dropped {
            // canceling frame lock, resume time
            let frame_idx = 0;
-           state.demo_state.override_time(state.previous_timestamp_ms, frame_idx);
+           state.demo_state.override_time(state.now_timestamp_ms, resume_time_ms, frame_idx);
        }
    }
    if keyboard.comma() < 0.0 || keyboard.comma() > 0.0 && keyboard.shift {

@@ -128,4 +128,4 @@ app: build server_py
 
 .PHONY: app_win
 app_win: build_win
-	cargo run $(CARGO_WIN)
+	RUST_LOG=info cargo run $(CARGO_WIN)

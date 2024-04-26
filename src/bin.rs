@@ -1,6 +1,3 @@
-use std::marker::PhantomData;
-use std::rc::Rc;
-use std::sync::Arc;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 use my_renderer::renderer::handle_keyboard;

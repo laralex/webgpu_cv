@@ -1,3 +1,14 @@
+fn main() {
+   cfg_if::cfg_if! {
+      if #[cfg(feature = "win")] {
+         futures::executor::block_on(win::run());
+      }
+   }
+}
+
+#[cfg(feature = "win")]
+mod win {
+
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use std::rc::Rc;
 
@@ -9,6 +20,32 @@ use my_renderer::renderer::handle_keyboard;
 use my_renderer::{DemoId, GraphicsLevel};
 use my_renderer::env::log_init;
 use my_renderer::renderer::{FrameStateRef, webgpu::Webgpu, stub_demo, fractal, DemoHistoryPlayback, DemoStateHistory, ExternalState, IDemo};
+use wgpu::SurfaceTexture;
+
+// Set up texture
+// let lenna_bytes = include_bytes!("../resources/checker.png");
+// let image =
+//    image::load_from_memory_with_format(lenna_bytes, ImageFormat::Png).expect("invalid image");
+// let image = image.to_rgba8();
+// let (width, height) = image.dimensions();
+// let raw_data = image.into_raw();
+
+// let texture_config = TextureConfig {
+//    size: Extent3d {
+//          width,
+//          height,
+//          ..Default::default()
+//    },
+//    label: Some("lenna texture"),
+//    format: Some(wgpu::TextureFormat::Rgba8Unorm),
+//    ..Default::default()
+// };
+
+// let texture = Texture::new(&device, &renderer, texture_config);
+
+// texture.write(&queue, &raw_data, width, height);
+// let lenna_texture_id = renderer.textures.insert(texture);
+      
 
 struct State<'window> {
    pub window: &'window winit::window::Window,
@@ -24,12 +61,12 @@ struct State<'window> {
    imgui: imgui::Context,
    imgui_renderer: imgui_wgpu::Renderer,
    imgui_platform: imgui_winit_support::WinitPlatform,
+   imgui_last_cursor: Option<Option<imgui::MouseCursor>>,
 }
 
 impl<'window> State<'window> {
    #[cfg(feature = "win")]
    async fn new(window: &'window winit::window::Window) -> Self {
-      // let window = Box::new(window);
       let (webgpu, surface) = Webgpu::new_with_winit(window).await;
       let webgpu = Rc::new(webgpu);
       let mut demo_state = ExternalState::default();
@@ -40,62 +77,11 @@ impl<'window> State<'window> {
       let demo = fractal::Demo::start_loading(webgpu.clone(), color_target_format, GraphicsLevel::Medium).await;
      
       // Set up dear imgui
-      let mut imgui = imgui::Context::create();
-      let mut imgui_platform = imgui_winit_support::WinitPlatform::init(&mut imgui);
-      imgui_platform.attach_window(
-         imgui.io_mut(),
-         &window,
-         imgui_winit_support::HiDpiMode::Default,
-      );
-      imgui.set_ini_filename(None);
-
-      let hidpi_factor = window.scale_factor();
-      let font_size = (13.0 * hidpi_factor) as f32;
-      imgui.io_mut().font_global_scale = (1.0 / hidpi_factor) as f32;
-
-      imgui.fonts().add_font(&[FontSource::DefaultFontData {
-         config: Some(imgui::FontConfig {
-               oversample_h: 1,
-               pixel_snap_h: true,
-               size_pixels: font_size,
-               ..Default::default()
-         }),
-      }]);
-
-      //
-      // Set up dear imgui wgpu renderer
-      //
-      let renderer_config = RendererConfig {
-            texture_format: color_target_format,
-            ..Default::default()
-      };
-
-      let mut imgui_renderer = Renderer::new(&mut imgui, &webgpu.device, &webgpu.queue, renderer_config);
-      
-      // Set up texture
-      // let lenna_bytes = include_bytes!("../resources/checker.png");
-      // let image =
-      //    image::load_from_memory_with_format(lenna_bytes, ImageFormat::Png).expect("invalid image");
-      // let image = image.to_rgba8();
-      // let (width, height) = image.dimensions();
-      // let raw_data = image.into_raw();
-
-      // let texture_config = TextureConfig {
-      //    size: Extent3d {
-      //          width,
-      //          height,
-      //          ..Default::default()
-      //    },
-      //    label: Some("lenna texture"),
-      //    format: Some(wgpu::TextureFormat::Rgba8Unorm),
-      //    ..Default::default()
-      // };
-
-      // let texture = Texture::new(&device, &renderer, texture_config);
-
-      // texture.write(&queue, &raw_data, width, height);
-      // let lenna_texture_id = renderer.textures.insert(texture);
-      
+      let (mut imgui, imgui_platform) = my_renderer::renderer::imgui::init_from_winit(&window);
+      let mut imgui_renderer = Renderer::new(&mut imgui, &webgpu.device, &webgpu.queue, RendererConfig {
+         texture_format: color_target_format,
+         ..Default::default()
+      });
 
       Self {
          window,
@@ -111,6 +97,7 @@ impl<'window> State<'window> {
          imgui,
          imgui_platform,
          imgui_renderer,
+         imgui_last_cursor: None,
      }
    }
 
@@ -142,50 +129,45 @@ impl<'window> State<'window> {
       self.demo_state.dismiss_events();
    }
 
-   fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
-      let surface_texture = self.webgpu_surface.get_current_texture()?;
-
-      self.demo.render(&self.webgpu, &surface_texture, self.demo_state.time_delta_sec())?;
-
-      // imgui
+   fn render_imgui(&mut self, surface_texture: &SurfaceTexture) {
       self.imgui_platform
          .prepare_frame(self.imgui.io_mut(), &self.window)
-         .expect("Failed to prepare frame");
+         .inspect_err(|_| log::warn!("Imgui winit failed to prepare frame"));
+      
       let ui = self.imgui.frame();
+      let window = ui.window("Hello world");
+      window
+         .size([300.0, 100.0], Condition::FirstUseEver)
+         .build(|| {
+            ui.text("Hello world!");
+            ui.text("This...is...imgui-rs on WGPU!");
+            ui.separator();
+            let mouse_pos = ui.io().mouse_pos;
+            ui.text(format!(
+                  "Mouse Position: ({:.1},{:.1})",
+                  mouse_pos[0], mouse_pos[1]
+            ));
+         });
 
-      {
-         let window = ui.window("Hello world");
-         window
-            .size([300.0, 100.0], Condition::FirstUseEver)
-            .build(|| {
-               ui.text("Hello world!");
-               ui.text("This...is...imgui-rs on WGPU!");
-               ui.separator();
-               let mouse_pos = ui.io().mouse_pos;
-               ui.text(format!(
-                     "Mouse Position: ({:.1},{:.1})",
-                     mouse_pos[0], mouse_pos[1]
-               ));
-            });
+      let window = ui.window("Hello too");
+      window
+         .size([400.0, 200.0], Condition::FirstUseEver)
+         .position([400.0, 200.0], Condition::FirstUseEver)
+         .build(|| {
+            ui.text(format!("Hello"));
+         });
 
-         let window = ui.window("Hello too");
-         window
-            .size([400.0, 200.0], Condition::FirstUseEver)
-            .position([400.0, 200.0], Condition::FirstUseEver)
-            .build(|| {
-               ui.text(format!("Hello"));
-            });
+      ui.show_demo_window(&mut true);
 
-         ui.show_demo_window(&mut true);
+      // submit imgui to webgpu
+      let desired_cursor = ui.mouse_cursor();
+      if self.imgui_last_cursor != Some(desired_cursor) {
+         self.imgui_last_cursor = Some(desired_cursor);
+         self.imgui_platform.prepare_render(ui, &self.window);
       }
 
       let mut encoder: wgpu::CommandEncoder =
-         self.webgpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-
-      // if last_cursor != Some(ui.mouse_cursor()) {
-      //    last_cursor = Some(ui.mouse_cursor());
-      self.imgui_platform.prepare_render(ui, &self.window);
-      // }
+      self.webgpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
       let view = surface_texture
          .texture
@@ -206,18 +188,26 @@ impl<'window> State<'window> {
       });
       self.imgui_renderer
          .render(self.imgui.render(), &self.webgpu.queue, &self.webgpu.device, &mut rpass)
-         .expect("Rendering failed");
+         .inspect_err(|_| log::warn!("Imgui webgpu renderer failed"));
       std::mem::drop(rpass);
-   
       self.webgpu.queue.submit(Some(encoder.finish()));
+   }
+
+   fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
+      let surface_texture = self.webgpu_surface.get_current_texture()?;
+
+      self.demo.render(&self.webgpu, &surface_texture, self.demo_state.time_delta_sec())?;
+      self.render_imgui(&surface_texture);
 
       // swap buffers
       surface_texture.present();
       Ok(())
    }
+
    fn reconfigure(&mut self) {
       self.webgpu_surface.configure(&self.webgpu.device, &self.webgpu_config);
    }
+
    pub fn resize(&mut self, (width, height): (u32, u32)) {
       if width > 0 && height > 0 {
          self.demo_state.set_screen_size((width, height));
@@ -235,10 +225,11 @@ impl<'window> State<'window> {
 }
 
 #[cfg(feature = "win")]
-async fn run() {
-   use futures::io::Window;
+pub async fn run() {
+   use std::cmp::Ordering;
+
 use winit::{
-      dpi::PhysicalPosition, event::*, event_loop::{ControlFlow, EventLoop}, keyboard::*, window::WindowBuilder
+      dpi::PhysicalPosition, event::*, event_loop::ControlFlow, keyboard::*
    };
    log_init();
    let event_loop = EventLoop::new()
@@ -254,7 +245,7 @@ use winit::{
             ref event,
             window_id,
          } if window_id == window_ref.id() => match event {
-            WindowEvent::CloseRequested => elwt.exit(), 
+            WindowEvent::CloseRequested => elwt.exit(),
             WindowEvent::KeyboardInput { event: KeyEvent {
                state: press_state,
                logical_key, physical_key, .. },
@@ -293,11 +284,22 @@ use winit::{
             WindowEvent::MouseWheel { delta, phase: TouchPhase::Moved, .. } => match delta {
                MouseScrollDelta::LineDelta(to_right, to_bottom) => {
                   let to_up = (-to_bottom).clamp(-1.0, 1.0); // TODO: maybe need to divide by some min/max
-                  state.demo_state.mouse().borrow_mut().wheel = to_up;
+                  let to_right = (to_right).clamp(-1.0, 1.0); // TODO: maybe need to divide by some min/max
+                  state.demo_state.mouse().borrow_mut().wheel = (to_right, to_up);
                },
-               MouseScrollDelta::PixelDelta(PhysicalPosition{x: to_right_px, y: to_bottom_px}) => {
-                  let to_up = (-0.02_f64 * to_bottom_px).clamp(-1.0, 1.0) as f32;
-                  state.demo_state.mouse().borrow_mut().wheel = to_up;
+               MouseScrollDelta::PixelDelta(pos) => {
+                  let pos = pos.to_logical::<f64>(window_ref.scale_factor());
+                  let h = match pos.x.partial_cmp(&0.0) {
+                        Some(Ordering::Greater) => 1.0,
+                        Some(Ordering::Less) => -1.0,
+                        _ => 0.0,
+                  };
+                  let v = match pos.y.partial_cmp(&0.0) {
+                        Some(Ordering::Greater) => -1.0,
+                        Some(Ordering::Less) => 1.0,
+                        _ => 0.0,
+                  };
+                  state.demo_state.mouse().borrow_mut().wheel = (h, v);
                },
             },
             WindowEvent::CursorMoved { position, .. } => {
@@ -338,10 +340,4 @@ use winit::{
    }).expect("Winit failed to start event loop");
 }
 
-fn main() {
-   cfg_if::cfg_if! {
-      if #[cfg(feature = "win")] {
-         futures::executor::block_on(run());
-      }
-   }
 }

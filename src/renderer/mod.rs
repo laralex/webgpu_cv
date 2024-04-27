@@ -1,5 +1,6 @@
 pub mod stub_demo;
 pub mod webgpu;
+pub mod imgui;
 use futures::Future;
 pub use webgpu::Webgpu;
 pub mod demo_state;

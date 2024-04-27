@@ -33,7 +33,7 @@ pub struct MouseState {
    button: [f32; 8],
    button_to_dismiss: [usize; 10],
    button_to_dismiss_idx: usize,
-   pub wheel: f32,
+   pub wheel: (f32, f32), // (horizontal, vertical), -1 == left/down, 1 == right/up
    pub canvas_position_px: (i32, i32), // origin at top-left
 }
 

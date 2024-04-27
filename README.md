@@ -7,13 +7,11 @@ Known issues:
    - project web-site
    - project trees-ruler
 - Demos overall:
+   - imgui (own platform support crate?)
    - fullscreen with F11 is weird (js error in firefox)
    - dynamic resolution confgurable per demo / pixel budget of the screen
-   - frame lock is weird
    - standalone app without wasm (for faster debugging)
-      - frame lock is weird
       - compiles for eternity
-      - mouse events
    - simple draw abstractions:
       - blit texture
       - axes

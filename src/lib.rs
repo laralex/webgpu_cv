@@ -3,9 +3,10 @@ pub mod renderer;
 pub mod timer;
 pub mod env;
 
+#[cfg(feature = "web")]
 use wasm_bindgen::prelude::*;
 
-#[wasm_bindgen]
+#[cfg_attr(feature = "web", wasm_bindgen)]
 #[derive(Default, Clone, Copy)]
 pub enum GraphicsLevel {
    Minimal = 0x00,
@@ -15,7 +16,7 @@ pub enum GraphicsLevel {
    Ultra = 0xFF,
 }
 
-#[wasm_bindgen]
+#[cfg_attr(feature = "web", wasm_bindgen)]
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum DemoId {
     Stub,
@@ -31,6 +32,7 @@ pub enum DemoId {
 mod wasm {
 
 use crate::env::log_init;
+use crate::renderer;
 use crate::renderer::{handle_keyboard, FrameStateRef};
 use crate::timer::ScopedTimer;
 
@@ -50,6 +52,15 @@ extern "C" {
     fn graphics_switching_finish();
 }
 
+#[cfg(feature = "imgui_web")]
+#[wasm_bindgen]
+struct ImguiInstance {
+    context: imgui::Context,
+    platform: renderer::imgui::web_platform::WebsysPlatform,
+    renderer: imgui_wgpu::Renderer,
+    last_cursor: Option<Option<imgui::MouseCursor>>,
+}
+
 #[wasm_bindgen]
 pub struct WasmInterface {
     #[allow(unused)]
@@ -67,6 +78,8 @@ pub struct WasmInterface {
     // gl: Rc<web_sys::WebGl2RenderingContext>,
     // demo_state_history: Rc<RefCell<renderer::DemoStateHistory>>, //::new();
     // demo_history_playback: Rc<RefCell<renderer::DemoHistoryPlayback>>, //::new();
+    #[cfg(feature = "imgui_web")]
+    imgui: Rc<RefCell<Option<ImguiInstance>>>,
 }
 
 impl From<u32> for GraphicsLevel {
@@ -134,6 +147,8 @@ impl WasmInterface {
             pending_loading_demo,
             // demo_state_history: Rc::new(RefCell::new(renderer::DemoStateHistory::new())),
             // demo_history_playback: Rc::new(RefCell::new(renderer::DemoHistoryPlayback::new())),
+            #[cfg(feature = "imgui_web")]
+            imgui: Rc::new(RefCell::new(None)),
         })
     }
 
@@ -154,7 +169,18 @@ impl WasmInterface {
             webgpu_config.width = width;
             webgpu_config.height = height;
         }
-        self.webgpu_surface.configure(&self.webgpu.device, &self.webgpu_config.borrow())
+        self.webgpu_surface.configure(&self.webgpu.device, &self.webgpu_config.borrow());
+
+        #[cfg(feature = "imgui_web")]
+        if let Some(imgui) = &*self.imgui.borrow_mut() {
+            let hidpi_factor = 1.0;
+            let size = web_platform::PhysicalSize::PhysicalSize::new(width as usize, height as usize);
+            // TODO: resize
+            // imgui.platform.handle_event(
+            //     imgui.context.io_mut(),
+            //     hidpi_factor, &renderer::imgui::web_platform::WebEvent::Resized(size),
+            // )
+        }
     }
 
     #[wasm_bindgen(js_name = setFpsLimit)]
@@ -314,6 +340,29 @@ impl WasmInterface {
         let mut demo_history_playback = renderer::DemoHistoryPlayback::new();
         let mut previous_timestamp_ms = 0.0;
         let window = js_interop::window();
+
+        #[cfg(feature = "imgui_web")] {
+            let surface_config = webgpu_config.borrow();
+            let (width, height) = (surface_config.width as usize, surface_config.height as usize);
+            let hidpi_scale = 1.0;
+            let (mut imgui, imgui_platform) = renderer::imgui::init_from_raw(
+                renderer::imgui::web_platform::PhysicalSize { width, height },
+                hidpi_scale,
+            );
+            let mut imgui_renderer = imgui_wgpu::Renderer::new(&mut imgui, &webgpu.device, &webgpu.queue, imgui_wgpu::RendererConfig {
+                texture_format: self.webgpu_config.borrow().format,
+                ..Default::default()
+            });
+            *self.imgui.borrow_mut() = Some(ImguiInstance{
+                context: imgui,
+                platform: imgui_platform,
+                renderer: imgui_renderer,
+                last_cursor: None,
+            })
+        }
+        #[cfg(feature = "imgui_web")]
+        let imgui = self.imgui.clone();
+
         *engine_tick2.borrow_mut() = Some(Closure::new(move |now_timestamp_ms: f64| {
             // engine step
             let webgpu = webgpu.as_ref();
@@ -350,6 +399,11 @@ impl WasmInterface {
                     Err(e) => eprintln!("{:?}", e), // resolved by the next frame
                 }
 
+                #[cfg(feature = "imgui_web")]
+                if let Some(imgui) = &mut *imgui.borrow_mut() {
+                    WasmInterface::render_imgui(&webgpu, imgui, &surface_texture);
+                }
+
                 // swap buffers
                 surface_texture.present();
                 demo_state.dismiss_events();
@@ -372,6 +426,71 @@ impl WasmInterface {
         js_interop::request_animation_frame(&window, engine_tick2.borrow().as_ref().unwrap());
         Ok(())
     }
+
+    #[cfg(feature = "imgui_web")]
+    fn render_imgui(webgpu: &Webgpu, imgui: &mut ImguiInstance, surface_texture: &wgpu::SurfaceTexture) {
+        use imgui::*;
+        imgui.platform
+           .prepare_frame(imgui.context.io_mut());
+
+        let ui = imgui.context.frame();
+        let window = ui.window("Hello world");
+        window
+           .size([300.0, 100.0], Condition::FirstUseEver)
+           .build(|| {
+              ui.text("Hello world!");
+              ui.text("This...is...imgui-rs on WGPU!");
+              ui.separator();
+              let mouse_pos = ui.io().mouse_pos;
+              ui.text(format!(
+                    "Mouse Position: ({:.1},{:.1})",
+                    mouse_pos[0], mouse_pos[1]
+              ));
+           });
+  
+        let window = ui.window("Hello too");
+        window
+           .size([400.0, 200.0], Condition::FirstUseEver)
+           .position([400.0, 200.0], Condition::FirstUseEver)
+           .build(|| {
+              ui.text(format!("Hello"));
+           });
+  
+        ui.show_demo_window(&mut true);
+  
+        // submit imgui to webgpu
+        let desired_cursor = ui.mouse_cursor();
+        if imgui.last_cursor != Some(desired_cursor) {
+           imgui.last_cursor = Some(desired_cursor);
+           imgui.platform.prepare_render(ui);
+        }
+
+        let mut encoder: wgpu::CommandEncoder =
+        webgpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+
+        let view = surface_texture
+           .texture
+           .create_view(&wgpu::TextureViewDescriptor::default());
+        let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+           label: None,
+           color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+              view: &view,
+              resolve_target: None,
+              ops: wgpu::Operations {
+                 load: wgpu::LoadOp::Load,
+                 store: wgpu::StoreOp::Store,
+              },
+           })],
+           depth_stencil_attachment: None,
+           occlusion_query_set: None,
+           timestamp_writes: None,
+        });
+        imgui.renderer
+           .render(imgui.context.render(), &webgpu.queue, &webgpu.device, &mut rpass)
+           .inspect_err(|_| log::warn!("Imgui webgpu renderer failed"));
+        std::mem::drop(rpass);
+        webgpu.queue.submit(Some(encoder.finish()));
+     }
 }
 
 fn configure_keydown(keyboard_state: Rc<RefCell<renderer::KeyboardState>>) -> Result<(), JsValue> {

@@ -15,7 +15,7 @@ path = "src/bin.rs"
 default = [ ]
 web = ["dep:console_error_panic_hook", "dep:wasm-bindgen-futures",
     "dep:js-sys", "dep:console_log", "dep:web-sys",
-    "wgpu/webgl", "wgpu/webgpu", "imgui_web"]
+    "wgpu/webgl", "wgpu/webgpu"]
 win = ["dep:winit", "dep:env_logger", "imgui_win"]
 imgui_web = ["dep:imgui", "imgui/wasm", "dep:imgui-wgpu"]
 imgui_win = ["dep:imgui", "dep:imgui-wgpu", "dep:imgui-winit-support"]
@@ -32,6 +32,9 @@ futures = "0.3"
 paste = "1.0"
 
 # standalone window app
+#imgui = { version = "0.11", optional = true}
+#imgui-winit-support = { version = "0.11", optional = true }
+#imgui-wgpu = { version = "0.24", optional = true }
 imgui = { git = "https://github.com/imgui-rs/imgui-rs", optional = true}
 imgui-winit-support = { git = "https://github.com/imgui-rs/imgui-rs", optional = true }
 imgui-wgpu = { git = "https://github.com/Yatekii/imgui-wgpu-rs.git", rev = "edc6bc484c44dd3af5b2170757b19c7aa15bface", optional = true } # for wgpu 0.19

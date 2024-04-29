@@ -21,9 +21,6 @@
 use imgui::{self, BackendFlags, ConfigFlags, Context, Io, Key, Ui};
 use std::{cmp::Ordering, collections::HashMap, hash::RandomState};
 
-// Re-export winit to make it easier for users to use the correct version.
-use web_sys::MouseEvent;
-
 /// winit backend platform state
 #[derive(Debug)]
 pub struct WebsysPlatform {
@@ -354,7 +351,7 @@ pub enum WebEvent {
     Mouse(MouseEvent),
     MouseWheel(MouseWheelEvent),
     Focused(bool),
-};
+}
 
 impl WebsysPlatform {
     /// Initializes a winit platform instance and configures imgui.
@@ -365,15 +362,16 @@ impl WebsysPlatform {
     /// * keys are configured
     /// * platform name is set
     pub fn init(imgui: &mut Context, display_size: PhysicalSize, display_hidpi_scale: f64, hidpi_mode: HiDpiMode) -> WebsysPlatform {
+        imgui.set_platform_name(Some(format!(
+            "imgui-web-sys-support {}",
+            "0.0.1"
+        )));
+
         let io = imgui.io_mut();
 
         // NOTE: not supported
         // io.backend_flags.insert(BackendFlags::HAS_MOUSE_CURSORS);
         // io.backend_flags.insert(BackendFlags::HAS_SET_MOUSE_POS);
-        imgui.set_platform_name(Some(format!(
-            "imgui-web-sys-support {}",
-            "0.0.1"
-        )));
 
         let mut platform = WebsysPlatform {
             hidpi_mode: ActiveHiDpiMode::Default,
@@ -386,7 +384,7 @@ impl WebsysPlatform {
     }
 
     fn to_imgui_key(&self, event: &web_sys::KeyboardEvent) -> Option<imgui::Key> {
-        self.keycode_to_imgui.get(event.code.into::<&str>()).copied()
+        self.keycode_to_imgui.get(event.code().as_str()).copied()
     }
 
     /// Attaches the platform instance to a winit window.
@@ -466,7 +464,7 @@ impl WebsysPlatform {
     /// * keyboard state is updated
     /// * mouse state is updated
     pub fn handle_event(&mut self, io: &mut Io, external_hidpi_factor: f64, event: &WebEvent) {
-        match *event {
+        match event {
             WebEvent::Resized(physical_size) => {
                 let logical_size = physical_size.to_logical(external_hidpi_factor);
                 let logical_size = self.scale_size_from_external_factor(external_hidpi_factor, logical_size);
@@ -516,7 +514,7 @@ impl WebsysPlatform {
 
                 // Add main key event
                 if let Some(key) = self.to_imgui_key(&event) {
-                    io.add_key_event(key, is_down);
+                    io.add_key_event(key, *is_down);
                 }
             },
             WebEvent::CursorMoved(physical_position) => {
@@ -526,12 +524,12 @@ impl WebsysPlatform {
             },
             WebEvent::Mouse(MouseEvent{event, is_down}) => {
                 if let Some(mb) = to_imgui_mouse_button(&event) {
-                    io.add_mouse_button_event(mb, is_down);
+                    io.add_mouse_button_event(mb, *is_down);
                 }
             },
             WebEvent::MouseWheel(MouseWheelEvent{norm_delta_x, norm_delta_y}) => {
                 io.add_mouse_wheel_event(
-                    [norm_delta_x, norm_delta_y]);
+                    [*norm_delta_x, *norm_delta_y]);
             },
             WebEvent::Focused(is_focused) => {
                 if !is_focused {

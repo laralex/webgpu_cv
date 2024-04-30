@@ -180,7 +180,7 @@ impl DemoLoadingFuture for DemoLoadingProcess {}
 
 pub struct Demo {
    render_pipeline: wgpu::RenderPipeline,
-   clear_color: [f64; 4],
+   clear_color: [f32; 4],
    num_rendered_vertices: i32,
    pending_graphics_level_switch: Option<GraphicsSwitchingProcess>,
 }
@@ -212,9 +212,9 @@ impl Demo {
 impl IDemo for Demo {
    fn tick(&mut self, input: &ExternalState) {
       let mouse_pos = input.mouse_unit_position();
-      self.clear_color[0] = (input.time_now_sec().sin() as f32 * 0.5 + 0.5 * mouse_pos.0) as f64;
-      self.clear_color[1] = ((input.time_now_sec() * 1.2).sin() * 0.5 + 0.5) as f64;
-      self.clear_color[2] = input.mouse().borrow().left() as f64;
+      self.clear_color[0] = (input.time_now_sec().sin() as f32 * 0.5 + 0.5 * mouse_pos.0);
+      self.clear_color[1] = ((input.time_now_sec() * 1.2).sin() * 0.5 + 0.5) as f32;
+      self.clear_color[2] = input.mouse().borrow().left();
       self.clear_color[3] = 1.0;
    }
 
@@ -226,10 +226,10 @@ impl IDemo for Demo {
 
       {
          let color = wgpu::Color{
-            r: self.clear_color[0],
-            g: self.clear_color[1],
-            b: self.clear_color[2],
-            a: self.clear_color[3],
+            r: self.clear_color[0] as f64,
+            g: self.clear_color[1] as f64,
+            b: self.clear_color[2] as f64,
+            a: self.clear_color[3] as f64,
          };
          let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                label: Some("Render Pass"),
@@ -253,6 +253,18 @@ impl IDemo for Demo {
       // submit will accept anything that implements IntoIter
       webgpu.queue.submit(std::iter::once(encoder.finish()));
       Ok(())
+   }
+
+   #[cfg(any(feature = "imgui_win", feature = "imgui_web"))]
+   fn render_imgui(&mut self, ui: &imgui::Ui) {
+      use imgui::*;
+      let window = ui.window("Triangle Demo");
+      window
+         .size([300.0, 100.0], Condition::FirstUseEver)
+         .build(|| {
+            ui.text(format!("Num rendered verts: {}", self.num_rendered_vertices));
+            ui.color_edit4("Clear color", &mut self.clear_color);
+         });
    }
 
    fn start_switching_graphics_level(&mut self, _webgpu: &Webgpu, graphics_level: GraphicsLevel) -> Result<(), wgpu::SurfaceError> {

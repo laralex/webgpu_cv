@@ -49,6 +49,11 @@ impl IDemo for Demo {
       Ok(())
    }
 
+   #[cfg(any(feature = "imgui_win", feature = "imgui_web"))]
+   fn render_imgui(&mut self, ui: &imgui::Ui) {
+
+   }
+
    fn start_switching_graphics_level(&mut self, _webgpu: &Webgpu, _level: GraphicsLevel) -> Result<(), wgpu::SurfaceError> {
       Ok(())
    }

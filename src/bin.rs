@@ -19,8 +19,8 @@ use imgui_winit_support::winit::{dpi::LogicalSize, event_loop::EventLoop, window
 use my_renderer::renderer::handle_keyboard;
 use my_renderer::{DemoId, GraphicsLevel};
 use my_renderer::env::log_init;
-use my_renderer::renderer::{FrameStateRef, webgpu::Webgpu, stub_demo, fractal, DemoHistoryPlayback, DemoStateHistory, ExternalState, IDemo};
-use wgpu::SurfaceTexture;
+use my_renderer::renderer::{imgui_web, FrameStateRef, webgpu::Webgpu, stub_demo, fractal, DemoHistoryPlayback, DemoStateHistory, ExternalState, IDemo};
+use wgpu::{Color, SurfaceTexture};
 
 // Set up texture
 // let lenna_bytes = include_bytes!("../resources/checker.png");
@@ -77,7 +77,7 @@ impl<'window> State<'window> {
       let demo = fractal::Demo::start_loading(webgpu.clone(), color_target_format, GraphicsLevel::Medium).await;
      
       // Set up dear imgui
-      let (mut imgui, imgui_platform) = my_renderer::renderer::imgui::init_from_winit(&window);
+      let (mut imgui, imgui_platform) = imgui_web::init_from_winit(&window);
       let mut imgui_renderer = Renderer::new(&mut imgui, &webgpu.device, &webgpu.queue, RendererConfig {
          texture_format: color_target_format,
          ..Default::default()
@@ -129,50 +129,15 @@ impl<'window> State<'window> {
       self.demo_state.dismiss_events();
    }
 
-   fn render_imgui(&mut self, surface_texture: &SurfaceTexture) {
-      self.imgui_platform
-         .prepare_frame(self.imgui.io_mut(), &self.window)
-         .inspect_err(|_| log::warn!("Imgui winit failed to prepare frame"));
-      
-      let ui = self.imgui.frame();
-      let window = ui.window("Hello world");
-      window
-         .size([300.0, 100.0], Condition::FirstUseEver)
-         .build(|| {
-            ui.text("Hello world!");
-            ui.text("This...is...imgui-rs on WGPU!");
-            ui.separator();
-            let mouse_pos = ui.io().mouse_pos;
-            ui.text(format!(
-                  "Mouse Position: ({:.1},{:.1})",
-                  mouse_pos[0], mouse_pos[1]
-            ));
-         });
-
-      let window = ui.window("Hello too");
-      window
-         .size([400.0, 200.0], Condition::FirstUseEver)
-         .position([400.0, 200.0], Condition::FirstUseEver)
-         .build(|| {
-            ui.text(format!("Hello"));
-         });
-
-      ui.show_demo_window(&mut true);
-
+   fn render_imgui(&mut self, surface_texture: &wgpu::SurfaceTexture) {
       // submit imgui to webgpu
-      let desired_cursor = ui.mouse_cursor();
-      if self.imgui_last_cursor != Some(desired_cursor) {
-         self.imgui_last_cursor = Some(desired_cursor);
-         self.imgui_platform.prepare_render(ui, &self.window);
-      }
-
       let mut encoder: wgpu::CommandEncoder =
       self.webgpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
       let view = surface_texture
          .texture
          .create_view(&wgpu::TextureViewDescriptor::default());
-      let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+      let mut renderpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
          label: None,
          color_attachments: &[Some(wgpu::RenderPassColorAttachment {
             view: &view,
@@ -186,17 +151,39 @@ impl<'window> State<'window> {
          occlusion_query_set: None,
          timestamp_writes: None,
       });
+
       self.imgui_renderer
-         .render(self.imgui.render(), &self.webgpu.queue, &self.webgpu.device, &mut rpass)
+         .render(self.imgui.render(), &self.webgpu.queue, &self.webgpu.device, &mut renderpass)
          .inspect_err(|_| log::warn!("Imgui webgpu renderer failed"));
-      std::mem::drop(rpass);
+      std::mem::drop(renderpass);
       self.webgpu.queue.submit(Some(encoder.finish()));
    }
 
    fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
       let surface_texture = self.webgpu_surface.get_current_texture()?;
 
+      // render demo
       self.demo.render(&self.webgpu, &surface_texture, self.demo_state.time_delta_sec())?;
+
+      // imgui
+      self.imgui_platform
+         .prepare_frame(self.imgui.io_mut(), &self.window)
+         .inspect_err(|_| log::warn!("Imgui winit failed to prepare frame"));
+
+      {
+         let ui = self.imgui.new_frame();
+         let desired_cursor = ui.mouse_cursor();
+         if self.imgui_last_cursor != Some(desired_cursor) {
+            self.imgui_last_cursor = Some(desired_cursor);
+            self.imgui_platform.prepare_render(ui, &self.window);
+         }
+
+         self.demo.render_imgui(&ui);
+
+         // common UI
+         ui.show_demo_window(&mut true);
+      }
+
       self.render_imgui(&surface_texture);
 
       // swap buffers

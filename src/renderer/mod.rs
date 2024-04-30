@@ -1,6 +1,6 @@
 pub mod stub_demo;
 pub mod webgpu;
-pub mod imgui;
+pub mod imgui_web;
 use futures::Future;
 pub use webgpu::Webgpu;
 pub mod demo_state;
@@ -49,6 +49,8 @@ pub trait IDemo {
    fn poll_switching_graphics_level(&mut self, webgpu: &Webgpu) -> Result<std::task::Poll<()>, wgpu::SurfaceError>;
    fn progress_switching_graphics_level(&self) -> f32;
    fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, delta_sec: f64) -> Result<(), wgpu::SurfaceError>;
+   #[cfg(any(feature = "imgui_win", feature = "imgui_web"))]
+   fn render_imgui(&mut self, ui: &imgui::Ui);
    fn drop_demo(&mut self, webgpu: &Webgpu);
 }
 

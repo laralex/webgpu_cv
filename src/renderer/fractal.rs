@@ -434,6 +434,24 @@ impl IDemo for Demo {
       Ok(())
    }
 
+   #[cfg(any(feature = "imgui_win", feature = "imgui_web"))]
+   fn render_imgui(&mut self, ui: &imgui::Ui) {
+      use imgui::*;
+      let window = ui.window("Fractal Demo");
+      window
+         .size([300.0, 100.0], Condition::FirstUseEver)
+         .build(|| {
+            ui.text("Hello world!");
+            ui.text("This...is...imgui-rs on WGPU!");
+            ui.separator();
+            let mouse_pos = ui.io().mouse_pos;
+            ui.text(format!(
+                  "Mouse Position: ({:.1},{:.1})",
+                  mouse_pos[0], mouse_pos[1]
+            ));
+         });
+   }
+
    fn start_switching_graphics_level(&mut self, _webgpu: &Webgpu, graphics_level: GraphicsLevel) -> Result<(), wgpu::SurfaceError> {
       #[cfg(feature = "web")]
       web_sys::console::log_3(&"Rust start_switching_graphics_level".into(), &std::module_path!().into(), &graphics_level.into());

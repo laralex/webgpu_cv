@@ -1,9 +1,14 @@
 fn main() {
-   cfg_if::cfg_if! {
+   cfg_if::cfg_if!(
       if #[cfg(feature = "win")] {
-         futures::executor::block_on(win::run());
-      }
-   }
+         use tokio::runtime::Builder;
+         tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(async { win::run().await; })
+     }
+   );
 }
 
 #[cfg(feature = "win")]
@@ -16,7 +21,7 @@ use imgui::*;
 use imgui_wgpu::{Renderer, RendererConfig, Texture, TextureConfig};
 use imgui_winit_support::winit::{dpi::LogicalSize, event_loop::EventLoop, window::WindowBuilder};
 
-use my_renderer::renderer::handle_keyboard;
+use my_renderer::renderer::{handle_keyboard, triangle, DemoLoadingFuture};
 use my_renderer::{DemoId, GraphicsLevel};
 use my_renderer::env::log_init;
 use my_renderer::renderer::{imgui_web, FrameStateRef, webgpu::Webgpu, stub_demo, fractal, DemoHistoryPlayback, DemoStateHistory, ExternalState, IDemo};
@@ -54,7 +59,6 @@ struct State<'window> {
    pub webgpu_config: wgpu::SurfaceConfiguration,
    demo: Box<dyn IDemo>,
    demo_state: ExternalState,
-   demo_id: DemoId,
    demo_state_history: DemoStateHistory,
    demo_history_playback: DemoHistoryPlayback,
    previous_timestamp_ms: f64,
@@ -62,9 +66,27 @@ struct State<'window> {
    imgui_renderer: imgui_wgpu::Renderer,
    imgui_platform: imgui_winit_support::WinitPlatform,
    imgui_last_cursor: Option<Option<imgui::MouseCursor>>,
+   // demos_names: [&str; 3],
+   demos_ids: [&'static DemoId; 3],
+   demo_idx: i32,
 }
 
 impl<'window> State<'window> {
+   async fn load_demo(&mut self, id: DemoId) -> Box<dyn IDemo> {
+      let loader = match id {
+        DemoId::Stub => stub_demo::Demo::start_loading(),
+        DemoId::Triangle => triangle::Demo::start_loading(
+         self.webgpu.clone(), self.webgpu_config.format, self.demo_state.graphics_level()),
+        DemoId::Fractal => fractal::Demo::start_loading(
+         self.webgpu.clone(), self.webgpu_config.format, self.demo_state.graphics_level()),
+        _ => stub_demo::Demo::start_loading(),
+      //   DemoId::FrameGeneration => todo!(),
+      //   DemoId::HeadAvatar => todo!(),
+      //   DemoId::FullBodyAvatar => todo!(),
+      //   DemoId::ProceduralGeneration => todo!(),
+      };
+      loader.await
+   }
    #[cfg(feature = "win")]
    async fn new(window: &'window winit::window::Window) -> Self {
       let (webgpu, surface) = Webgpu::new_with_winit(window).await;
@@ -73,13 +95,17 @@ impl<'window> State<'window> {
       demo_state.set_graphics_level(GraphicsLevel::Medium);
       demo_state.set_time_delta_limit_ms(1.0);
       demo_state.set_debug_mode(Some(1));
-      let color_target_format = surface.config.format;
-      let demo = fractal::Demo::start_loading(webgpu.clone(), color_target_format, GraphicsLevel::Medium).await;
-     
+      let demo = fractal::Demo::start_loading(webgpu.clone(), surface.config.format, demo_state.graphics_level()).await;
+      let demo_idx = 0;
+      let demos_ids = [
+         &DemoId::Fractal,
+         &DemoId::Triangle,
+         &DemoId::Stub,
+      ];
       // Set up dear imgui
       let (mut imgui, imgui_platform) = imgui_web::init_from_winit(&window);
       let mut imgui_renderer = Renderer::new(&mut imgui, &webgpu.device, &webgpu.queue, RendererConfig {
-         texture_format: color_target_format,
+         texture_format: surface.config.format,
          ..Default::default()
       });
 
@@ -90,7 +116,8 @@ impl<'window> State<'window> {
          webgpu_config: surface.config,
          demo_state,
          demo,
-         demo_id: DemoId::Stub,
+         demo_idx,
+         demos_ids,
          demo_state_history: DemoStateHistory::new(),
          demo_history_playback: DemoHistoryPlayback::new(),
          previous_timestamp_ms: 0.0,
@@ -170,6 +197,7 @@ impl<'window> State<'window> {
          .prepare_frame(self.imgui.io_mut(), &self.window)
          .inspect_err(|_| log::warn!("Imgui winit failed to prepare frame"));
 
+      let mut need_load_demo = false;
       {
          let ui = self.imgui.new_frame();
          let desired_cursor = ui.mouse_cursor();
@@ -181,10 +209,21 @@ impl<'window> State<'window> {
          self.demo.render_imgui(&ui);
 
          // common UI
-         ui.show_demo_window(&mut true);
+         let window = ui.window("Common");
+         window
+            .size([300.0, 100.0], Condition::FirstUseEver)
+            .position([0.0, 0.0], Condition::FirstUseEver)
+            .build(||
+            need_load_demo = ui.list_box("Choose demo",
+            &mut self.demo_idx, &self.demos_ids, self.demos_ids.len() as i32)
+         );
       }
-
       self.render_imgui(&surface_texture);
+
+      if need_load_demo {
+         self.demo = futures::executor::block_on(
+            self.load_demo(*self.demos_ids[self.demo_idx as usize]));
+      }
 
       // swap buffers
       surface_texture.present();
@@ -215,7 +254,7 @@ impl<'window> State<'window> {
 pub async fn run() {
    use std::cmp::Ordering;
 
-use winit::{
+   use winit::{
       dpi::PhysicalPosition, event::*, event_loop::ControlFlow, keyboard::*
    };
    log_init();

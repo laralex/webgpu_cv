@@ -28,6 +28,21 @@ pub enum DemoId {
     ProceduralGeneration,
 }
 
+impl AsRef<str> for DemoId {
+    #[inline]
+    fn as_ref(&self) -> &str {
+        match self {
+            DemoId::Stub => "Stub",
+            DemoId::Triangle => "Triangle",
+            DemoId::Fractal => "Mandelbrot Fractal",
+            DemoId::FrameGeneration => "Frame Generation",
+            DemoId::HeadAvatar => "Head Avatar",
+            DemoId::FullBodyAvatar => "Full Body Avatar",
+            DemoId::ProceduralGeneration => "Procedural Generation",
+        }
+    }
+}
+
 #[cfg(feature = "web")]
 mod wasm {
 

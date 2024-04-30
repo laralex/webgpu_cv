@@ -440,6 +440,7 @@ impl IDemo for Demo {
       let window = ui.window("Fractal Demo");
       window
          .size([300.0, 100.0], Condition::FirstUseEver)
+         .position([300.0, 0.0], Condition::FirstUseEver)
          .build(|| {
             ui.text("Hello world!");
             ui.text("This...is...imgui-rs on WGPU!");

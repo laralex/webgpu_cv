@@ -261,6 +261,7 @@ impl IDemo for Demo {
       let window = ui.window("Triangle Demo");
       window
          .size([300.0, 100.0], Condition::FirstUseEver)
+         .position([300.0, 0.0], Condition::FirstUseEver)
          .build(|| {
             ui.text(format!("Num rendered verts: {}", self.num_rendered_vertices));
             ui.color_edit4("Clear color", &mut self.clear_color);

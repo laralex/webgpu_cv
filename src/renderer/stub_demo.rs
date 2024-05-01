@@ -50,7 +50,7 @@ impl IDemo for Demo {
    }
 
    #[cfg(any(feature = "imgui_win", feature = "imgui_web"))]
-   fn render_imgui(&mut self, ui: &imgui::Ui) {
+   fn render_imgui(&mut self, _ui: &imgui::Ui, _args: super::imgui_web::ImguiRenderArgs) {
 
    }
 

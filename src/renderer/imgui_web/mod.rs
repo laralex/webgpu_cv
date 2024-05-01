@@ -1,5 +1,26 @@
 #![cfg(any(feature = "imgui", feature="imgui_web", feature="imgui_win"))]
 
+pub struct ImguiRenderArgs {
+   pub position: [f32; 2],
+   pub size: [f32; 2],
+}
+
+impl ImguiRenderArgs {
+   pub fn new_right_from(other: &ImguiRenderArgs, right_offset: [f32; 2]) -> ImguiRenderArgs {
+      ImguiRenderArgs {
+         position: [other.position[0] + other.size[0] + right_offset[0], other.position[1] + right_offset[1]],
+         size: other.size,
+      }
+   }
+
+   pub fn new_down_from(other: &ImguiRenderArgs, down_offset: [f32; 2]) -> ImguiRenderArgs {
+      ImguiRenderArgs {
+         position: [other.position[0] + down_offset[0], other.position[1] + other.size[1] + down_offset[1]],
+         size: other.size,
+      }
+   }
+}
+
 #[cfg(feature = "web")]
 pub mod web_platform;
 

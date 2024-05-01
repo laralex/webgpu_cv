@@ -435,12 +435,12 @@ impl IDemo for Demo {
    }
 
    #[cfg(any(feature = "imgui_win", feature = "imgui_web"))]
-   fn render_imgui(&mut self, ui: &imgui::Ui) {
+   fn render_imgui(&mut self, ui: &imgui::Ui, args: super::imgui_web::ImguiRenderArgs) {
       use imgui::*;
       let window = ui.window("Fractal Demo");
       window
-         .size([300.0, 100.0], Condition::FirstUseEver)
-         .position([300.0, 0.0], Condition::FirstUseEver)
+         .size(args.size, Condition::FirstUseEver)
+         .position(args.position, Condition::FirstUseEver)
          .build(|| {
             ui.text("Hello world!");
             ui.text("This...is...imgui-rs on WGPU!");

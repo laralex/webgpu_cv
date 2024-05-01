@@ -50,7 +50,7 @@ pub trait IDemo {
    fn progress_switching_graphics_level(&self) -> f32;
    fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, delta_sec: f64) -> Result<(), wgpu::SurfaceError>;
    #[cfg(any(feature = "imgui_win", feature = "imgui_web"))]
-   fn render_imgui(&mut self, ui: &imgui::Ui);
+   fn render_imgui(&mut self, ui: &imgui::Ui, args: imgui_web::ImguiRenderArgs);
    fn drop_demo(&mut self, webgpu: &Webgpu);
 }
 

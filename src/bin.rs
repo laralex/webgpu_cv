@@ -21,6 +21,7 @@ use imgui::*;
 use imgui_wgpu::{Renderer, RendererConfig, Texture, TextureConfig};
 use imgui_winit_support::winit::{dpi::LogicalSize, event_loop::EventLoop, window::WindowBuilder};
 
+use my_renderer::renderer::imgui_web::ImguiRenderArgs;
 use my_renderer::renderer::{handle_keyboard, triangle, DemoLoadingFuture};
 use my_renderer::{DemoId, GraphicsLevel};
 use my_renderer::env::log_init;
@@ -156,7 +157,7 @@ impl<'window> State<'window> {
       self.demo_state.dismiss_events();
    }
 
-   fn render_imgui(&mut self, surface_texture: &wgpu::SurfaceTexture) {
+   fn submit_imgui(&mut self, surface_texture: &wgpu::SurfaceTexture) {
       // submit imgui to webgpu
       let mut encoder: wgpu::CommandEncoder =
       self.webgpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
@@ -206,19 +207,26 @@ impl<'window> State<'window> {
             self.imgui_platform.prepare_render(ui, &self.window);
          }
 
-         self.demo.render_imgui(&ui);
+         let imgui_common_args = ImguiRenderArgs {
+            position: [10.0, 10.0],
+            size: [300.0, 100.0],
+         };
+         let imgui_demo_args = ImguiRenderArgs::new_right_from(
+            &imgui_common_args, [10.0, 0.0]);
+
+         self.demo.render_imgui(&ui, imgui_demo_args);
 
          // common UI
          let window = ui.window("Common");
          window
-            .size([300.0, 100.0], Condition::FirstUseEver)
-            .position([0.0, 0.0], Condition::FirstUseEver)
+            .size(imgui_common_args.size, Condition::FirstUseEver)
+            .position(imgui_common_args.position, Condition::FirstUseEver)
             .build(||
             need_load_demo = ui.list_box("Choose demo",
             &mut self.demo_idx, &self.demos_ids, self.demos_ids.len() as i32)
          );
       }
-      self.render_imgui(&surface_texture);
+      self.submit_imgui(&surface_texture);
 
       if need_load_demo {
          self.demo = futures::executor::block_on(

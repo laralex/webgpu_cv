@@ -385,9 +385,6 @@ impl IDemo for Demo {
       self.demo_stable_uniform_data.aspect_ratio = input.aspect_ratio();
       self.demo_stable_uniform_data.is_debug = input.debug_mode().map_or(0.0, f32::from);
       self.pending_write_stable_uniform = self.pending_write_stable_uniform || input.is_stable_updated();
-      if input.is_stable_updated() {
-         log::info!("Stable update {:?}",  self.demo_stable_uniform_data.is_debug);
-      }
       self.demo_dynamic_uniform_data.mouse_position = input.mouse_unit_position().into();
    }
 
@@ -446,6 +443,7 @@ impl IDemo for Demo {
          .position(args.position, Condition::FirstUseEver)
          .build(|| {
             ui.input_int("Num iterations", &mut self.fractal_uniform_data.num_iterations)
+               .step(10)
                .build();
             ui.input_float("Zoom", &mut self.fractal_uniform_data.fractal_zoom)
                .build();

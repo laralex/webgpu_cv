@@ -75,7 +75,8 @@ struct State<'window> {
 
 struct ImguiExports {
    debug_mode: i32,
-   debug_mode_enabled: bool
+   debug_mode_enabled: bool,
+   playback_enabled: bool,
 }
 
 impl<'window> State<'window> {
@@ -117,6 +118,7 @@ impl<'window> State<'window> {
       });
       let debug_mode = demo_state.debug_mode().unwrap_or_default() as i32;
       let debug_mode_enabled = demo_state.debug_mode().is_some();
+      let playback_enabled = false;
       Self {
          window,
          webgpu,
@@ -133,7 +135,8 @@ impl<'window> State<'window> {
          imgui_platform,
          imgui_renderer,
          imgui_last_cursor: None,
-         imgui_exports: ImguiExports { debug_mode, debug_mode_enabled, },
+         imgui_exports: ImguiExports {
+            debug_mode, debug_mode_enabled, playback_enabled},
      }
    }
 
@@ -152,9 +155,9 @@ impl<'window> State<'window> {
          handle_keyboard(keyboard, frame_state);
       }
 
+      self.tick_imgui(now_timestamp_ms);
       let tick_timestamp_ms = self.demo_history_playback.playback_timestamp_ms().unwrap_or(now_timestamp_ms);
       self.demo_state.tick(tick_timestamp_ms);
-      self.tick_imgui();
       self.demo.tick(&self.demo_state);
       self.previous_timestamp_ms = now_timestamp_ms;
    }
@@ -196,60 +199,83 @@ impl<'window> State<'window> {
       self.webgpu.queue.submit(Some(encoder.finish()));
    }
    
-   fn tick_imgui(&mut self) {
+   fn tick_imgui(&mut self, now_timestamp_ms: f64) {
          // imgui capture updates
          self.imgui_platform
             .prepare_frame(self.imgui.as_mut().unwrap().io_mut(), &self.window)
             .inspect_err(|_| log::warn!("Imgui winit failed to prepare frame"));
    
-         let mut need_load_demo = false;
-         let mut need_debug_mode = None;
-         {
-            let mut imgui_local = self.imgui.take().unwrap();
-            let ui = imgui_local.new_frame();
-            let desired_cursor = ui.mouse_cursor();
-            if self.imgui_last_cursor != Some(desired_cursor) {
-               self.imgui_last_cursor = Some(desired_cursor);
-               self.imgui_platform.prepare_render(ui, &self.window);
+         let mut imgui_local = self.imgui.take().unwrap();
+         let ui = imgui_local.new_frame();
+         let desired_cursor = ui.mouse_cursor();
+         if self.imgui_last_cursor != Some(desired_cursor) {
+            self.imgui_last_cursor = Some(desired_cursor);
+            self.imgui_platform.prepare_render(ui, &self.window);
+         }
+
+         let imgui_common_args = ImguiRenderArgs {
+            position: [10.0, 10.0],
+            size: [300.0, 200.0],
+         };
+         let imgui_demo_args = ImguiRenderArgs::new_right_from(
+            &imgui_common_args, [10.0, 0.0]);
+
+         self.demo.render_imgui(&ui, imgui_demo_args);
+
+         // common UI
+         let window = ui.window("Common");
+         window
+            .size(imgui_common_args.size, Condition::FirstUseEver)
+            .position(imgui_common_args.position, Condition::FirstUseEver)
+            .build(|| {
+            if ui.list_box("Demo",&mut self.demo_idx,
+            &self.demos_ids, self.demos_ids.len() as i32) {
+               self.demo = futures::executor::block_on(
+                  self.load_demo(*self.demos_ids[self.demo_idx as usize]));
             }
-   
-            let imgui_common_args = ImguiRenderArgs {
-               position: [10.0, 10.0],
-               size: [300.0, 200.0],
-            };
-            let imgui_demo_args = ImguiRenderArgs::new_right_from(
-               &imgui_common_args, [10.0, 0.0]);
-   
-            self.demo.render_imgui(&ui, imgui_demo_args);
-   
-            // common UI
-            let window = ui.window("Common");
-            window
-               .size(imgui_common_args.size, Condition::FirstUseEver)
-               .position(imgui_common_args.position, Condition::FirstUseEver)
-               .build(|| {
-               need_load_demo = ui.list_box("Choose demo",
-               &mut self.demo_idx, &self.demos_ids, self.demos_ids.len() as i32);
-               let mut upd_debug_mode = false;
-   
-               upd_debug_mode |= ui.input_int("Debug mode", &mut self.imgui_exports.debug_mode).build();
-               upd_debug_mode |= ui.checkbox("Enable debug mode", &mut self.imgui_exports.debug_mode_enabled);
-               if upd_debug_mode {
-                  need_debug_mode = Some(self.imgui_exports.debug_mode_enabled
-                     .then_some(self.imgui_exports.debug_mode as u16));
+
+            ui.separator();
+            let mut upd_debug_mode = false;
+            upd_debug_mode |= ui.checkbox("Enable debug mode", &mut self.imgui_exports.debug_mode_enabled);
+            upd_debug_mode |= ui.input_int("Debug mode", &mut self.imgui_exports.debug_mode).build();
+            if upd_debug_mode {
+               self.demo_state.set_debug_mode(self.imgui_exports.debug_mode_enabled
+                  .then_some(self.imgui_exports.debug_mode as u16));
+            }
+
+            ui.separator();
+            let mut upd_playback = false;
+            if ui.checkbox("Enable frame playback", &mut self.imgui_exports.playback_enabled) {
+               if self.imgui_exports.playback_enabled {
+                  self.demo_history_playback.start_playback(
+                     now_timestamp_ms, self.demo_state.time_now_ms())
+               } else {
+                  if let Some((_, resume_time_ms)) = self.demo_history_playback.cancel_playback() {
+                     let frame_idx = 0;
+                     self.demo_state.override_time(now_timestamp_ms, resume_time_ms, frame_idx);
+                  }
                }
-            });
-            self.imgui = Some(imgui_local);
-         }
-   
-         if need_load_demo {
-            self.demo = futures::executor::block_on(
-               self.load_demo(*self.demos_ids[self.demo_idx as usize]));
-         }
-         if let Some(debug_mode) = need_debug_mode {
-            self.demo_state.set_debug_mode(debug_mode);
-         }
+            }
+            let mut play_back = false;
+            ui.same_line();
+            play_back |= ui.button("<<") || ui.is_item_active();
+            ui.same_line();
+            play_back |= ui.button("<");
+            if play_back {
+               self.demo_history_playback.play_back(&self.demo_state_history);
+            }
+            let mut play_forward = false;
+            ui.same_line();
+            play_forward |= ui.button(">");
+            ui.same_line();
+            play_forward |= ui.button(">>") || ui.is_item_active();
+            if play_forward{
+               self.demo_history_playback.play_forward(&self.demo_state_history);
+            }
+         });
+         self.imgui = Some(imgui_local);
    }
+
    fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
       let surface_texture = self.webgpu_surface.get_current_texture()?;
 
@@ -302,6 +328,7 @@ pub async fn run() {
    let time_begin = SystemTime::now();
    event_loop.set_control_flow(ControlFlow::Poll);
    event_loop.run(move |event, elwt| {
+      state.imgui_platform.handle_event(state.imgui.as_mut().unwrap().io_mut(), &window_ref, &event);
       match event {
          Event::WindowEvent {
             ref event,
@@ -398,7 +425,6 @@ pub async fn run() {
          },
          _ => {}
       };
-      state.imgui_platform.handle_event(state.imgui.as_mut().unwrap().io_mut(), &window_ref, &event);
    }).expect("Winit failed to start event loop");
 }
 

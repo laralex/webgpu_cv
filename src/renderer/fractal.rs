@@ -226,7 +226,7 @@ impl DemoLoadingProcess {
       let demo_buffer = Buffer::new_uniform_size(
          &self.webgpu.device, self.demo_dynamic_buffer_offset + demo_dynamic_uniform_size,
           uniform_usage, Some("Demo Bind Buffer"));
-      let fractal_buffer = Buffer::new_uniform::<DemoDynamicUniformData>(
+      let fractal_buffer = Buffer::new_uniform::<FractalUniformData>(
          &self.webgpu.device, uniform_usage, Some("Fractal Bind Buffer"));
       let demo_uniform_group = BindGroup::builder()
          .with_uniform_buffer_range(0, uniform_visibility,
@@ -296,17 +296,20 @@ impl DemoLoadingProcess {
    }
 
    fn switch_graphics_level(&mut self) {
+      let default_fractal_zoom = 2.0;
       self.loaded_demo = Some(Demo {
          render_pipelines: self.render_pipelines.take().unwrap(),
          use_antialiasing: false,
          num_rendered_vertices: 3,
          pending_graphics_level_switch: None,
          pending_write_stable_uniform: true,
-         default_fractal_zoom: 2.0,
+         default_fractal_zoom,
          fractal_uniform_data: FractalUniformData {
             fractal_center: [-1.1900443, 0.3043895],
-            fractal_zoom: 0.0,
+            fractal_zoom: default_fractal_zoom,
             num_iterations: 1000,
+            color_bias: [3.0, 3.5, 4.0],
+            color_power: 0.22,
          },
          fractal_buffer_offset: 0,
          fractal_uniform_buffer: self.fractal_uniform_buffer.take().unwrap(),
@@ -359,6 +362,8 @@ struct FractalUniformData {
    fractal_center: [f32; 2],
    fractal_zoom: f32,
    num_iterations: i32,
+   color_bias: [f32; 3],
+   color_power: f32,
 }
 
 #[repr(C)]
@@ -380,7 +385,9 @@ impl IDemo for Demo {
    fn tick(&mut self, input: &ExternalState) {
       const DEMO_LENGTH_SECONDS: f64 = 45.0;
       let zoom_scale = (-0.3*input.time_now_sec().rem(DEMO_LENGTH_SECONDS)).exp() as f32;
-      self.fractal_uniform_data.fractal_zoom = self.default_fractal_zoom * zoom_scale;
+      if input.debug_mode() < Some(2) {
+         self.fractal_uniform_data.fractal_zoom = self.default_fractal_zoom * zoom_scale;
+      }
       self.demo_stable_uniform_data.color_attachment_size = input.screen_size().into();
       self.demo_stable_uniform_data.aspect_ratio = input.aspect_ratio();
       self.demo_stable_uniform_data.is_debug = input.debug_mode().map_or(0.0, f32::from);
@@ -442,13 +449,28 @@ impl IDemo for Demo {
          .size(args.size, Condition::FirstUseEver)
          .position(args.position, Condition::FirstUseEver)
          .build(|| {
-            ui.input_int("Num iterations", &mut self.fractal_uniform_data.num_iterations)
-               .step(10)
-               .build();
-            ui.input_float("Zoom", &mut self.fractal_uniform_data.fractal_zoom)
-               .build();
-            ui.input_float2("Center", &mut self.fractal_uniform_data.fractal_center)
-               .build();
+            imgui::Drag::new("Num iterations")
+               .range(1, 2000)
+               .speed(2.0)
+               .build(ui,&mut self.fractal_uniform_data.num_iterations);
+            let drag_speed = self.fractal_uniform_data.fractal_zoom * 0.05;
+            imgui::Drag::new("Zoom")
+               .range(1e-16, 2.0)
+               .speed(drag_speed)
+               .flags(SliderFlags::LOGARITHMIC)
+               .build(ui,&mut self.fractal_uniform_data.fractal_zoom);
+            imgui::Drag::new("Center")
+               .range(-2.0, 2.0)
+               .speed(drag_speed)
+               .build_array(ui, &mut self.fractal_uniform_data.fractal_center);
+            imgui::Drag::new("Color bias")
+               .range(-5.0, 5.0)
+               .speed(0.01)
+               .build_array(ui, &mut self.fractal_uniform_data.color_bias);
+            imgui::Drag::new("Color power")
+               .range(-0.15, 1.0)
+               .speed(0.005)
+               .build(ui,&mut self.fractal_uniform_data.color_power);
             ui.separator();
          });
    }

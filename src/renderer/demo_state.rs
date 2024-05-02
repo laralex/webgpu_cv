@@ -240,28 +240,28 @@ impl ExternalState {
       }
    }
 
-   pub fn screen_size(&self) -> (u32, u32) { self.stable.screen_size }
-   pub fn graphics_level(&self) -> GraphicsLevel { self.stable.graphics_level }
-   pub fn debug_mode(&self) -> Option<u16> { self.stable.debug_mode }
-   pub fn aspect_ratio(&self) -> f32 { self.derived_stable.aspect_ratio }
-   pub fn is_stable_updated(&self) -> bool { self.is_stable_updated }
+   #[inline] pub fn screen_size(&self) -> (u32, u32) { self.stable.screen_size }
+   #[inline] pub fn graphics_level(&self) -> GraphicsLevel { self.stable.graphics_level }
+   #[inline] pub fn debug_mode(&self) -> Option<u16> { self.stable.debug_mode }
+   #[inline] pub fn aspect_ratio(&self) -> f32 { self.derived_stable.aspect_ratio }
+   #[inline] pub fn is_stable_updated(&self) -> bool { self.is_stable_updated }
 
-   pub fn mouse(&self) -> &Rc<RefCell<MouseState>> { &self.mouse }
-   pub fn keyboard(&self) -> &Rc<RefCell<KeyboardState>> { &self.keyboard }
-   pub fn time_of_startup_ms(&self) -> f64 { self.time_of_startup_ms }
+   #[inline] pub fn mouse(&self) -> &Rc<RefCell<MouseState>> { &self.mouse }
+   #[inline] pub fn keyboard(&self) -> &Rc<RefCell<KeyboardState>> { &self.keyboard }
+   #[inline] pub fn time_of_startup_ms(&self) -> f64 { self.time_of_startup_ms }
    // pub fn time_of_tick_ms(&self) -> f64 { self.time_of_tick_ms }
-   pub fn time_now_ms(&self) -> f64 { self.time_now_ms }
-   pub fn time_prev_ms(&self) -> f64 { self.time_prev_ms }
-   pub fn time_delta_ms(&self) -> f64 { self.time_delta_ms }
-   pub fn time_delta_limit_ms(&self) -> f64 { self.time_delta_limit_ms }
-   pub fn frame_idx(&self) -> usize { self.frame_idx }
+   #[inline] pub fn time_now_ms(&self) -> f64 { self.time_now_ms }
+   #[inline] pub fn time_prev_ms(&self) -> f64 { self.time_prev_ms }
+   #[inline] pub fn time_delta_ms(&self) -> f64 { self.time_delta_ms }
+   #[inline] pub fn time_delta_limit_ms(&self) -> f64 { self.time_delta_limit_ms }
+   #[inline] pub fn frame_idx(&self) -> usize { self.frame_idx }
    
-   pub fn time_since_startup_ms(&self) -> f64 { self.derived.time_since_startup_sec }
-   pub fn time_now_sec(&self) -> f64 { self.derived.time_now_sec }
-   pub fn time_prev_sec(&self) -> f64 { self.derived.time_prev_sec }
-   pub fn time_delta_sec(&self) -> f64 { self.derived.time_delta_sec }
-   pub fn frame_rate(&self) -> f32 { self.derived.frame_rate }
-   pub fn mouse_viewport_position_px(&self) -> (i32, i32) { self.derived.mouse_viewport_position_px }
+   #[inline] pub fn time_since_startup_ms(&self) -> f64 { self.derived.time_since_startup_sec }
+   #[inline] pub fn time_now_sec(&self) -> f64 { self.derived.time_now_sec }
+   #[inline] pub fn time_prev_sec(&self) -> f64 { self.derived.time_prev_sec }
+   #[inline] pub fn time_delta_sec(&self) -> f64 { self.derived.time_delta_sec }
+   #[inline] pub fn frame_rate(&self) -> f32 { self.derived.frame_rate }
+   #[inline] pub fn mouse_viewport_position_px(&self) -> (i32, i32) { self.derived.mouse_viewport_position_px }
 
    pub fn set_time_delta_limit_ms(&mut self, time_delta_limit_ms: f64) {
       self.time_delta_limit_ms = time_delta_limit_ms;

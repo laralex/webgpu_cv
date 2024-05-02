@@ -20,7 +20,9 @@ struct DemoSettingsDynamic {
 struct FractalSettings {
     center: vec2<f32>,
     zoom: f32,
-    num_iterations: i32
+    num_iterations: i32,
+    color_bias: vec3<f32>,
+    color_power: f32,
 }
 @group(1) @binding(0) var<uniform> fractal: FractalSettings;
 
@@ -38,14 +40,15 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     for (var re = 0; re < AA; re++) {
         for (var im = 0; im < AA; im++) {
             var diverge_iteration = mandelbrot_diverge_iteration(center + vec2(f32(re), f32(im)) * AA_norm, fractal.num_iterations);
-            shade += step(1e-6, diverge_iteration) * (0.5 + 0.5*cos(pow(fractal.zoom,0.22)*diverge_iteration*0.08 + vec3(3.0,3.5,4.0)));
+            shade += step(1e-6, diverge_iteration) * (0.5 + 0.5*cos(pow(fractal.zoom, fractal.color_power)*diverge_iteration*0.08 + fractal.color_bias));
         }
     }
     shade /= f32(AA*AA);
 #else
     var diverge_iteration = mandelbrot_diverge_iteration(center, fractal.num_iterations);
-    var shade = step(1e-6, diverge_iteration) * (0.5 + 0.5*cos(pow(fractal.zoom,0.22)*diverge_iteration*0.08 + vec3(3.0,3.5,4.0)));
+    var shade = step(1e-6, diverge_iteration) * (0.5 + 0.5*cos(pow(fractal.zoom, fractal.color_power)*diverge_iteration*0.08 + fractal.color_bias));
 #endif
+    // red cursor overlay
     shade = mix(shade, vec3(1.0, 0.0, 0.0), step(length(in.uv - demo_dyn.mouse_position), 0.01) * step(0.5, demo.is_debug));
     return vec4<f32>(shade, 1.0);
 }

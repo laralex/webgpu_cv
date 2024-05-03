@@ -136,6 +136,8 @@ impl<'window> State<'window> {
          .next().unwrap_or(0);
       let imgui_exports = ImguiExports{
          graphics_level_idx: graphics_level_idx,
+         debug_mode: demo_state.debug_mode().unwrap_or_default() as i32,
+         debug_mode_enabled: demo_state.debug_mode().is_some(),
          ..Default::default()
       };
       Self {
@@ -261,6 +263,7 @@ impl<'window> State<'window> {
       window
          .size(imgui_common_args.size, Condition::FirstUseEver)
          .position(imgui_common_args.position, Condition::FirstUseEver)
+         .movable(false)
          .build(|| {
          if ui.list_box("Demo",&mut self.demo_idx,
          &self.demos_ids, self.demos_ids.len() as i32) {
@@ -290,6 +293,7 @@ impl<'window> State<'window> {
                   now_timestamp_ms, self.demo_state.time_now_ms())
             } else {
                if let Some((_, resume_time_ms)) = self.demo_history_playback.cancel_playback() {
+                  self.demo_state_history.reset_history();
                   let frame_idx = 0;
                   self.demo_state.override_time(now_timestamp_ms, resume_time_ms, frame_idx);
                }
@@ -378,7 +382,8 @@ pub async fn run() {
    let event_loop = EventLoop::new()
       .expect("Winit failed to initialize");
    let window = WindowBuilder::new()
-      .with_maximized(true)
+      .with_inner_size(winit::dpi::PhysicalSize::new(800, 600))
+      // .with_maximized(true)
       .with_title("WebGPU demos for Alexey Larionov's web CV")
       .build(&event_loop).unwrap();
    let mut state = State::new(&window).await;

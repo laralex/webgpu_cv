@@ -141,9 +141,8 @@ pub struct ExternalState {
    mouse: Rc<RefCell<MouseState>>,
    keyboard: Rc<RefCell<KeyboardState>>,
    time_delta_limit_ms: f64,
-   time_of_startup_ms: f64,
-   time_of_tick_ms: f64,
-
+   absolute_time_startup_ms: f64,
+   absolute_time_tick_ms: f64,
    time_now_ms:    f64,
    time_prev_ms:   f64,
    time_delta_ms:  f64,
@@ -162,8 +161,8 @@ pub struct ExternalStateData {
    pub mouse: MouseState,
    pub keyboard: KeyboardState,
    pub time_delta_limit_ms: f64,
-
-   pub time_tick_ms:   f64,
+   pub absolute_time_startup_ms: f64,
+   pub absolute_time_tick_ms:   f64,
    pub time_now_ms:    f64,
    pub time_prev_ms:   f64,
    pub time_delta_ms:  f64,
@@ -178,9 +177,9 @@ pub struct ExternalStateData {
 #[allow(unused)]
 impl ExternalState {
 
-   pub fn new(time_of_startup_ms: f64) -> Self {
+   pub fn new(absolute_time_startup_ms: f64) -> Self {
       let mut state = ExternalState::default();
-      state.time_of_startup_ms = time_of_startup_ms;
+      state.absolute_time_startup_ms = absolute_time_startup_ms;
       state
    }
 
@@ -189,7 +188,8 @@ impl ExternalState {
          mouse: self.mouse.borrow().clone(),
          keyboard: self.keyboard.borrow().clone(),
          time_delta_limit_ms: self.time_delta_limit_ms.clone(),
-         time_tick_ms: self.time_of_tick_ms.clone(),
+         absolute_time_startup_ms: self.absolute_time_startup_ms.clone(),
+         absolute_time_tick_ms: self.absolute_time_tick_ms.clone(),
          time_now_ms: self.time_now_ms.clone(),
          time_prev_ms: self.time_prev_ms.clone(),
          time_delta_ms: self.time_delta_ms.clone(),
@@ -223,7 +223,7 @@ impl ExternalState {
       
       let mouse_canvas_position_px = self.mouse.borrow().canvas_position_px;
       self.derived = DerivedDynamicState {
-         time_since_startup_sec: (self.time_of_tick_ms - self.time_of_startup_ms)*0.001,
+         time_since_startup_sec: (self.absolute_time_tick_ms - self.absolute_time_startup_ms)*0.001,
          time_now_sec: now,
          time_prev_sec: then,
          time_delta_sec: delta,
@@ -248,7 +248,8 @@ impl ExternalState {
 
    #[inline] pub fn mouse(&self) -> &Rc<RefCell<MouseState>> { &self.mouse }
    #[inline] pub fn keyboard(&self) -> &Rc<RefCell<KeyboardState>> { &self.keyboard }
-   #[inline] pub fn time_of_startup_ms(&self) -> f64 { self.time_of_startup_ms }
+   #[inline] pub fn absolute_time_startup_ms(&self) -> f64 { self.absolute_time_startup_ms }
+   #[inline] pub fn absolute_time_tick_ms(&self) -> f64 { self.absolute_time_tick_ms }
    // pub fn time_of_tick_ms(&self) -> f64 { self.time_of_tick_ms }
    #[inline] pub fn time_now_ms(&self) -> f64 { self.time_now_ms }
    #[inline] pub fn time_prev_ms(&self) -> f64 { self.time_prev_ms }
@@ -284,7 +285,7 @@ impl ExternalState {
 
    pub fn override_time(&mut self, tick_timestamp_ms: f64, now_time_ms: f64, frame_idx: usize) {
       self.frame_idx = frame_idx;
-      self.time_of_tick_ms = tick_timestamp_ms;
+      self.absolute_time_tick_ms = tick_timestamp_ms;
       self.time_delta_ms = 0.0; // .max(1)
       self.time_prev_ms  = now_time_ms;
       self.time_now_ms   = now_time_ms;
@@ -293,8 +294,8 @@ impl ExternalState {
 
    pub fn tick(&mut self, tick_timestamp_ms: f64) {
       self.frame_idx += 1;
-      self.time_delta_ms = tick_timestamp_ms - self.time_of_tick_ms;
-      self.time_of_tick_ms = tick_timestamp_ms;
+      self.time_delta_ms = tick_timestamp_ms - self.absolute_time_tick_ms;
+      self.absolute_time_tick_ms = tick_timestamp_ms;
       self.time_prev_ms  = self.time_now_ms;
       self.time_now_ms   += self.time_delta_ms;
       self.update_derived_state();
@@ -355,8 +356,8 @@ impl Default for ExternalState {
          mouse: Rc::new(RefCell::new(Default::default())),
          keyboard: Rc::new(RefCell::new(Default::default())),
          time_delta_limit_ms: Default::default(),
-         time_of_startup_ms: Default::default(),
-         time_of_tick_ms: Default::default(),
+         absolute_time_startup_ms: Default::default(),
+         absolute_time_tick_ms: Default::default(),
          time_delta_ms: Default::default(),
          time_now_ms: Default::default(),
          time_prev_ms: Default::default(),
@@ -396,8 +397,9 @@ impl DemoStateHistory {
        }
        let state_idx = (self.history_head_idx + self.history.len()) - offset_back - 1;
        let state_idx = state_idx % self.history.len();
-       log::info!("sample_state {} {}", offset_back, self.history.len());
-       Some(self.history[state_idx])
+       let state = self.history[state_idx];
+       log::info!("sample_state {} {}: t {}", offset_back, self.history.len(), state.absolute_time_tick_ms);
+       Some(state)
    }
 
    pub fn store_state(&mut self, state: ExternalStateData) {
@@ -407,6 +409,10 @@ impl DemoStateHistory {
            self.history_head_idx = 0;
        }
        self.history_size = self.history.len().min(self.history_size + 1);
+   }
+
+   pub fn reset_history(&mut self) {
+      self.history_size = 0;
    }
 }
 
@@ -460,7 +466,7 @@ impl DemoHistoryPlayback {
    pub fn play_back(&mut self, state_history: &DemoStateHistory) {
       if self.is_playing_back() {
          if let Some(state) = state_history.sample_state(self.history_playback_offset + 1) {
-             self.frame_lock_timestamp_ms.replace(state.time_tick_ms);
+             self.frame_lock_timestamp_ms.replace(state.absolute_time_tick_ms);
              self.frame_lock_time_ms.replace(state.time_now_ms);
              self.history_playback_offset += 1;
          }
@@ -469,10 +475,11 @@ impl DemoHistoryPlayback {
 
    pub fn play_forward(&mut self, state_history: &DemoStateHistory) {
       if self.is_playing_back() {
-         if let Some(state) = state_history.sample_state(self.history_playback_offset - 1) {
-            self.frame_lock_timestamp_ms.replace(state.time_tick_ms);
+         let new_history_offset = self.history_playback_offset.saturating_sub(1);
+         if let Some(state) = state_history.sample_state(new_history_offset) {
+            self.frame_lock_timestamp_ms.replace(state.absolute_time_tick_ms);
             self.frame_lock_time_ms.replace(state.time_now_ms);
-            self.history_playback_offset -= 1;
+            self.history_playback_offset = new_history_offset;
          }
       }
    }
@@ -493,6 +500,7 @@ pub fn handle_keyboard<'a>(keyboard: KeyboardState, state: FrameStateRef<'a>) {
       if state.demo_history_playback.is_playing_back() {
          if let Some((_, resume_time_ms)) = state.demo_history_playback.cancel_playback() {
             let frame_idx = 0;
+            state.demo_state_history.reset_history();
             state.demo_state.override_time(state.now_timestamp_ms, resume_time_ms, frame_idx);
          }
       } else {

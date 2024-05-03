@@ -30,8 +30,9 @@ const AA : i32 = 2;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    var uv = vec2(in.uv.x * demo.aspect_ratio, in.uv.y);
-    var delta_center = fractal.zoom * (2.0 * uv - 1.0);
+    var uv = 2.0 * in.uv - 1.0;
+    uv = vec2(uv.x * demo.aspect_ratio, uv.y);
+    var delta_center = fractal.zoom * uv;
     var center = fractal.center + delta_center;
 
 #ifdef USE_ANTIALIASING

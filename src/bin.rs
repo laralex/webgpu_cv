@@ -14,6 +14,7 @@ fn main() {
 #[cfg(feature = "win")]
 mod win {
 
+use std::task::Poll;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use std::rc::Rc;
 
@@ -75,6 +76,7 @@ struct State<'window> {
 
 #[derive(Default)]
 struct ImguiExports {
+   graphics_level_idx: usize,
    debug_mode: i32,
    debug_mode_enabled: bool,
    playback_enabled: bool,
@@ -82,6 +84,10 @@ struct ImguiExports {
    screen_override: [u32; 2],
    screen_backup: [u32; 2],
 }
+
+const GRAPHICS_LEVELS: [GraphicsLevel; 5] = [
+   GraphicsLevel::Minimal, GraphicsLevel::Low, GraphicsLevel::Medium,
+   GraphicsLevel::High, GraphicsLevel::Ultra];
 
 impl<'window> State<'window> {
    async fn load_demo(&mut self, id: DemoId) -> Box<dyn IDemo> {
@@ -123,6 +129,15 @@ impl<'window> State<'window> {
       let debug_mode = demo_state.debug_mode().unwrap_or_default() as i32;
       let debug_mode_enabled = demo_state.debug_mode().is_some();
       let playback_enabled = false;
+
+      let graphics_level_idx = GRAPHICS_LEVELS.iter().enumerate()
+         .filter_map(|(i, level)| (*level == demo_state.graphics_level()).then_some(i))
+         .take(1)
+         .next().unwrap_or(0);
+      let imgui_exports = ImguiExports{
+         graphics_level_idx: graphics_level_idx,
+         ..Default::default()
+      };
       Self {
          window,
          webgpu,
@@ -139,7 +154,7 @@ impl<'window> State<'window> {
          imgui_platform,
          imgui_renderer,
          imgui_last_cursor: None,
-         imgui_exports: ImguiExports::default(),
+         imgui_exports,
      }
    }
 
@@ -172,7 +187,7 @@ impl<'window> State<'window> {
       self.demo_state.dismiss_events();
    }
 
-   fn submit_imgui(&mut self, surface_texture: &wgpu::SurfaceTexture) {
+   fn render_imgui(&mut self, surface_texture: &wgpu::SurfaceTexture) {
       // submit imgui to webgpu
       let mut encoder: wgpu::CommandEncoder =
       self.webgpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
@@ -202,6 +217,22 @@ impl<'window> State<'window> {
       self.webgpu.queue.submit(Some(encoder.finish()));
    }
    
+   fn swtich_graphics_level(&mut self, level: GraphicsLevel) {
+      self.demo_state.set_graphics_level(level);
+      self.demo.start_switching_graphics_level(&self.webgpu, level)
+         .expect("Failed to start switching graphics level");
+      loop {
+         match self.demo.poll_switching_graphics_level(&self.webgpu) {
+            Ok(Poll::Ready(())) => break,
+            Ok(Poll::Pending) => log::info!("Switching graphics level to {}", level.as_ref()),
+            _ => {
+               log::error!("Error while switching graphics level to {}", level.as_ref());
+               break;
+            }
+         }
+      }
+   }
+
    fn tick_imgui(&mut self, now_timestamp_ms: f64) {
       // imgui capture updates
       self.imgui_platform
@@ -218,7 +249,7 @@ impl<'window> State<'window> {
 
       let imgui_common_args = ImguiRenderArgs {
          position: [10.0, 10.0],
-         size: [300.0, 350.0],
+         size: [350.0, 350.0],
       };
       let imgui_demo_args = ImguiRenderArgs::new_right_from(
          &imgui_common_args, [10.0, 0.0]);
@@ -235,6 +266,11 @@ impl<'window> State<'window> {
          &self.demos_ids, self.demos_ids.len() as i32) {
             self.demo = futures::executor::block_on(
                self.load_demo(*self.demos_ids[self.demo_idx as usize]));
+         }
+
+         if ui.combo("Graphics level", &mut self.imgui_exports.graphics_level_idx, 
+            &GRAPHICS_LEVELS, |level| level.as_ref().into()) {
+            self.swtich_graphics_level(GRAPHICS_LEVELS[self.imgui_exports.graphics_level_idx])
          }
 
          ui.separator();
@@ -304,7 +340,7 @@ impl<'window> State<'window> {
       // render demo
       self.demo.render(&self.webgpu, &surface_texture, self.demo_state.time_delta_sec())?;
       // render imgui
-      self.submit_imgui(&surface_texture);
+      self.render_imgui(&surface_texture);
 
       // swap buffers
       surface_texture.present();

@@ -7,13 +7,26 @@ pub mod env;
 use wasm_bindgen::prelude::*;
 
 #[cfg_attr(feature = "web", wasm_bindgen)]
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone, Copy, PartialEq)]
 pub enum GraphicsLevel {
    Minimal = 0x00,
    Low = 0x10,
    #[default] Medium = 0x20,
    High = 0x30,
    Ultra = 0xFF,
+}
+
+impl AsRef<str> for GraphicsLevel {
+    #[inline]
+    fn as_ref(&self) -> &str {
+        match self {
+            GraphicsLevel::Minimal => "Minimal",
+            GraphicsLevel::Low => "Low",
+            GraphicsLevel::Medium => "Medium",
+            GraphicsLevel::High => "High",
+            GraphicsLevel::Ultra => "Ultra",
+        }
+    }
 }
 
 #[cfg_attr(feature = "web", wasm_bindgen)]

@@ -848,8 +848,10 @@ window.onload = function() {
    const myPhoto = document.getElementById('my-photo');
    loadBuildData().finally(() => {
       console.log("LOADED BUILD_DATA", BUILD_DATA);
-
-      if (!BUILD_DATA.debug && IS_INTRO_SHOWN.val == true) {
+      if (BUILD_DATA.debug) {
+         IS_INTRO_SHOWN.val = false;
+      }
+      if (IS_INTRO_SHOWN.val === true) {
          van.add(document.getElementById("intro-container"), IntroPopup({onclose: () => {
             IS_TUTORIAL_SHOWN.val = true;
             IS_INTRO_SHOWN.val = false;

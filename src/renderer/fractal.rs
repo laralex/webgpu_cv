@@ -193,11 +193,10 @@ impl DemoLoadingProcess {
       self.compile_shader_frag_aa();
    }
 
-   fn rebuild_pipelines(mut self, destination_demo: &mut Demo) {
+   fn rebuild_pipelines(&mut self) {
       self.compile_shaders();
       self.build_uniforms();
       self.build_pipelines();
-      destination_demo.render_pipelines = self.render_pipelines.take().unwrap();
    }
 
    fn compile_shader_vert(&mut self) {
@@ -262,7 +261,7 @@ impl DemoLoadingProcess {
       self.render_pipelines = Some(FractalRenderPipelines{
          default: self.build_render_pipeline("Render Pipeline - Default",
             &pipeline_layout_descr, &vs, &fs),
-         antiialiasing: self.build_render_pipeline("Render Pipeline - AA",
+         antialiasing: self.build_render_pipeline("Render Pipeline - AA",
             &pipeline_layout_descr, &vs, &fs_aa),
       });
    }
@@ -344,7 +343,7 @@ impl DemoLoadingProcess {
 
 struct FractalRenderPipelines {
    default: Rc<wgpu::RenderPipeline>,
-   antiialiasing: Rc<wgpu::RenderPipeline>,
+   antialiasing: Rc<wgpu::RenderPipeline>,
 }
 pub struct Demo {
    current_graphics_level: GraphicsLevel,
@@ -435,7 +434,7 @@ impl IDemo for Demo {
          });
 
          render_pass.set_pipeline(
-            if self.use_antialiasing { &self.render_pipelines.antiialiasing }
+            if self.use_antialiasing { &self.render_pipelines.antialiasing }
             else { &self.render_pipelines.default }
          );
          const DEMO_UNIFORM_BIND_GROUP_INDEX: u32 = 0;
@@ -480,13 +479,16 @@ impl IDemo for Demo {
                .range(-0.15, 1.0)
                .speed(0.005)
                .build(ui,&mut self.fractal_uniform_data.color_power);
+            ui.checkbox("Antialiasing", &mut self.use_antialiasing);
             ui.separator();
          });
    }
 
-   fn rebuild_pipelines(&mut self, webgpu: Rc<Webgpu>, color_texture_format: wgpu::TextureFormat) {
-      DemoLoadingProcess::new(webgpu.clone(), color_texture_format, self.current_graphics_level)
-         .rebuild_pipelines(self)
+   fn rebuild_pipelines(&mut self, webgpu: Rc<Webgpu>, color_target_format: wgpu::TextureFormat) {
+      let mut loader = DemoLoadingProcess::new(
+         webgpu.clone(), color_target_format, self.current_graphics_level);
+      loader.rebuild_pipelines();
+      self.render_pipelines = loader.render_pipelines.take().unwrap();
    }
 
    fn start_switching_graphics_level(&mut self, _webgpu: &Webgpu, graphics_level: GraphicsLevel) -> Result<(), wgpu::SurfaceError> {

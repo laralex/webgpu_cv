@@ -1,4 +1,4 @@
-use std::{collections::HashMap, hash::{BuildHasher, Hash, Hasher}, path::Path, rc::Rc};
+use std::{any, collections::HashMap, hash::{BuildHasher, Hash, Hasher}, path::Path, rc::Rc};
 
 use super::{preprocessor::Preprocessor, webgpu::utils::Utils};
 
@@ -80,20 +80,24 @@ impl ShaderLoader {
       }
    }
 
-   pub fn get_shader<T>(&mut self, device: &wgpu::Device, variant: T, preprocessor: Option<&mut Preprocessor>) -> Rc<wgpu::ShaderModule> where T: AsRef<str> + AsRef<Path> + Hash {
+   pub fn get_shader<T>(&mut self, device: &wgpu::Device, variant: T, preprocessor: Option<&mut Preprocessor>) -> Rc<wgpu::ShaderModule> where T: AsRef<str> + AsRef<Path> + Hash + 'static {
       let mut hash = 0;
       if self.use_cache {
          let mut hasher = self.loaded_shaders.hasher().build_hasher();
          variant.hash(&mut hasher);
-         preprocessor.as_ref().hash(&mut hasher);
+         std::any::TypeId::of::<T>().hash(&mut hasher); // hash of type, because vert/frag shader variants are stored in same cache
+
+         preprocessor.as_ref().inspect(|p| p.hash(&mut hasher));
          hash = hasher.finish();
          if let Some(shader) = self.loaded_shaders.get(&hash) {
-            #[cfg(feature = "web")]
-            web_sys::console::log_1(&"Shader cache hit".into());
+            // #[cfg(feature = "web")]
+            // web_sys::console::log_1(&"Shader cache hit".into());
+            log::warn!("Shader cache hit {hash}");
             return shader.clone()
          }
-         #[cfg(feature = "web")]
-         web_sys::console::log_1(&"Shader cache MISS".into());
+         // #[cfg(feature = "web")]
+         // web_sys::console::log_1(&"Shader cache MISS".into());
+         log::warn!("Shader cache MISS {hash}");
       }
       let shader = Rc::new(Self::build_shader(device, variant, preprocessor));
       self.loaded_shaders.insert(hash, shader.clone());

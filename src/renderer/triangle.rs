@@ -2,6 +2,7 @@ use std::rc::Rc;
 use futures::Future;
 use wgpu::SurfaceTexture;
 
+use crate::renderer::pipeline_loader::RenderPipelineFlatDescriptor;
 use crate::renderer::webgpu::Utils;
 
 use super::shader_loader::{FragmentShaderVariant, VertexShaderVariant};
@@ -24,7 +25,7 @@ struct DemoLoadingProcess {
    stage_percent: f32,
    graphics_level: GraphicsLevel,
    color_target_format: wgpu::TextureFormat,
-   render_pipeline: Option<wgpu::RenderPipeline>,
+   render_pipeline: Option<Rc<wgpu::RenderPipeline>>,
    vertex_shader: Option<Rc<wgpu::ShaderModule>>,
    fragment_shader: Option<Rc<wgpu::ShaderModule>>,
    webgpu: Rc<Webgpu>,
@@ -79,16 +80,19 @@ impl SimpleFuture for DemoLoadingProcess {
             std::task::Poll::Pending
          },
          LinkPrograms => {
-            let render_pipeline_layout =
-               self.webgpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                  label: Some("Render Pipeline Layout"),
-                  bind_group_layouts: &[],
-                  push_constant_ranges: &[],
-               });
+            let layout_descriptor = wgpu::PipelineLayoutDescriptor {
+               label: Some("Render Pipeline Layout"),
+               bind_group_layouts: &[],
+               push_constant_ranges: &[],
+            };
+            let render_pipeline_layout = self.webgpu.device.create_pipeline_layout(
+               &layout_descriptor);
             let vs = self.vertex_shader.take().unwrap();
             let fs = self.fragment_shader.take().unwrap();
-            self.render_pipeline = Some(
-               self.webgpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            self.render_pipeline = Some(self.webgpu.get_pipeline(
+               &RenderPipelineFlatDescriptor::new(
+               &layout_descriptor,
+               &wgpu::RenderPipelineDescriptor {
                label: Some("Render Pipeline"),
                layout: Some(&render_pipeline_layout),
                vertex: wgpu::VertexState {
@@ -113,7 +117,7 @@ impl SimpleFuture for DemoLoadingProcess {
                   alpha_to_coverage_enabled: false,
                },
                multiview: None,
-            }));
+            })));
             self.stage_percent = 0.7;
             self.stage = StartSwitchingGraphicsLevel;
             std::task::Poll::Pending
@@ -179,7 +183,7 @@ impl DemoLoadingSimpleFuture for DemoLoadingProcess{}
 impl DemoLoadingFuture for DemoLoadingProcess {}
 
 pub struct Demo {
-   render_pipeline: wgpu::RenderPipeline,
+   render_pipeline: Rc<wgpu::RenderPipeline>,
    clear_color: [f32; 4],
    num_rendered_vertices: i32,
    pending_graphics_level_switch: Option<GraphicsSwitchingProcess>,

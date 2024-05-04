@@ -284,6 +284,9 @@ impl<'window> State<'window> {
             self.demo_state.set_debug_mode(self.imgui_exports.debug_mode_enabled
                .then_some(self.imgui_exports.debug_mode as u16));
          }
+         if ui.button("Recompile shaders") {
+            self.demo.rebuild_pipelines(self.webgpu.clone(), self.webgpu_config.format);
+         }
 
          ui.separator();
          let mut upd_playback = false;

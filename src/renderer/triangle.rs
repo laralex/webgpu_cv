@@ -255,6 +255,10 @@ impl IDemo for Demo {
       Ok(())
    }
 
+   fn rebuild_pipelines(&mut self, _webgpu: Rc<Webgpu>, _color_texture_format: wgpu::TextureFormat) {
+
+   }
+
    #[cfg(any(feature = "imgui_win", feature = "imgui_web"))]
    fn render_imgui(&mut self, ui: &imgui::Ui, args: super::imgui_web::ImguiRenderArgs) {
       use imgui::*;

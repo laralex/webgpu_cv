@@ -8,7 +8,10 @@ use super::{pipeline_loader::{PipelineLoader, RenderPipelineFlatDescriptor}, pre
 pub mod draw;
 pub mod uniform;
 
+#[cfg(feature = "web")]
 const USE_SHADER_CACHE: bool = true;
+#[cfg(not(feature = "web"))]
+const USE_SHADER_CACHE: bool = false;
 const USE_PIPELINE_CACHE: bool = true;
 pub struct Webgpu {
    pub device: wgpu::Device,
@@ -201,11 +204,11 @@ impl Webgpu {
    }
 
    pub fn get_vertex_shader(&self, variant: VertexShaderVariant, preprocessor: Option<&mut Preprocessor>) -> Rc<wgpu::ShaderModule> {
-      self.shader_loader.borrow_mut().get_vertex_shader(&self.device, variant, preprocessor)
+      self.shader_loader.borrow_mut().get_shader(&self.device, variant, preprocessor)
    }
 
    pub fn get_fragment_shader(&self, variant: FragmentShaderVariant, preprocessor: Option<&mut Preprocessor>) -> Rc<wgpu::ShaderModule> {
-      self.shader_loader.borrow_mut().get_fragment_shader(&self.device, variant, preprocessor)
+      self.shader_loader.borrow_mut().get_shader(&self.device, variant, preprocessor)
    }
 
    pub fn get_pipeline(&self, flat_descriptor: &RenderPipelineFlatDescriptor) -> Rc<wgpu::RenderPipeline> {

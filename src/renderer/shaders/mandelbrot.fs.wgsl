@@ -41,13 +41,13 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     for (var re = 0; re < AA; re++) {
         for (var im = 0; im < AA; im++) {
             var diverge_iteration = mandelbrot_diverge_iteration(center + vec2(f32(re), f32(im)) * AA_norm, fractal.num_iterations);
-            shade += step(1e-6, diverge_iteration) * (0.5 + 0.5*cos(pow(fractal.zoom, fractal.color_power)*diverge_iteration*0.08 + fractal.color_bias));
+            shade += step(1e-6, diverge_iteration) * (0.5 + cos(pow(fractal.zoom, fractal.color_power)*diverge_iteration*0.08 + fractal.color_bias));
         }
     }
     shade /= f32(AA*AA);
 #else
     var diverge_iteration = mandelbrot_diverge_iteration(center, fractal.num_iterations);
-    var shade = step(1e-6, diverge_iteration) * (0.5 + 0.5*cos(pow(fractal.zoom, fractal.color_power)*diverge_iteration*0.08 + fractal.color_bias));
+    var shade = step(1e-6, diverge_iteration) * (0.5 + cos(pow(fractal.zoom, fractal.color_power)*diverge_iteration*0.08 + fractal.color_bias));
 #endif
     // red cursor overlay
     shade = mix(shade, vec3(1.0, 0.0, 0.0), step(length(in.uv - demo_dyn.mouse_position), 0.01) * step(0.5, demo.is_debug));

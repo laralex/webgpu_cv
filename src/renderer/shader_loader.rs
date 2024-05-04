@@ -1,25 +1,72 @@
-use std::{collections::HashMap, hash::{Hash, Hasher, BuildHasher}, rc::Rc};
+use std::{collections::HashMap, hash::{BuildHasher, Hash, Hasher}, path::Path, rc::Rc};
 
 use super::{preprocessor::Preprocessor, webgpu::utils::Utils};
 
 #[allow(unused)]
 #[derive(Clone, Copy, Hash, Eq, PartialEq)]
 pub enum VertexShaderVariant {
-   TriangleFullscreen,
-   TriangleColored,
+   TriangleFullscreen = 0,
+   TriangleColored = 1,
+}
+
+// shader enum -> source code during compilation
+impl AsRef<str> for VertexShaderVariant {
+   fn as_ref(&self) -> &str {
+      use VertexShaderVariant::*;
+      match self {
+         TriangleFullscreen => include_str!("shaders/triangle_fullscreen.vs.wgsl"),
+         TriangleColored => include_str!("shaders/triangle_colored.vs.wgsl"),
+      }
+   }
+}
+
+// shader enum -> filesystem path
+impl AsRef<std::path::Path> for VertexShaderVariant {
+    fn as_ref(&self) -> &std::path::Path {
+      use VertexShaderVariant::*;
+      match self {
+         TriangleFullscreen => "shaders/triangle_fullscreen.vs.wgsl".as_ref(),
+         TriangleColored => "shaders/triangle_colored.vs.wgsl".as_ref(),
+      }
+    }
 }
 
 #[allow(unused)]
 #[derive(Clone, Copy, Hash, Eq, PartialEq)]
 pub enum FragmentShaderVariant {
-   VertexColor,
-   FractalMandelbrot,
-   Uv,
+   VertexColor = 0,
+   FractalMandelbrot = 1,
+   Uv = 2,
+}
+
+// shader enum -> source code during compilation
+impl AsRef<str> for FragmentShaderVariant {
+   fn as_ref(&self) -> &str {
+      use FragmentShaderVariant::*;
+      match self {
+         VertexColor => include_str!("shaders/vertex_color.fs.wgsl"),
+         FractalMandelbrot => include_str!("shaders/mandelbrot.fs.wgsl"),
+         Uv => include_str!("shaders/uv.fs.wgsl"),
+      }
+   }
+}
+
+// shader enum -> filesystem path
+impl AsRef<std::path::Path> for FragmentShaderVariant {
+    fn as_ref(&self) -> &std::path::Path {
+      use FragmentShaderVariant::*;
+      match self {
+         VertexColor => "shaders/vertex_color.fs.wgsl".as_ref(),
+         FractalMandelbrot => "shaders/mandelbrot.fs.wgsl".as_ref(),
+         Uv => "shaders/uv.fs.wgsl".as_ref(),
+      }
+    }
 }
 
 pub struct ShaderLoader {
-   loaded_vertex_shaders: HashMap<u64, Rc<wgpu::ShaderModule>>,
-   loaded_fragment_shaders: HashMap<u64, Rc<wgpu::ShaderModule>>,
+   // loaded_vertex_shaders: HashMap<u64, Rc<wgpu::ShaderModule>>,
+   // loaded_fragment_shaders: HashMap<u64, Rc<wgpu::ShaderModule>>,
+   loaded_shaders: HashMap<u64, Rc<wgpu::ShaderModule>>,
    use_cache: bool,
 }
 
@@ -27,80 +74,56 @@ impl ShaderLoader {
    pub fn new(use_cache: bool) -> Self {
       Self {
          use_cache,
-         loaded_vertex_shaders: Default::default(),
-         loaded_fragment_shaders: Default::default(),
+         loaded_shaders: Default::default(),
+         // loaded_vertex_shaders: Default::default(),
+         // loaded_fragment_shaders: Default::default(),
       }
    }
 
-   pub fn get_vertex_shader(&mut self, device: &wgpu::Device, variant: VertexShaderVariant, preprocessor: Option<&mut Preprocessor>) -> Rc<wgpu::ShaderModule> {
+   pub fn get_shader<T>(&mut self, device: &wgpu::Device, variant: T, preprocessor: Option<&mut Preprocessor>) -> Rc<wgpu::ShaderModule> where T: AsRef<str> + AsRef<Path> + Hash {
       let mut hash = 0;
       if self.use_cache {
-         let mut hasher = self.loaded_vertex_shaders.hasher().build_hasher();
+         let mut hasher = self.loaded_shaders.hasher().build_hasher();
          variant.hash(&mut hasher);
          preprocessor.as_ref().hash(&mut hasher);
          hash = hasher.finish();
-         if let Some(shader) = self.loaded_vertex_shaders.get(&hash) {
+         if let Some(shader) = self.loaded_shaders.get(&hash) {
             #[cfg(feature = "web")]
-            web_sys::console::log_2(&"Vertex shader cache hit".into(), &(variant as usize).into());
+            web_sys::console::log_1(&"Shader cache hit".into());
             return shader.clone()
          }
          #[cfg(feature = "web")]
-         web_sys::console::log_2(&"Vertex shader cache MISS".into(), &(variant as usize).into());
+         web_sys::console::log_1(&"Shader cache MISS".into());
       }
-      let shader = Rc::new(Self::make_vertex_shader(device, variant, preprocessor));
-      self.loaded_vertex_shaders.insert(hash, shader.clone());
+      let shader = Rc::new(Self::build_shader(device, variant, preprocessor));
+      self.loaded_shaders.insert(hash, shader.clone());
       shader
    }
    
-   pub fn get_fragment_shader(&mut self, device: &wgpu::Device, variant: FragmentShaderVariant, preprocessor: Option<&mut Preprocessor>) -> Rc<wgpu::ShaderModule> {
-      let mut hash = 0;
-      if self.use_cache {
-         let mut hasher = self.loaded_vertex_shaders.hasher().build_hasher();
-         variant.hash(&mut hasher);
-         preprocessor.as_ref().hash(&mut hasher);
-         hash = hasher.finish();
-         if let Some(shader) = self.loaded_fragment_shaders.get(&hash) {
-            #[cfg(feature = "web")]
-            web_sys::console::log_2(&"Fragment shader cache hit".into(), &(variant as usize).into());
-            return shader.clone()
+   fn build_shader<T>(device: &wgpu::Device, variant: T, preprocessor: Option<&mut Preprocessor>) -> wgpu::ShaderModule where T: AsRef<str> + AsRef<Path> {
+      let filepath: &std::path::Path = variant.as_ref();
+      let source_code;
+      cfg_if::cfg_if!(
+         if #[cfg(feature = "web")] {
+            // source code embedded during compilation
+            source_code = variant.as_ref()
+         } else {
+            // source code loaded from filesystem
+            let cwd = std::env::current_dir().expect("Failed to get current working dir");
+            let abs_filepath = cwd.join("src").join("renderer").join(filepath);
+            let source_code_owned = std::fs::read_to_string(&abs_filepath)
+               .expect(format!("File not found: {}", abs_filepath.to_str().unwrap()).as_ref());
+            source_code = source_code_owned.as_ref();
          }
-         #[cfg(feature = "web")]
-         web_sys::console::log_2(&"Fragment shader cache MISS".into(), &(variant as usize).into());
-      }
-      let shader = Rc::new(Self::make_fragment_shader(device, variant, preprocessor));
-      self.loaded_fragment_shaders.insert(hash, shader.clone());
-      shader
+      );
+      ShaderLoader::build_shader_module(
+         device, source_code, filepath.to_str().unwrap(), preprocessor)
    }
 
-   fn make_vertex_shader(device: &wgpu::Device, variant: VertexShaderVariant, preprocessor: Option<&mut Preprocessor>) -> wgpu::ShaderModule {
-      use VertexShaderVariant::*;
-      let (source_code, label) = match variant {
-         TriangleFullscreen =>
-            (include_str!("shaders/triangle_fullscreen.vs.wgsl"), "triangle_fullscreen.vs.wgsl"),
-         TriangleColored =>
-            (include_str!("shaders/triangle_colored.vs.wgsl")   , "triangle_colored.vs.wgsl"),
-      };
+   fn build_shader_module(device: &wgpu::Device, source_code: &str, label: &str, preprocessor: Option<&mut Preprocessor>) -> wgpu::ShaderModule {
       let source_code = match preprocessor {
          Some(preprocessor) => preprocessor.process(source_code)
-            .expect("Failed to run preprocessor on vertex shader"),
-         _ => source_code.to_owned(),
-      };
-      Utils::make_shader(device, &source_code, label)
-   }
-
-   fn make_fragment_shader(device: &wgpu::Device, variant: FragmentShaderVariant, preprocessor: Option<&mut Preprocessor>) -> wgpu::ShaderModule {
-      use FragmentShaderVariant::*;
-      let (source_code, label) = match variant {
-         VertexColor =>
-            (include_str!("shaders/vertex_color.fs.wgsl"), "vertex_color.fs.wgsl"),
-         FractalMandelbrot =>
-            (include_str!("shaders/mandelbrot.fs.wgsl"), "mandelbrot.fs.wgsl"),
-         Uv =>
-            (include_str!("shaders/uv.fs.wgsl"), "uv.fs.wgsl"),
-      };
-      let source_code = match preprocessor {
-         Some(preprocessor) => preprocessor.process(source_code)
-            .expect("Failed to run preprocessor on fragment shader"),
+            .expect(format!("Failed to run preprocessor on shader: {}", label).as_ref()),
          _ => source_code.to_owned(),
       };
       Utils::make_shader(device, &source_code, label)

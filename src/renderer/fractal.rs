@@ -1,7 +1,7 @@
 use std::ops::Rem;
 use std::rc::Rc;
 use futures::Future;
-use wgpu::{ShaderStages, SurfaceTexture};
+use wgpu::{PipelineLayoutDescriptor, ShaderStages, SurfaceTexture};
 use bytemuck;
 
 use crate::renderer::webgpu::Utils;
@@ -103,13 +103,13 @@ impl SimpleFuture for DemoLoadingProcess {
             std::task::Poll::Pending
          },
          CreateUniforms => {
-            self.create_uniforms();
+            self.build_uniforms();
             self.stage_percent += 0.1;
             self.stage = CreatePipelines;
             std::task::Poll::Pending
          }
          CreatePipelines => {
-            self.create_pipelines();
+            self.build_pipelines();
             self.stage_percent += 0.1;
             self.stage = StartSwitchingGraphicsLevel;
             std::task::Poll::Pending
@@ -193,6 +193,13 @@ impl DemoLoadingProcess {
       self.compile_shader_frag_aa();
    }
 
+   fn rebuild_pipelines(mut self, destination_demo: &mut Demo) {
+      self.compile_shaders();
+      self.build_uniforms();
+      self.build_pipelines();
+      destination_demo.render_pipelines = self.render_pipelines.take().unwrap();
+   }
+
    fn compile_shader_vert(&mut self) {
       let _t = ScopedTimer::new("compile_shader_vert");
       let vertex_shader = self.webgpu.get_vertex_shader(VERTEX_SHADER_VARIANT, None);
@@ -214,7 +221,7 @@ impl DemoLoadingProcess {
       self.fragment_shader_antialiasing = Some(fragment_shader_antialiasing);
    }
 
-   fn create_uniforms(&mut self) {
+   fn build_uniforms(&mut self) {
       let _t = ScopedTimer::new("create_uniforms");
       let uniform_visibility = ShaderStages::FRAGMENT;
       let uniform_usage = wgpu::BufferUsages::COPY_DST;
@@ -244,7 +251,7 @@ impl DemoLoadingProcess {
       self.uniform_groups = Some(vec![demo_uniform_group, fractal_uniform_group]);
    }
 
-   fn create_pipelines(&mut self) {
+   fn build_pipelines(&mut self) {
       let _t = ScopedTimer::new("create_pipelines");
       let builder = PipelineLayoutBuilder::from_uniform_iter(self.uniform_groups.as_ref().unwrap().iter());
       let pipeline_layout_descr = builder.build_descriptor(Some("Render Pipeline Layout"));
@@ -253,14 +260,14 @@ impl DemoLoadingProcess {
       let fs = self.fragment_shader_default.take().unwrap();
       let fs_aa = self.fragment_shader_antialiasing.take().unwrap();
       self.render_pipelines = Some(FractalRenderPipelines{
-         default: self.create_render_pipeline("Render Pipeline - Default",
+         default: self.build_render_pipeline("Render Pipeline - Default",
             &pipeline_layout_descr, &vs, &fs),
-         antiialiasing: self.create_render_pipeline("Render Pipeline - AA",
+         antiialiasing: self.build_render_pipeline("Render Pipeline - AA",
             &pipeline_layout_descr, &vs, &fs_aa),
-      })
+      });
    }
 
-   fn create_render_pipeline(&self, label: &str, layout_descriptor: &wgpu::PipelineLayoutDescriptor, vs: &wgpu::ShaderModule, fs: &wgpu::ShaderModule) -> Rc<wgpu::RenderPipeline> {
+   fn build_render_pipeline(&self, label: &str, layout_descriptor: &wgpu::PipelineLayoutDescriptor, vs: &wgpu::ShaderModule, fs: &wgpu::ShaderModule) -> Rc<wgpu::RenderPipeline> {
       let _t = ScopedTimer::new("create_render_pipeline");
       let render_pipeline_layout = self.webgpu.device.create_pipeline_layout(&layout_descriptor);
       self.webgpu.get_pipeline(&RenderPipelineFlatDescriptor::new(
@@ -298,6 +305,7 @@ impl DemoLoadingProcess {
    fn switch_graphics_level(&mut self) {
       let default_fractal_zoom = 2.0;
       self.loaded_demo = Some(Demo {
+         current_graphics_level: self.graphics_level,
          render_pipelines: self.render_pipelines.take().unwrap(),
          use_antialiasing: false,
          num_rendered_vertices: 3,
@@ -339,6 +347,7 @@ struct FractalRenderPipelines {
    antiialiasing: Rc<wgpu::RenderPipeline>,
 }
 pub struct Demo {
+   current_graphics_level: GraphicsLevel,
    render_pipelines: FractalRenderPipelines,
    use_antialiasing: bool,
    num_rendered_vertices: u32,
@@ -475,7 +484,14 @@ impl IDemo for Demo {
          });
    }
 
+   fn rebuild_pipelines(&mut self, webgpu: Rc<Webgpu>, color_texture_format: wgpu::TextureFormat) {
+      DemoLoadingProcess::new(webgpu.clone(), color_texture_format, self.current_graphics_level)
+         .rebuild_pipelines(self)
+   }
+
    fn start_switching_graphics_level(&mut self, _webgpu: &Webgpu, graphics_level: GraphicsLevel) -> Result<(), wgpu::SurfaceError> {
+      // TODO: fix this, the graphics level is not yet finished switching
+      self.current_graphics_level = graphics_level;
       #[cfg(feature = "web")]
       web_sys::console::log_3(&"Rust start_switching_graphics_level".into(), &std::module_path!().into(), &graphics_level.into());
       self.pending_graphics_level_switch = Some(GraphicsSwitchingProcess{

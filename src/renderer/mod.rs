@@ -49,6 +49,7 @@ pub trait IDemo {
    fn poll_switching_graphics_level(&mut self, webgpu: &Webgpu) -> Result<std::task::Poll<()>, wgpu::SurfaceError>;
    fn progress_switching_graphics_level(&self) -> f32;
    fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, delta_sec: f64) -> Result<(), wgpu::SurfaceError>;
+   fn rebuild_pipelines(&mut self, webgpu: Rc<Webgpu>, color_texture_format: wgpu::TextureFormat);
    #[cfg(any(feature = "imgui_win", feature = "imgui_web"))]
    fn render_imgui(&mut self, ui: &imgui::Ui, args: imgui_web::ImguiRenderArgs);
    fn drop_demo(&mut self, webgpu: &Webgpu);

@@ -1,4 +1,4 @@
-use std::task::Poll;
+use std::{rc::Rc, task::Poll};
 use futures::Future;
 use wgpu::SurfaceTexture;
 
@@ -47,6 +47,10 @@ impl IDemo for Demo {
       // submit will accept anything that implements IntoIter
       webgpu.queue.submit(std::iter::once(encoder.finish()));
       Ok(())
+   }
+
+   fn rebuild_pipelines(&mut self, _webgpu: Rc<Webgpu>, _color_texture_format: wgpu::TextureFormat) {
+
    }
 
    #[cfg(any(feature = "imgui_win", feature = "imgui_web"))]

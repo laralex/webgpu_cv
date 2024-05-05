@@ -68,7 +68,7 @@ impl Webgpu {
       let mut webgpu_artifacts = None;
       let backends_to_try = &[
          // (wgpu::Backends::DX12, "DX12".to_owned()),
-         (wgpu::Backends::BROWSER_WEBGPU, "WebGPU".to_owned()),
+         // (wgpu::Backends::BROWSER_WEBGPU, "WebGPU".to_owned()),
          // (wgpu::Backends::PRIMARY, "Vulkan/Metal/DX12/WebGPU".to_owned()),
          (wgpu::Backends::GL, "WebGL".to_owned()),
       ];

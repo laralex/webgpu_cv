@@ -138,7 +138,7 @@ impl WasmInterface {
 
         let pending_loading_demo = Rc::new(RefCell::new(None));
         let (canvas, webgpu, webgpu_surface) = Webgpu::new_with_canvas(
-            wgpu::PowerPreference::None,
+            wgpu::PowerPreference::HighPerformance,
         ).await;
         demo_loading_apply_progress(0.5);
 

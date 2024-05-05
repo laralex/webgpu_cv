@@ -30,7 +30,6 @@ impl Webgpu {
    pub async fn new_with_canvas(power_preference: wgpu::PowerPreference) -> (web_sys::HtmlCanvasElement, Self, WebgpuSurface<'static>){
       use wasm_bindgen::JsCast;
       use crate::timer::ScopedTimer;
-
       let try_init_webgpu = |backend| async move {
          let _t = ScopedTimer::new("webgpu::try_init_webgpu");
          let document = web_sys::window().unwrap().document().unwrap();
@@ -39,20 +38,22 @@ impl Webgpu {
 
          let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: backend, ..Default::default() });
-         web_sys::console::log_1(&"DEBUG 1".into());
 
          // # Safety
-         // The surface needs to live as long as the window that created it.
-         let surface = instance.create_surface(wgpu::SurfaceTarget::Canvas(canvas.clone()))
-            .map_err(|e| web_sys::console::log_2(&"Failed to create wgpu surface: ".into(), &e.to_string().into()))
-            .ok();
-         web_sys::console::log_1(&"DEBUG 2".into());
+         let canvas_js: &wasm_bindgen::JsValue = &canvas;
+         let raw_window_handle = wgpu::rwh::WebCanvasWindowHandle::new(
+            std::ptr::NonNull::from(canvas_js).cast().into()).into();
+         let raw_display_handle = wgpu::rwh::WebDisplayHandle::new().into();
+
+         // NOTE: can panic, can't catch it with std::panic::catch_unwind !!!
+         let surface = unsafe { instance.create_surface_unsafe(
+            wgpu::SurfaceTargetUnsafe::RawHandle { raw_display_handle, raw_window_handle })
+         }.map_err(|e| web_sys::console::log_2(&"Failed to create wgpu surface: ".into(), &e.to_string().into())).ok();
          if surface.is_none() {
             canvas.remove();
             return None;
          }
          
-         web_sys::console::log_1(&"DEBUG 3".into());
          let adapter = instance.request_adapter(
             &wgpu::RequestAdapterOptions {
                power_preference,
@@ -60,31 +61,27 @@ impl Webgpu {
                force_fallback_adapter: false,
             },
          ).await;
-         web_sys::console::log_1(&"DEBUG 4".into());
          if adapter.is_none() {
             canvas.remove();
             return None;
          }
-         web_sys::console::log_1(&"DEBUG 5".into());
          Some((canvas, instance, surface.unwrap(), adapter.unwrap()))
       };
       
       let mut webgpu_artifacts = None;
       let backends_to_try = &[
          // (wgpu::Backends::DX12, "DX12".to_owned()),
-         (wgpu::Backends::BROWSER_WEBGPU, "WebGPU".to_owned()),
+         // (wgpu::Backends::BROWSER_WEBGPU, "WebGPU".to_owned()),
          // (wgpu::Backends::PRIMARY, "Vulkan/Metal/DX12/WebGPU".to_owned()),
          (wgpu::Backends::GL, "WebGL".to_owned()),
       ];
       for (backend, backend_name) in backends_to_try {
-         web_sys::console::log_1(&"DEBUG backend".into());
+         log::warn!("Loading wgpu backend {backend_name}");
          webgpu_artifacts = try_init_webgpu(backend.clone()).await;
-         web_sys::console::log_1(&"DEBUG after init".into());
          if webgpu_artifacts.is_some() {
-            web_sys::console::log_2(&"Created wgpu surface for backend:".into(), &backend_name.into());
+            log::warn!("Successful loading of backend {backend_name}");
             break;
          }
-         web_sys::console::log_2(&"Failed to create wgpu surface for backend:".into(), &backend_name.into());
       }
       let _t = ScopedTimer::new("webgpu::new_with_canvas");
       let (canvas, _instance, surface, adapter) = webgpu_artifacts
@@ -95,7 +92,6 @@ impl Webgpu {
          &Utils::default_device_descriptor(),
          None, // Trace path
       ).await;
-      web_sys::console::log_1(&"DEBUG 6".into());
 
       if let Err(e) = device_result {
          web_sys::console::log_2(
@@ -107,7 +103,6 @@ impl Webgpu {
          ).await
       }
       let (device, queue) = device_result.expect("Failed to request wgpu device");
-      web_sys::console::log_1(&"DEBUG 7".into());
 
       let surface_caps = surface.get_capabilities(&adapter);
       let surface_format = surface_caps.formats.iter()
@@ -128,7 +123,6 @@ impl Webgpu {
       };
 
       surface.configure(&device, &config);
-      web_sys::console::log_1(&"DEBUG 8".into());
       let shader_loader = RefCell::new(ShaderLoader::new(USE_SHADER_CACHE));
       let pipeline_loader = RefCell::new(PipelineLoader::new(USE_PIPELINE_CACHE));
       ( canvas, Self { device, queue, shader_loader, pipeline_loader }, WebgpuSurface{surface, config} )

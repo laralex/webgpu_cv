@@ -22,7 +22,7 @@ cargo_win_debug:
 
 .PHONY: cargo_win
 cargo_win:
-	cargo $(CARGO_TOOLCHAIN) $(CARGO_BUILD_COMMAND) --release $(CARGO_WIN)
+	cargo $(CARGO_TOOLCHAIN) $(CARGO_BUILD_COMMAND) $(CARGO_WIN) --release
 
 .PHONY: cargo_debug
 cargo_web_debug:
@@ -30,7 +30,7 @@ cargo_web_debug:
 
 .PHONY: cargo_web
 cargo_web:
-	cargo $(CARGO_TOOLCHAIN) $(CARGO_BUILD_COMMAND) --release $(CARGO_WEB)
+	cargo $(CARGO_TOOLCHAIN) $(CARGO_BUILD_COMMAND) $(CARGO_WEB) --release
 
 .PHONY: test_shaders
 test_shaders:

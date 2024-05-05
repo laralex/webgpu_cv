@@ -64,13 +64,13 @@ use crate::renderer;
 use crate::renderer::{handle_keyboard, FrameStateRef};
 use crate::timer::ScopedTimer;
 
-use self::renderer::{DemoLoadingFuture, KeyboardState};
+use self::renderer::DemoLoadingFuture;
 
 use super::*;
-use renderer::{DemoLoadingSimpleFuture, ExternalState, IDemo, MouseState, Webgpu};
+use renderer::{ExternalState, IDemo, Webgpu};
 use web_sys::Element;
 use std::pin::Pin;
-use std::{cell::{RefCell, Cell}, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 #[wasm_bindgen(raw_module = "../modules/exports_to_wasm.js")]
 extern "C" {

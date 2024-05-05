@@ -1,7 +1,6 @@
 fn main() {
    cfg_if::cfg_if!(
       if #[cfg(feature = "win")] {
-         use tokio::runtime::Builder;
          tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
@@ -15,19 +14,16 @@ fn main() {
 mod win {
 
 use std::task::Poll;
-use std::time::{Instant, SystemTime, UNIX_EPOCH};
+use std::time::SystemTime;
 use std::rc::Rc;
 
 use imgui::*;
-use imgui_wgpu::{Renderer, RendererConfig, Texture, TextureConfig};
-use imgui_winit_support::winit::{dpi::LogicalSize, event_loop::EventLoop, window::WindowBuilder};
+use imgui_wgpu::{Renderer, RendererConfig};
+use imgui_winit_support::winit::{event_loop::EventLoop, window::WindowBuilder};
 
-use my_renderer::renderer::imgui_web::ImguiRenderArgs;
-use my_renderer::renderer::{handle_keyboard, triangle, DemoLoadingFuture};
+use my_renderer::renderer::{handle_keyboard, triangle, imgui_web, FrameStateRef, webgpu::Webgpu, stub_demo, fractal, DemoHistoryPlayback, DemoStateHistory, ExternalState, IDemo};
 use my_renderer::{DemoId, GraphicsLevel};
 use my_renderer::env::log_init;
-use my_renderer::renderer::{imgui_web, FrameStateRef, webgpu::Webgpu, stub_demo, fractal, DemoHistoryPlayback, DemoStateHistory, ExternalState, IDemo};
-use wgpu::{Color, SurfaceTexture};
 
 // Set up texture
 // let lenna_bytes = include_bytes!("../resources/checker.png");
@@ -122,13 +118,10 @@ impl<'window> State<'window> {
       ];
       // Set up dear imgui
       let (mut imgui, imgui_platform) = imgui_web::init_from_winit(&window);
-      let mut imgui_renderer = Renderer::new(&mut imgui, &webgpu.device, &webgpu.queue, RendererConfig {
+      let imgui_renderer = Renderer::new(&mut imgui, &webgpu.device, &webgpu.queue, RendererConfig {
          texture_format: surface.config.format,
          ..Default::default()
       });
-      let debug_mode = demo_state.debug_mode().unwrap_or_default() as i32;
-      let debug_mode_enabled = demo_state.debug_mode().is_some();
-      let playback_enabled = false;
 
       let graphics_level_idx = GRAPHICS_LEVELS.iter().enumerate()
          .filter_map(|(i, level)| (*level == demo_state.graphics_level()).then_some(i))
@@ -212,7 +205,7 @@ impl<'window> State<'window> {
          timestamp_writes: None,
       });
 
-      self.imgui_renderer
+      let _ = self.imgui_renderer
          .render(self.imgui.as_mut().unwrap().render(), &self.webgpu.queue, &self.webgpu.device, &mut renderpass)
          .inspect_err(|_| log::warn!("Imgui webgpu renderer failed"));
       std::mem::drop(renderpass);
@@ -237,7 +230,7 @@ impl<'window> State<'window> {
 
    fn tick_imgui(&mut self, now_timestamp_ms: f64) {
       // imgui capture updates
-      self.imgui_platform
+      let _ = self.imgui_platform
          .prepare_frame(self.imgui.as_mut().unwrap().io_mut(), &self.window)
          .inspect_err(|_| log::warn!("Imgui winit failed to prepare frame"));
 
@@ -249,11 +242,11 @@ impl<'window> State<'window> {
          self.imgui_platform.prepare_render(ui, &self.window);
       }
 
-      let imgui_common_args = ImguiRenderArgs {
+      let imgui_common_args = imgui_web::ImguiRenderArgs {
          position: [10.0, 10.0],
          size: [350.0, 350.0],
       };
-      let imgui_demo_args = ImguiRenderArgs::new_right_from(
+      let imgui_demo_args = imgui_web::ImguiRenderArgs::new_right_from(
          &imgui_common_args, [10.0, 0.0]);
 
       self.demo.render_imgui(&ui, imgui_demo_args);
@@ -289,7 +282,6 @@ impl<'window> State<'window> {
          }
 
          ui.separator();
-         let mut upd_playback = false;
          if ui.checkbox("Enable frame playback", &mut self.imgui_exports.playback_enabled) {
             if self.imgui_exports.playback_enabled {
                self.demo_history_playback.start_playback(
@@ -378,9 +370,7 @@ impl<'window> State<'window> {
 pub async fn run() {
    use std::cmp::Ordering;
 
-   use winit::{
-      dpi::PhysicalPosition, event::*, event_loop::ControlFlow, keyboard::*
-   };
+   use winit::{event::*, event_loop::ControlFlow, keyboard::*};
    log_init();
    let event_loop = EventLoop::new()
       .expect("Winit failed to initialize");

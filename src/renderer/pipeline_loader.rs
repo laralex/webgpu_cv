@@ -96,13 +96,13 @@ impl<'a> Hash for PipelineLayoutDescriptor<'a> {
    }
 }
 
-struct BindGroupLayoutDescriptor<'a>(&'a wgpu::BindGroupLayoutDescriptor<'a>);
+// struct BindGroupLayoutDescriptor<'a>(&'a wgpu::BindGroupLayoutDescriptor<'a>);
 
-impl<'a> Hash for BindGroupLayoutDescriptor<'a> {
-   fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-      for (i, entry) in self.0.entries.iter().enumerate() {
-         i.hash(state);
-         entry.hash(state);
-      }
-   }
-}
+// impl<'a> Hash for BindGroupLayoutDescriptor<'a> {
+//    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+//       for (i, entry) in self.0.entries.iter().enumerate() {
+//          i.hash(state);
+//          entry.hash(state);
+//       }
+//    }
+// }

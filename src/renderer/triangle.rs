@@ -216,7 +216,7 @@ impl Demo {
 impl IDemo for Demo {
    fn tick(&mut self, input: &ExternalState) {
       let mouse_pos = input.mouse_unit_position();
-      self.clear_color[0] = (input.time_now_sec().sin() as f32 * 0.5 + 0.5 * mouse_pos.0);
+      self.clear_color[0] = input.time_now_sec().sin() as f32 * 0.5 + 0.5 * mouse_pos.0;
       self.clear_color[1] = ((input.time_now_sec() * 1.2).sin() * 0.5 + 0.5) as f32;
       self.clear_color[2] = input.mouse().borrow().left();
       self.clear_color[3] = 1.0;

@@ -39,20 +39,20 @@ impl Webgpu {
 
          let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: backend, ..Default::default() });
-         js_interop::js_log!("DEBUG 1");
+         web_sys::console::log_1(&"DEBUG 1".into());
 
          // # Safety
          // The surface needs to live as long as the window that created it.
          let surface = instance.create_surface(wgpu::SurfaceTarget::Canvas(canvas.clone()))
             .map_err(|e| web_sys::console::log_2(&"Failed to create wgpu surface: ".into(), &e.to_string().into()))
             .ok();
-         js_interop::js_log!("DEBUG 2");
+         web_sys::console::log_1(&"DEBUG 2".into());
          if surface.is_none() {
             canvas.remove();
             return None;
          }
          
-         js_interop::js_log!("DEBUG 3");
+         web_sys::console::log_1(&"DEBUG 3".into());
          let adapter = instance.request_adapter(
             &wgpu::RequestAdapterOptions {
                power_preference,
@@ -60,12 +60,12 @@ impl Webgpu {
                force_fallback_adapter: false,
             },
          ).await;
-         js_interop::js_log!("DEBUG 4");
+         web_sys::console::log_1(&"DEBUG 4".into());
          if adapter.is_none() {
             canvas.remove();
             return None;
          }
-         js_interop::js_log!("DEBUG 5");
+         web_sys::console::log_1(&"DEBUG 5".into());
          Some((canvas, instance, surface.unwrap(), adapter.unwrap()))
       };
       
@@ -77,9 +77,9 @@ impl Webgpu {
          (wgpu::Backends::GL, "WebGL".to_owned()),
       ];
       for (backend, backend_name) in backends_to_try {
-         js_interop::js_log!("DEBUG backend");
+         web_sys::console::log_1(&"DEBUG backend".into());
          webgpu_artifacts = try_init_webgpu(backend.clone()).await;
-         js_interop::js_log!("DEBUG after init");
+         web_sys::console::log_1(&"DEBUG after init".into());
          if webgpu_artifacts.is_some() {
             web_sys::console::log_2(&"Created wgpu surface for backend:".into(), &backend_name.into());
             break;
@@ -95,7 +95,7 @@ impl Webgpu {
          &Utils::default_device_descriptor(),
          None, // Trace path
       ).await;
-      js_interop::js_log!("DEBUG 6");
+      web_sys::console::log_1(&"DEBUG 6".into());
 
       if let Err(e) = device_result {
          web_sys::console::log_2(
@@ -107,7 +107,7 @@ impl Webgpu {
          ).await
       }
       let (device, queue) = device_result.expect("Failed to request wgpu device");
-      js_interop::js_log!("DEBUG 7");
+      web_sys::console::log_1(&"DEBUG 7".into());
 
       let surface_caps = surface.get_capabilities(&adapter);
       let surface_format = surface_caps.formats.iter()
@@ -128,7 +128,7 @@ impl Webgpu {
       };
 
       surface.configure(&device, &config);
-      js_interop::js_log!("DEBUG 8");
+      web_sys::console::log_1(&"DEBUG 8".into());
       let shader_loader = RefCell::new(ShaderLoader::new(USE_SHADER_CACHE));
       let pipeline_loader = RefCell::new(PipelineLoader::new(USE_PIPELINE_CACHE));
       ( canvas, Self { device, queue, shader_loader, pipeline_loader }, WebgpuSurface{surface, config} )

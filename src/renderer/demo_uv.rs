@@ -1,15 +1,14 @@
 use std::rc::Rc;
 use futures::Future;
-use wgpu::SurfaceTexture;
 
 use crate::renderer::pipeline_loader::RenderPipelineFlatDescriptor;
 use crate::renderer::webgpu::Utils;
 
 use super::shader_loader::{FragmentShaderVariant, VertexShaderVariant};
-use super::{DemoLoadingFuture, DemoLoadingSimpleFuture, Dispose, ExternalState, GraphicsLevel, IDemo, Progress, SimpleFuture, Webgpu};
+use super::{DemoLoadingFuture, DemoLoadingSimpleFuture, Dispose, ExternalState, GraphicsLevel, IDemo, LoadingArgs, Progress, RenderArgs, SimpleFuture, Webgpu};
 
-const VERTEX_SHADER_VARIANT:   VertexShaderVariant   = VertexShaderVariant::TriangleColored;
-const FRAGMENT_SHADER_VARIANT: FragmentShaderVariant = FragmentShaderVariant::VertexColor;
+const VERTEX_SHADER_VARIANT:   VertexShaderVariant   = VertexShaderVariant::TriangleFullscreen;
+const FRAGMENT_SHADER_VARIANT: FragmentShaderVariant = FragmentShaderVariant::Uv;
 
 #[derive(Default)]
 enum DemoLoadingStage {
@@ -24,11 +23,10 @@ struct DemoLoadingProcess {
    stage: DemoLoadingStage,
    stage_percent: f32,
    graphics_level: GraphicsLevel,
-   color_target_format: wgpu::TextureFormat,
+   loading_args: LoadingArgs,
    render_pipeline: Option<Rc<wgpu::RenderPipeline>>,
    vertex_shader: Option<Rc<wgpu::ShaderModule>>,
    fragment_shader: Option<Rc<wgpu::ShaderModule>>,
-   webgpu: Rc<Webgpu>,
    loaded_demo: Option<Demo>,
 }
 
@@ -71,8 +69,8 @@ impl SimpleFuture for DemoLoadingProcess {
       use DemoLoadingStage::*;
       match self.stage {
          CompileShaders => {
-            let vertex_shader = self.webgpu.get_vertex_shader(VERTEX_SHADER_VARIANT, None);
-            let fragment_shader = self.webgpu.get_fragment_shader(FRAGMENT_SHADER_VARIANT, None);
+            let vertex_shader = self.loading_args.webgpu.get_vertex_shader(VERTEX_SHADER_VARIANT, None);
+            let fragment_shader = self.loading_args.webgpu.get_fragment_shader(FRAGMENT_SHADER_VARIANT, None);
             self.vertex_shader = Some(vertex_shader);
             self.fragment_shader = Some(fragment_shader);
             self.stage_percent = 0.6;
@@ -80,16 +78,17 @@ impl SimpleFuture for DemoLoadingProcess {
             std::task::Poll::Pending
          },
          LinkPrograms => {
+            let global_uniform = self.loading_args.global_uniform.clone();
             let layout_descriptor = wgpu::PipelineLayoutDescriptor {
                label: Some("Render Pipeline Layout"),
-               bind_group_layouts: &[],
+               bind_group_layouts: &[&global_uniform.borrow().bind_group_info.bind_group_layout],
                push_constant_ranges: &[],
             };
-            let render_pipeline_layout = self.webgpu.device.create_pipeline_layout(
+            let render_pipeline_layout = self.loading_args.webgpu.device.create_pipeline_layout(
                &layout_descriptor);
             let vs = self.vertex_shader.take().unwrap();
             let fs = self.fragment_shader.take().unwrap();
-            self.render_pipeline = Some(self.webgpu.get_pipeline(
+            self.render_pipeline = Some(self.loading_args.webgpu.get_pipeline(
                &RenderPipelineFlatDescriptor::new(
                &layout_descriptor,
                &wgpu::RenderPipelineDescriptor {
@@ -104,7 +103,7 @@ impl SimpleFuture for DemoLoadingProcess {
                      module: &fs,
                      entry_point: "fs_main",
                      targets: &[Some(wgpu::ColorTargetState {
-                        format: self.color_target_format,
+                        format: self.loading_args.color_texture_format,
                         blend: Some(wgpu::BlendState::REPLACE),
                         write_mask: wgpu::ColorWrites::ALL,
                      })],
@@ -125,21 +124,19 @@ impl SimpleFuture for DemoLoadingProcess {
          StartSwitchingGraphicsLevel => {
             self.loaded_demo = Some(Demo {
                render_pipeline: self.render_pipeline.take().unwrap(),
-               clear_color: [0.0; 4],
-               num_rendered_vertices: 3,
                pending_graphics_level_switch: None,
             });
             let graphics_level = self.graphics_level;
-            let webgpu = self.webgpu.clone();
+            let loading_args = self.loading_args.clone();
             self.loaded_demo.as_mut().unwrap()
-                  .start_switching_graphics_level(webgpu.as_ref(), graphics_level)
+                  .start_switching_graphics_level(loading_args, graphics_level)
                   .expect("WebGPU surface error");
             self.stage_percent = 0.75;
             self.stage = SwitchGraphicsLevel;
             std::task::Poll::Pending
          }
          SwitchGraphicsLevel => {
-            let webgpu = self.webgpu.clone();
+            let webgpu = self.loading_args.webgpu.clone();
             match self.loaded_demo.as_mut().unwrap().poll_switching_graphics_level(webgpu.as_ref()) {
                Ok(std::task::Poll::Pending)  => {
                   self.stage_percent = 0.75 + 0.25 * self.loaded_demo.as_ref().unwrap().progress_switching_graphics_level();
@@ -184,64 +181,28 @@ impl DemoLoadingFuture for DemoLoadingProcess {}
 
 pub struct Demo {
    render_pipeline: Rc<wgpu::RenderPipeline>,
-   clear_color: [f32; 4],
-   num_rendered_vertices: i32,
    pending_graphics_level_switch: Option<GraphicsSwitchingProcess>,
 }
 
-impl Drop for Demo {
-   fn drop(&mut self) {
-      // std::mem::drop(self.render_pipeline);
-      self.pending_graphics_level_switch.take();
-   }
-}
-
-impl Demo {
-   pub fn start_loading(webgpu: Rc<Webgpu>, color_target_format: wgpu::TextureFormat, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture> {
-      Box::new(DemoLoadingProcess {
-         stage: Default::default(),
-         stage_percent: 0.0,
-         graphics_level,
-         color_target_format,
-         render_pipeline: Default::default(),
-         vertex_shader: Default::default(),
-         fragment_shader: Default::default(),
-         loaded_demo: Default::default(),
-         webgpu,
-      })
-   }
-}
-
-
 impl IDemo for Demo {
-   fn tick(&mut self, input: &ExternalState) {
-      let mouse_pos = input.mouse_unit_position();
-      self.clear_color[0] = input.time_now_sec().sin() as f32 * 0.5 + 0.5 * mouse_pos.0;
-      self.clear_color[1] = ((input.time_now_sec() * 1.2).sin() * 0.5 + 0.5) as f32;
-      self.clear_color[2] = input.mouse().borrow().left();
-      self.clear_color[3] = 1.0;
+   fn tick(&mut self, _input: &ExternalState) {
+
    }
 
-   fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, _delta_sec: f64) -> Result<(), wgpu::SurfaceError> {
-      let view = Utils::surface_view(backbuffer);
-      let mut encoder = webgpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+   fn render(&mut self, args: RenderArgs) -> Result<(), wgpu::SurfaceError> {
+      let view = Utils::surface_view(args.backbuffer);
+      let mut encoder = args.webgpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
          label: Some("Render Encoder"),
       });
 
       {
-         let color = wgpu::Color{
-            r: self.clear_color[0] as f64,
-            g: self.clear_color[1] as f64,
-            b: self.clear_color[2] as f64,
-            a: self.clear_color[3] as f64,
-         };
          let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                label: Some("Render Pass"),
                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                   view: &view,
                   resolve_target: None,
                   ops: wgpu::Operations {
-                     load: wgpu::LoadOp::Clear(color),
+                     load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                      store: wgpu::StoreOp::Store,
                   },
                })],
@@ -249,34 +210,33 @@ impl IDemo for Demo {
                occlusion_query_set: None,
                timestamp_writes: None,
          });
-
+         const DEMO_UNIFORM_BIND_GROUP_INDEX: u32 = 0;
+         render_pass.set_bind_group(DEMO_UNIFORM_BIND_GROUP_INDEX, &args.global_uniform.bind_group_info.bind_group, &[]);
          render_pass.set_pipeline(&self.render_pipeline);
-         render_pass.draw(0..3, 0..1); // self.num_rendered>vertices
+         render_pass.draw(0..3, 0..1);
       }
    
       // submit will accept anything that implements IntoIter
-      webgpu.queue.submit(std::iter::once(encoder.finish()));
+      args.webgpu.queue.submit(std::iter::once(encoder.finish()));
       Ok(())
    }
 
-   fn rebuild_pipelines(&mut self, _webgpu: Rc<Webgpu>, _color_texture_format: wgpu::TextureFormat) {
+   fn rebuild_pipelines(&mut self, _loading_args: LoadingArgs) {
 
    }
 
    #[cfg(any(feature = "imgui_win", feature = "imgui_web"))]
    fn render_imgui(&mut self, ui: &imgui::Ui, args: super::imgui_web::ImguiRenderArgs) {
       use imgui::*;
-      let window = ui.window("Triangle Demo");
+      let window = ui.window("Uv Sandbox Demo");
       window
          .size(args.size, Condition::FirstUseEver)
          .position(args.position, Condition::FirstUseEver)
          .build(|| {
-            ui.text(format!("Num rendered verts: {}", self.num_rendered_vertices));
-            ui.color_edit4("Clear color", &mut self.clear_color);
          });
    }
 
-   fn start_switching_graphics_level(&mut self, _webgpu: &Webgpu, graphics_level: GraphicsLevel) -> Result<(), wgpu::SurfaceError> {
+   fn start_switching_graphics_level(&mut self, _args: LoadingArgs, graphics_level: GraphicsLevel) -> Result<(), wgpu::SurfaceError> {
       log::info!("Rust start_switching_graphics_level {}", std::module_path!());
       self.pending_graphics_level_switch = Some(GraphicsSwitchingProcess{
          progress: 0.0,
@@ -306,9 +266,31 @@ impl IDemo for Demo {
    }
 }
 
+impl Drop for Demo {
+   fn drop(&mut self) {
+      // std::mem::drop(self.render_pipeline);
+      self.pending_graphics_level_switch.take();
+   }
+}
+
+impl Demo {
+   pub fn start_loading(args: LoadingArgs, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture> {
+      Box::new(DemoLoadingProcess {
+         stage: Default::default(),
+         stage_percent: 0.0,
+         graphics_level,
+         loading_args: args,
+         render_pipeline: Default::default(),
+         vertex_shader: Default::default(),
+         fragment_shader: Default::default(),
+         loaded_demo: Default::default(),
+      })
+   }
+}
+
 pub struct GraphicsSwitchingProcess {
    progress: f32,
-   graphics_level: GraphicsLevel,
+   #[allow(unused)] graphics_level: GraphicsLevel,
 }
 
 impl Dispose for GraphicsSwitchingProcess {
@@ -332,13 +314,6 @@ impl Progress for GraphicsSwitchingProcess {
 impl GraphicsSwitchingProcess {
    pub fn poll(demo: &mut Demo, _webgpu: &Webgpu) -> std::task::Poll<()> {
       let self_ = demo.pending_graphics_level_switch.as_mut().unwrap();
-      demo.num_rendered_vertices = match self_.graphics_level {
-         GraphicsLevel::Minimal => 0,
-         GraphicsLevel::Low => 3,
-         GraphicsLevel::Medium => 6,
-         GraphicsLevel::High => 9,
-         GraphicsLevel::Ultra => 12,
-      };
       self_.progress = 1.0;
       std::task::Poll::Ready(())
    }

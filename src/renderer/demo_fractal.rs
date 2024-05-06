@@ -1,7 +1,7 @@
 use std::ops::Rem;
 use std::rc::Rc;
 use futures::Future;
-use wgpu::{ShaderStages, SurfaceTexture};
+use wgpu::ShaderStages;
 use bytemuck;
 
 use crate::renderer::webgpu::Utils;
@@ -13,8 +13,8 @@ use super::preprocessor::Preprocessor;
 use super::shader_loader::{FragmentShaderVariant, VertexShaderVariant};
 use super::webgpu::buffer::{Buffer, UniformBuffer};
 use super::webgpu::utils::PipelineLayoutBuilder;
-use super::webgpu::uniform::BindGroup;
-use super::{DemoLoadingFuture, DemoLoadingSimpleFuture, Dispose, ExternalState, IDemo, Progress, SimpleFuture, Webgpu};
+use super::webgpu::uniform::BindGroupInfo;
+use super::{DemoLoadingFuture, DemoLoadingSimpleFuture, Dispose, ExternalState, IDemo, LoadingArgs, Progress, RenderArgs, SimpleFuture, Webgpu};
 
 const VERTEX_SHADER_VARIANT: VertexShaderVariant = VertexShaderVariant::TriangleFullscreen;
 // const FRAGMENT_SHADER_VARIANT: FragmentShaderVariant = FragmentShaderVariant::Uv;
@@ -34,17 +34,13 @@ struct DemoLoadingProcess {
    stage: DemoLoadingStage,
    stage_percent: f32,
    graphics_level: GraphicsLevel,
-   color_target_format: wgpu::TextureFormat,
+   loading_args: LoadingArgs,
    render_pipelines: Option<FractalRenderPipelines>,
    vertex_shader: Option<Rc<wgpu::ShaderModule>>,
    fragment_shader_default: Option<Rc<wgpu::ShaderModule>>,
    fragment_shader_antialiasing: Option<Rc<wgpu::ShaderModule>>,
-   uniform_groups: Option<Vec<BindGroup>>,
+   uniform_groups: Option<Vec<BindGroupInfo>>,
    fractal_uniform_buffer: Option<UniformBuffer>,
-   demo_uniform_buffer: Option<UniformBuffer>,
-   demo_stable_buffer_offset: u64,
-   demo_dynamic_buffer_offset: u64,
-   webgpu: Rc<Webgpu>,
    loaded_demo: Option<Demo>,
 }
 
@@ -63,8 +59,7 @@ impl Dispose for DemoLoadingProcess {
             self.fragment_shader_antialiasing.take();
             self.stage = DemoLoadingStage::Ready;
             self.loaded_demo.take();
-            #[cfg(feature = "web")]
-            web_sys::console::log_3(&"Rust loading drop".into(), &std::module_path!().into(), &self.stage_percent.into());
+            log::warn!("Rust loading drop {} {}", std::module_path!(), self.stage_percent)
          },
       }
    }
@@ -121,7 +116,7 @@ impl SimpleFuture for DemoLoadingProcess {
             std::task::Poll::Pending
          }
          SwitchGraphicsLevel => {
-            let webgpu = self.webgpu.clone();
+            let webgpu = self.loading_args.webgpu.clone();
             match self.loaded_demo.as_mut().unwrap().poll_switching_graphics_level(webgpu.as_ref()) {
                Ok(std::task::Poll::Pending)  => {
                   self.stage_percent = 0.75 + 0.25 * self.loaded_demo.as_ref().unwrap().progress_switching_graphics_level();
@@ -166,23 +161,19 @@ impl DemoLoadingFuture for DemoLoadingProcess {}
 
 
 impl DemoLoadingProcess {
-   fn new(webgpu: Rc<Webgpu>, color_target_format: wgpu::TextureFormat, graphics_level: GraphicsLevel) -> Self {
+   fn new(loading_args: LoadingArgs, graphics_level: GraphicsLevel) -> Self {
       Self {
          stage: Default::default(),
          stage_percent: 0.0,
-         graphics_level: graphics_level,
-         color_target_format: color_target_format,
+         graphics_level,
+         loading_args,
          render_pipelines: Default::default(),
          vertex_shader: Default::default(),
          fragment_shader_default: Default::default(),
          fragment_shader_antialiasing: Default::default(),
          uniform_groups: Default::default(),
          fractal_uniform_buffer: Default::default(),
-         demo_uniform_buffer: Default::default(),
-         demo_stable_buffer_offset: Default::default(),
-         demo_dynamic_buffer_offset: Default::default(),
          loaded_demo: Default::default(),
-         webgpu,
       }
    }
 
@@ -201,14 +192,14 @@ impl DemoLoadingProcess {
 
    fn compile_shader_vert(&mut self) {
       let _t = ScopedTimer::new("compile_shader_vert");
-      let vertex_shader = self.webgpu.get_vertex_shader(VERTEX_SHADER_VARIANT, None);
+      let vertex_shader = self.loading_args.webgpu.get_vertex_shader(VERTEX_SHADER_VARIANT, None);
       self.vertex_shader = Some(vertex_shader);
    }
 
    fn compile_shader_frag_default(&mut self) {
       let _t = ScopedTimer::new("compile_shader_frag_default");
       let mut preprocessor = Preprocessor::new();
-      let fragment_shader_default = self.webgpu.get_fragment_shader(FRAGMENT_SHADER_VARIANT, Some(&mut preprocessor));
+      let fragment_shader_default = self.loading_args.webgpu.get_fragment_shader(FRAGMENT_SHADER_VARIANT, Some(&mut preprocessor));
       self.fragment_shader_default = Some(fragment_shader_default);
    }
 
@@ -216,43 +207,35 @@ impl DemoLoadingProcess {
       let _t = ScopedTimer::new("compile_shader_frag_aa");
       let mut preprocessor = Preprocessor::new();
       preprocessor.define("USE_ANTIALIASING", "1");
-      let fragment_shader_antialiasing = self.webgpu.get_fragment_shader(FRAGMENT_SHADER_VARIANT, Some(&mut preprocessor));
+      let fragment_shader_antialiasing = self.loading_args.webgpu.get_fragment_shader(FRAGMENT_SHADER_VARIANT, Some(&mut preprocessor));
       self.fragment_shader_antialiasing = Some(fragment_shader_antialiasing);
    }
 
    fn build_uniforms(&mut self) {
       let _t = ScopedTimer::new("create_uniforms");
-      let uniform_visibility = ShaderStages::FRAGMENT;
-      let uniform_usage = wgpu::BufferUsages::COPY_DST;
-      self.demo_stable_buffer_offset = 0;
-      self.demo_dynamic_buffer_offset = self.webgpu.device.limits().min_uniform_buffer_offset_alignment as u64;
 
-      let demo_stable_uniform_size = std::mem::size_of::<DemoStableUniformData>() as u64;
-      let demo_dynamic_uniform_size = std::mem::size_of::<DemoDynamicUniformData>() as u64;
-      let demo_buffer = Buffer::new_uniform_size(
-         &self.webgpu.device, self.demo_dynamic_buffer_offset + demo_dynamic_uniform_size,
-          uniform_usage, Some("Demo Bind Buffer"));
       let fractal_buffer = Buffer::new_uniform::<FractalUniformData>(
-         &self.webgpu.device, uniform_usage, Some("Fractal Bind Buffer"));
-      let demo_uniform_group = BindGroup::builder()
-         .with_uniform_buffer_range(0, uniform_visibility,
-            &demo_buffer.buffer, (self.demo_stable_buffer_offset, demo_stable_uniform_size))
-         .with_uniform_buffer_range(1, uniform_visibility,
-            &demo_buffer.buffer, (self.demo_dynamic_buffer_offset, demo_dynamic_uniform_size))
-         .build(&self.webgpu.device, Some("Demo Bind Group"), None);
-      self.demo_uniform_buffer = Some(demo_buffer);
-
-      let fractal_uniform_group = BindGroup::builder()
-         .with_uniform_buffer(0, uniform_visibility, &fractal_buffer.buffer)
-         .build(&self.webgpu.device, Some("Fractal Bind Group"), None);
+         &self.loading_args.webgpu.device,
+         wgpu::BufferUsages::COPY_DST,
+         Some("Fractal Bind Buffer"));
+      let fractal_uniform_group = BindGroupInfo::builder()
+         .with_uniform_buffer(0, ShaderStages::FRAGMENT, &fractal_buffer.buffer)
+         .build(&self.loading_args.webgpu.device, Some("Fractal Bind Group"), None);
       self.fractal_uniform_buffer = Some(fractal_buffer);
 
-      self.uniform_groups = Some(vec![demo_uniform_group, fractal_uniform_group]);
+      self.uniform_groups = Some(vec![fractal_uniform_group]);
    }
 
    fn build_pipelines(&mut self) {
       let _t = ScopedTimer::new("create_pipelines");
-      let builder = PipelineLayoutBuilder::from_uniform_iter(self.uniform_groups.as_ref().unwrap().iter());
+      let mut builder = PipelineLayoutBuilder::new();
+      let global_uniform = self.loading_args.global_uniform.borrow();
+      builder = builder.with(&global_uniform.bind_group_info);
+      if let Some(uniform_groups) = self.uniform_groups.as_ref() {
+         for group in uniform_groups {
+            builder = builder.with(group);
+         }
+      }
       let pipeline_layout_descr = builder.build_descriptor(Some("Render Pipeline Layout"));
       
       let vs = self.vertex_shader.take().unwrap();
@@ -268,8 +251,8 @@ impl DemoLoadingProcess {
 
    fn build_render_pipeline(&self, label: &str, layout_descriptor: &wgpu::PipelineLayoutDescriptor, vs: &wgpu::ShaderModule, fs: &wgpu::ShaderModule) -> Rc<wgpu::RenderPipeline> {
       let _t = ScopedTimer::new("create_render_pipeline");
-      let render_pipeline_layout = self.webgpu.device.create_pipeline_layout(&layout_descriptor);
-      self.webgpu.get_pipeline(&RenderPipelineFlatDescriptor::new(
+      let render_pipeline_layout = self.loading_args.webgpu.device.create_pipeline_layout(&layout_descriptor);
+      self.loading_args.webgpu.get_pipeline(&RenderPipelineFlatDescriptor::new(
          // &self.uniform_groups,
          layout_descriptor,
          &wgpu::RenderPipelineDescriptor {
@@ -284,7 +267,7 @@ impl DemoLoadingProcess {
                   module: fs,
                   entry_point: "fs_main",
                   targets: &[Some(wgpu::ColorTargetState {
-                     format: self.color_target_format,
+                     format: self.loading_args.color_texture_format,
                      blend: Some(wgpu::BlendState::REPLACE),
                      write_mask: wgpu::ColorWrites::ALL,
                   })],
@@ -307,9 +290,7 @@ impl DemoLoadingProcess {
          current_graphics_level: self.graphics_level,
          render_pipelines: self.render_pipelines.take().unwrap(),
          use_antialiasing: false,
-         num_rendered_vertices: 3,
          pending_graphics_level_switch: None,
-         pending_write_stable_uniform: true,
          default_fractal_zoom,
          fractal_uniform_data: FractalUniformData {
             fractal_center: [-1.1900443, 0.3043895],
@@ -321,22 +302,10 @@ impl DemoLoadingProcess {
          fractal_buffer_offset: 0,
          fractal_uniform_buffer: self.fractal_uniform_buffer.take().unwrap(),
          uniform_groups: self.uniform_groups.take().unwrap(),
-         demo_stable_uniform_data: DemoStableUniformData {
-            color_attachment_size: [1, 1],
-            aspect_ratio: 1.0,
-            is_debug: 0.0,
-         },
-         demo_stable_buffer_offset: self.demo_stable_buffer_offset,
-         demo_dynamic_uniform_data: DemoDynamicUniformData {
-            mouse_position: [0.0, 0.0],
-            __padding: Default::default(),
-         },
-         demo_dynamic_buffer_offset: self.demo_dynamic_buffer_offset,
-         demo_uniform_buffer: self.demo_uniform_buffer.take().unwrap(),
       });
-      let webgpu = self.webgpu.clone();
+      let loading_args = self.loading_args.clone();
       self.loaded_demo.as_mut().unwrap()
-            .start_switching_graphics_level(webgpu.as_ref(), self.graphics_level)
+            .start_switching_graphics_level(loading_args, self.graphics_level)
             .expect("WebGPU surface error");
    }
 }
@@ -349,19 +318,12 @@ pub struct Demo {
    current_graphics_level: GraphicsLevel,
    render_pipelines: FractalRenderPipelines,
    use_antialiasing: bool,
-   num_rendered_vertices: u32,
    pending_graphics_level_switch: Option<GraphicsSwitchingProcess>,
-   pending_write_stable_uniform: bool,
    default_fractal_zoom: f32,
-   uniform_groups: Vec<BindGroup>,
+   uniform_groups: Vec<BindGroupInfo>,
    fractal_uniform_data: FractalUniformData,
    fractal_uniform_buffer: UniformBuffer,
    fractal_buffer_offset: u64,
-   demo_stable_uniform_data: DemoStableUniformData,
-   demo_stable_buffer_offset: u64,
-   demo_dynamic_uniform_data: DemoDynamicUniformData,
-   demo_dynamic_buffer_offset: u64,
-   demo_uniform_buffer: UniformBuffer,
 }
 
 #[repr(C)]
@@ -374,21 +336,6 @@ struct FractalUniformData {
    color_power: f32,
 }
 
-#[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-struct DemoStableUniformData {
-   color_attachment_size: [u32; 2],
-   aspect_ratio: f32,
-   is_debug: f32,
-}
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-struct DemoDynamicUniformData {
-   mouse_position: [f32; 2],
-   __padding: [u32; 2],
-}
-
 impl IDemo for Demo {
    fn tick(&mut self, input: &ExternalState) {
       const DEMO_LENGTH_SECONDS: f64 = 45.0;
@@ -396,25 +343,15 @@ impl IDemo for Demo {
       if input.debug_mode() < Some(2) {
          self.fractal_uniform_data.fractal_zoom = self.default_fractal_zoom * zoom_scale;
       }
-      self.demo_stable_uniform_data.color_attachment_size = input.screen_size().into();
-      self.demo_stable_uniform_data.aspect_ratio = input.aspect_ratio();
-      self.demo_stable_uniform_data.is_debug = input.debug_mode().map_or(0.0, f32::from);
-      self.pending_write_stable_uniform = self.pending_write_stable_uniform || input.is_stable_updated();
-      self.demo_dynamic_uniform_data.mouse_position = input.mouse_unit_position().into();
    }
 
-   fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, _delta_sec: f64) -> Result<(), wgpu::SurfaceError> {
+   fn render(&mut self, args: RenderArgs) -> Result<(), wgpu::SurfaceError> {
       {
-         if self.pending_write_stable_uniform {
-            self.demo_uniform_buffer.write(&webgpu.queue, self.demo_stable_buffer_offset, &[self.demo_stable_uniform_data]);
-            self.pending_write_stable_uniform = false;
-         }
-         self.demo_uniform_buffer.write(&webgpu.queue, self.demo_dynamic_buffer_offset, &[self.demo_dynamic_uniform_data]);
-         self.fractal_uniform_buffer.write(&webgpu.queue, self.fractal_buffer_offset, &[self.fractal_uniform_data]);
+         self.fractal_uniform_buffer.write(&args.webgpu.queue, self.fractal_buffer_offset, &[self.fractal_uniform_data]);
       }
 
-      let view = Utils::surface_view(backbuffer);
-      let mut encoder = webgpu.device.create_command_encoder(
+      let view = Utils::surface_view(args.backbuffer);
+      let mut encoder = args.webgpu.device.create_command_encoder(
          &wgpu::CommandEncoderDescriptor { label: Some("Render Encoder"), });
 
       {
@@ -424,7 +361,7 @@ impl IDemo for Demo {
                   view: &view,
                   resolve_target: None,
                   ops: wgpu::Operations {
-                     load: wgpu::LoadOp::Load,
+                     load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                      store: wgpu::StoreOp::Store,
                   },
                })],
@@ -437,15 +374,15 @@ impl IDemo for Demo {
             if self.use_antialiasing { &self.render_pipelines.antialiasing }
             else { &self.render_pipelines.default }
          );
-         const DEMO_UNIFORM_BIND_GROUP_INDEX: u32 = 0;
+         const GLOBAL_UNIFORM_BIND_GROUP_INDEX: u32 = 0;
          const FRACTAL_UNIFORM_BIND_GROUP_INDEX: u32 = 1;
-         render_pass.set_bind_group(DEMO_UNIFORM_BIND_GROUP_INDEX, &self.uniform_groups[0].bind_group, &[]);
-         render_pass.set_bind_group(FRACTAL_UNIFORM_BIND_GROUP_INDEX, &self.uniform_groups[1].bind_group, &[]);
-         render_pass.draw(0..self.num_rendered_vertices, 0..1); // self.num_rendered>vertices
+         render_pass.set_bind_group(GLOBAL_UNIFORM_BIND_GROUP_INDEX, &args.global_uniform.bind_group_info.bind_group, &[]);
+         render_pass.set_bind_group(FRACTAL_UNIFORM_BIND_GROUP_INDEX, &self.uniform_groups[0].bind_group, &[]);
+         render_pass.draw(0..3, 0..1); // self.num_rendered>vertices
       }
    
       // submit will accept anything that implements IntoIter
-      webgpu.queue.submit(std::iter::once(encoder.finish()));
+      args.webgpu.queue.submit(std::iter::once(encoder.finish()));
       Ok(())
    }
 
@@ -484,18 +421,17 @@ impl IDemo for Demo {
          });
    }
 
-   fn rebuild_pipelines(&mut self, webgpu: Rc<Webgpu>, color_target_format: wgpu::TextureFormat) {
-      let mut loader = DemoLoadingProcess::new(
-         webgpu.clone(), color_target_format, self.current_graphics_level);
+   fn rebuild_pipelines(&mut self, args: LoadingArgs) {
+      let mut loader = DemoLoadingProcess::new(args,
+         self.current_graphics_level);
       loader.rebuild_pipelines();
       self.render_pipelines = loader.render_pipelines.take().unwrap();
    }
 
-   fn start_switching_graphics_level(&mut self, _webgpu: &Webgpu, graphics_level: GraphicsLevel) -> Result<(), wgpu::SurfaceError> {
+   fn start_switching_graphics_level(&mut self, _loading_args: LoadingArgs, graphics_level: GraphicsLevel) -> Result<(), wgpu::SurfaceError> {
       // TODO: fix this, the graphics level is not yet finished switching
       self.current_graphics_level = graphics_level;
-      #[cfg(feature = "web")]
-      web_sys::console::log_3(&"Rust start_switching_graphics_level".into(), &std::module_path!().into(), &graphics_level.into());
+      log::warn!("Rust start_switching_graphics_level {} {}", std::module_path!(), graphics_level.as_ref());
       self.pending_graphics_level_switch = Some(GraphicsSwitchingProcess{
          progress: 0.0,
          graphics_level,
@@ -516,14 +452,13 @@ impl IDemo for Demo {
    }
 
    fn drop_demo(&mut self, _webgpu: &Webgpu) {
-      #[cfg(feature = "web")]
-      web_sys::console::log_2(&"Rust demo drop custom".into(), &std::module_path!().into());
+      log::warn!("Rust demo drop custom {}", std::module_path!());
    }
 }
 
 impl Demo {
-   pub fn start_loading(webgpu: Rc<Webgpu>, color_target_format: wgpu::TextureFormat, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture> {
-      Box::new(DemoLoadingProcess::new(webgpu, color_target_format, graphics_level))
+   pub fn start_loading(args: LoadingArgs, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture> {
+      Box::new(DemoLoadingProcess::new(args, graphics_level))
    }
 
    pub fn make_command_buffers(&mut self) {
@@ -539,8 +474,7 @@ pub struct GraphicsSwitchingProcess {
 
 impl Dispose for GraphicsSwitchingProcess {
    fn dispose(&mut self) {
-      #[cfg(feature = "web")]
-      web_sys::console::log_2(&"Rust graphics switching drop".into(), &std::module_path!().into());
+      log::warn!("Rust graphics switching drop {}", std::module_path!());
    }
 }
 
@@ -575,13 +509,20 @@ impl GraphicsSwitchingProcess {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+   use std::cell::RefCell;
+   use crate::renderer::GlobalUniform;
+   use super::*;
 
     #[test]
    fn shaders_compile() {
       let webgpu = futures::executor::block_on(Webgpu::new_offscreen());
-      let mut demo_loader = DemoLoadingProcess::new(Rc::new(webgpu),
-      wgpu::TextureFormat::Rgba8Unorm, GraphicsLevel::Medium);
+      let global_uniform = GlobalUniform::new(&webgpu.device);
+      let loading_args = LoadingArgs {
+         webgpu: Rc::new(webgpu),
+         global_uniform: Rc::new(RefCell::new(global_uniform)),
+         color_texture_format: wgpu::TextureFormat::Rgba8Unorm,
+      };
+      let mut demo_loader = DemoLoadingProcess::new(loading_args, GraphicsLevel::Medium);
       demo_loader.compile_shaders();
    }
 }

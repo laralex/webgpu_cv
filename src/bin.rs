@@ -13,6 +13,7 @@ fn main() {
 #[cfg(feature = "win")]
 mod win {
 
+use std::cell::RefCell;
 use std::task::Poll;
 use std::time::SystemTime;
 use std::rc::Rc;
@@ -21,7 +22,8 @@ use imgui::*;
 use imgui_wgpu::{Renderer, RendererConfig};
 use imgui_winit_support::winit::{event_loop::EventLoop, window::WindowBuilder};
 
-use my_renderer::renderer::{handle_keyboard, triangle, imgui_web, FrameStateRef, webgpu::Webgpu, stub_demo, fractal, DemoHistoryPlayback, DemoStateHistory, ExternalState, IDemo};
+use my_renderer::renderer::{GlobalUniform, LoadingArgs, RenderArgs};
+use my_renderer::renderer::{handle_keyboard, demo_uv, imgui_web, FrameStateRef, webgpu::Webgpu, demo_stub, demo_fractal, DemoHistoryPlayback, DemoStateHistory, ExternalState, IDemo};
 use my_renderer::{DemoId, GraphicsLevel};
 use my_renderer::env::log_init;
 
@@ -55,6 +57,7 @@ struct State<'window> {
    pub webgpu: Rc<Webgpu>,
    pub webgpu_surface: wgpu::Surface<'window>,
    pub webgpu_config: wgpu::SurfaceConfiguration,
+   global_uniform: Rc<RefCell<GlobalUniform>>,
    demo: Box<dyn IDemo>,
    demo_state: ExternalState,
    demo_state_history: DemoStateHistory,
@@ -87,13 +90,16 @@ const GRAPHICS_LEVELS: [GraphicsLevel; 5] = [
 
 impl<'window> State<'window> {
    async fn load_demo(&mut self, id: DemoId) -> Box<dyn IDemo> {
+      let loading_args = LoadingArgs {
+         webgpu: self.webgpu.clone(),
+         global_uniform: self.global_uniform.clone(),
+         color_texture_format: self.webgpu_config.format,
+      };
       let loader = match id {
-        DemoId::Stub => stub_demo::Demo::start_loading(),
-        DemoId::Triangle => triangle::Demo::start_loading(
-         self.webgpu.clone(), self.webgpu_config.format, self.demo_state.graphics_level()),
-        DemoId::Fractal => fractal::Demo::start_loading(
-         self.webgpu.clone(), self.webgpu_config.format, self.demo_state.graphics_level()),
-        _ => stub_demo::Demo::start_loading(),
+        DemoId::Stub => demo_stub::Demo::start_loading(),
+        DemoId::Uv => demo_uv::Demo::start_loading(loading_args, self.demo_state.graphics_level()),
+        DemoId::Fractal => demo_fractal::Demo::start_loading(loading_args, self.demo_state.graphics_level()),
+        _ => demo_stub::Demo::start_loading(),
       //   DemoId::FrameGeneration => todo!(),
       //   DemoId::HeadAvatar => todo!(),
       //   DemoId::FullBodyAvatar => todo!(),
@@ -109,11 +115,17 @@ impl<'window> State<'window> {
       demo_state.set_graphics_level(GraphicsLevel::Medium);
       demo_state.set_time_delta_limit_ms(1.0);
       demo_state.set_debug_mode(Some(1));
-      let demo = fractal::Demo::start_loading(webgpu.clone(), surface.config.format, demo_state.graphics_level()).await;
-      let demo_idx = 0;
+      let global_uniform = Rc::new(RefCell::new(GlobalUniform::new(&webgpu.device)));
+      let loading_args = LoadingArgs {
+         webgpu: webgpu.clone(),
+         global_uniform: global_uniform.clone(),
+         color_texture_format: surface.config.format,
+      };
+      let demo = demo_fractal::Demo::start_loading(loading_args, demo_state.graphics_level()).await;
+      let demo_idx = 0 as i32;
       let demos_ids = [
          &DemoId::Fractal,
-         &DemoId::Triangle,
+         &DemoId::Uv,
          &DemoId::Stub,
       ];
       // Set up dear imgui
@@ -138,6 +150,7 @@ impl<'window> State<'window> {
          webgpu,
          webgpu_surface: surface.surface,
          webgpu_config: surface.config,
+         global_uniform,
          demo_state,
          demo,
          demo_idx,
@@ -171,6 +184,8 @@ impl<'window> State<'window> {
       self.tick_imgui(now_timestamp_ms);
       let tick_timestamp_ms = self.demo_history_playback.playback_timestamp_ms().unwrap_or(now_timestamp_ms);
       self.demo_state.tick(tick_timestamp_ms);
+      self.global_uniform.borrow_mut().update_cpu(&self.demo_state);
+      self.global_uniform.borrow_mut().update_gpu(&self.webgpu.queue);
       self.demo.tick(&self.demo_state);
       self.previous_timestamp_ms = now_timestamp_ms;
    }
@@ -214,7 +229,12 @@ impl<'window> State<'window> {
    
    fn swtich_graphics_level(&mut self, level: GraphicsLevel) {
       self.demo_state.set_graphics_level(level);
-      self.demo.start_switching_graphics_level(&self.webgpu, level)
+      let loading_args = LoadingArgs {
+         webgpu: self.webgpu.clone(),
+         global_uniform: self.global_uniform.clone(),
+         color_texture_format: self.webgpu_config.format,
+      };
+      self.demo.start_switching_graphics_level(loading_args, level)
          .expect("Failed to start switching graphics level");
       loop {
          match self.demo.poll_switching_graphics_level(&self.webgpu) {
@@ -278,7 +298,12 @@ impl<'window> State<'window> {
                .then_some(self.imgui_exports.debug_mode as u16));
          }
          if ui.button("Recompile shaders") {
-            self.demo.rebuild_pipelines(self.webgpu.clone(), self.webgpu_config.format);
+            let loading_args = LoadingArgs {
+               webgpu: self.webgpu.clone(),
+               global_uniform: self.global_uniform.clone(),
+               color_texture_format: self.webgpu_config.format,
+            };
+            self.demo.rebuild_pipelines(loading_args);
          }
 
          ui.separator();
@@ -337,7 +362,11 @@ impl<'window> State<'window> {
       let surface_texture = self.webgpu_surface.get_current_texture()?;
 
       // render demo
-      self.demo.render(&self.webgpu, &surface_texture, self.demo_state.time_delta_sec())?;
+      self.demo.render(RenderArgs{
+         webgpu: &self.webgpu,
+         backbuffer: &surface_texture,
+         global_uniform: &self.global_uniform.borrow(),
+         time_delta_sec: self.demo_state.time_delta_sec()})?;
       // render imgui
       self.render_imgui(&surface_texture);
 

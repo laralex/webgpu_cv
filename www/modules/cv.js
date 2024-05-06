@@ -501,18 +501,12 @@ function CvWacv2024(chapterArgs) {
 function CvProjectWebcv(chapterArgs) {
    chapterArgs.insideConstructor = () => {
       return div({class: "font-normalsize"},
-         div({class: "flex-row flex-center", style: "margin-bottom:0.5rem;gap:1.0rem;"},
+         div({class: "flex-row flex-center", style: "margin-bottom:0.5rem;gap:0.7rem;"},
             YearsBlock(["6 months", "2024"]),
             div({class: "flex-column"},
                "By Aleksei Larionov",
                
                a({href: "https://creativecommons.org/licenses/by/4.0/legalcode.en", target:"_blank", rel:"license noopener noreferrer", style: "display:inline-block;"}, "License: CC BY 4.0"),
-               // div({class: "flex-row"},
-               // img({style:"height:22px!important;margin-left:3px;vertical-align:text-bottom;", src:"https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1"}),
-               // img({style:"height:22px!important;margin-left:3px;vertical-align:text-bottom;", src:"https://mirrors.creativecommons.org/presskit/icons/zero.svg?ref=chooser-v1"}),
-               // ),
-               // a({href: "https://creativecommons.org/publicdomain/zero/1.0?ref=chooser-v1", target:"_blank", rel:"license noopener noreferrer", style: "display:inline-block;"}, "Zero "),
-               // Universal
             ),
             div({class: "flex-column"},
                img({
@@ -538,21 +532,7 @@ function CvProjectWebcv(chapterArgs) {
             ),
             
          ),
-         // LeftRightAlignedList({
-         //       leftItems: [
-         //          () => p("Project page"),
-         //          () => p("Proceedings"),
-         //          () => p("Arxiv"),
-         //       ],
-         //       rightItems: [
-         //          () => a({"href": "https://samsunglabs.github.io/MoRF-project-page/"}, "samsunglabs.github.io/MoRF-project-page"),
-         //          () => a({"href": "https://openaccess.thecvf.com/content/WACV2024/html/Bashirov_MoRF_Mobile_Realistic_Fullbody_Avatars_From_a_Monocular_Video_WACV_2024_paper.html"}, "link"),
-         //          () => a({"href": "https://arxiv.org/abs/2303.10275"}, "link"),
-         //       ],
-         // }),
-         // Highlight("Features: "),
          ul(li("Everything is designed and programmed from scratch"),
-            li("Deployed via GitHub CI/CD on my web-server (lighttpd)"),
             li("Graphics demos:",
                ul(
                   li("All made with: ", Highlight("Rust, WebAssembly, WebGPU")),
@@ -566,7 +546,7 @@ function CvProjectWebcv(chapterArgs) {
                   li("Easy deployment, no complexity of NodeJS, no webpack"),
                )
             ),
-
+            li("Deployed on my web-server (lighttpd) via GitHub CI/CD"),
          ),
       )
    }

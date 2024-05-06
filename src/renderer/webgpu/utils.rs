@@ -1,6 +1,6 @@
 use wgpu::{Device, SurfaceTexture};
 
-use super::uniform::BindGroup;
+use super::uniform::BindGroupInfo;
 
 pub struct Utils;
 
@@ -85,7 +85,7 @@ impl<'a> PipelineLayoutBuilder<'a> {
       }
    }
 
-   pub fn from_uniform_iter(iter: impl Iterator<Item=&'a BindGroup>) -> Self {
+   pub fn from_uniform_iter(iter: impl Iterator<Item=&'a BindGroupInfo>) -> Self {
       let mut s = Self::new();
       for uniform_group in iter {
          s = s.with(uniform_group);
@@ -93,11 +93,11 @@ impl<'a> PipelineLayoutBuilder<'a> {
       s
    }
 
-   pub fn with(self, uniform_group: &'a BindGroup) -> Self {
+   pub fn with(self, uniform_group: &'a BindGroupInfo) -> Self {
       self.with_uniform_group(uniform_group)
    }
 
-   pub fn with_uniform_group(mut self, uniform_group: &'a BindGroup) -> Self {
+   pub fn with_uniform_group(mut self, uniform_group: &'a BindGroupInfo) -> Self {
       self.uniform_group_layouts.push(&uniform_group.bind_group_layout);
       self
    }

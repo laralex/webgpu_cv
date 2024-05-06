@@ -33,7 +33,7 @@ impl AsRef<str> for GraphicsLevel {
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum DemoId {
     Stub,
-    Triangle,
+    Uv,
     Fractal,
     FrameGeneration,
     HeadAvatar,
@@ -46,7 +46,7 @@ impl AsRef<str> for DemoId {
     fn as_ref(&self) -> &str {
         match self {
             DemoId::Stub => "Stub",
-            DemoId::Triangle => "Triangle",
+            DemoId::Uv => "Uv Sandbox",
             DemoId::Fractal => "Mandelbrot Fractal",
             DemoId::FrameGeneration => "Frame Generation",
             DemoId::HeadAvatar => "Head Avatar",
@@ -60,7 +60,7 @@ impl AsRef<str> for DemoId {
 mod wasm {
 
 use crate::env::log_init;
-use crate::renderer;
+use crate::renderer::{self, LoadingArgs, RenderArgs};
 use crate::renderer::{handle_keyboard, FrameStateRef};
 use crate::timer::ScopedTimer;
 
@@ -84,7 +84,7 @@ extern "C" {
 #[wasm_bindgen]
 struct ImguiInstance {
     context: imgui::Context,
-    platform: renderer::imgui::web_platform::WebsysPlatform,
+    platform: renderer::imgui_web::web_platform::WebsysPlatform,
     renderer: imgui_wgpu::Renderer,
     last_cursor: Option<Option<imgui::MouseCursor>>,
 }
@@ -102,6 +102,7 @@ pub struct WasmInterface {
     previous_demo: Rc<RefCell<Box<dyn IDemo>>>,
     previous_demo_id: Rc<RefCell<DemoId>>,
     pending_loading_demo: Rc<RefCell<Option<Pin<Box<dyn DemoLoadingFuture>>>>>,
+    global_uniform: Rc<RefCell<renderer::GlobalUniform>>,
     // canvas: Option<web_sys::HtmlCanvasElement>,
     // gl: Rc<web_sys::WebGl2RenderingContext>,
     // demo_state_history: Rc<RefCell<renderer::DemoStateHistory>>, //::new();
@@ -160,6 +161,9 @@ impl WasmInterface {
         }
 
         demo_loading_apply_progress(0.6);
+        let global_uniform = Rc::new(RefCell::new(
+            renderer::GlobalUniform::new(&webgpu.device)));
+        demo_loading_apply_progress(0.7);
         demo_loading_finish();
 
         Ok(Self {
@@ -168,13 +172,14 @@ impl WasmInterface {
             webgpu_surface: Rc::new(webgpu_surface.surface),
             webgpu_config: Rc::new(RefCell::new(webgpu_surface.config)),
             demo_state,
-            demo: Rc::new(RefCell::new(Box::new(renderer::stub_demo::Demo{}))),
+            demo: Rc::new(RefCell::new(Box::new(renderer::demo_stub::Demo{}))),
             demo_id: Rc::new(RefCell::new(DemoId::Stub)),
-            previous_demo: Rc::new(RefCell::new(Box::new(renderer::stub_demo::Demo{}))),
+            previous_demo: Rc::new(RefCell::new(Box::new(renderer::demo_stub::Demo{}))),
             previous_demo_id: Rc::new(RefCell::new(DemoId::Stub)),
             pending_loading_demo,
             // demo_state_history: Rc::new(RefCell::new(renderer::DemoStateHistory::new())),
             // demo_history_playback: Rc::new(RefCell::new(renderer::DemoHistoryPlayback::new())),
+            global_uniform,
             #[cfg(feature = "imgui_web")]
             imgui: Rc::new(RefCell::new(None)),
         })
@@ -202,7 +207,8 @@ impl WasmInterface {
         #[cfg(feature = "imgui_web")]
         if let Some(imgui) = &*self.imgui.borrow_mut() {
             let hidpi_factor = 1.0;
-            let size = web_platform::PhysicalSize::PhysicalSize::new(width as usize, height as usize);
+            use renderer::imgui_web::web_platform::PhysicalSize;
+            let size = PhysicalSize::new(width as usize, height as usize);
             // TODO: resize
             // imgui.platform.handle_event(
             //     imgui.context.io_mut(),
@@ -236,8 +242,13 @@ impl WasmInterface {
         self.demo_state.borrow_mut().set_graphics_level(level);
         let switcher_callback = Rc::new(RefCell::new(None));
         let switcher_callback2 = switcher_callback.clone();
+        let loading_args = LoadingArgs {
+            webgpu: self.webgpu.clone(),
+            global_uniform: self.global_uniform.clone(),
+            color_texture_format: self.webgpu_config.borrow().format,
+        };
         self.demo.borrow_mut().as_mut()
-            .start_switching_graphics_level(self.webgpu.as_ref(), level)
+            .start_switching_graphics_level(loading_args, level)
             .expect("WebGPU surface error");
         let demo_ref = self.demo.clone();
         let webgpu_ref = self.webgpu.clone();
@@ -255,7 +266,7 @@ impl WasmInterface {
                     graphics_switching_apply_progress(1.0);
                     // finished switching
                     // don't request another `request_animation_frame`
-                    web_sys::console::log_1(&"Rust wasm_set_graphics_level".into());
+                    log::warn!("Rust wasm_set_graphics_level");
                     graphics_switching_finish();
                 }
                 Err(_) => panic!("Error wasm_set_graphics_level")
@@ -294,11 +305,16 @@ impl WasmInterface {
 
         // assign new current loading process
         let pending_loading_demo_ref = self.pending_loading_demo.clone();
+        let loading_args = LoadingArgs {
+            webgpu: self.webgpu.clone(),
+            global_uniform: self.global_uniform.clone(),
+            color_texture_format: self.webgpu_config.borrow().format,
+        };
         *pending_loading_demo_ref.borrow_mut() = Some(
             Box::into_pin(renderer::wasm::start_loading_demo(demo_id,
-                self.webgpu.clone(),
-                self.webgpu_config.borrow().format,
-                self.demo_state.as_ref().borrow().graphics_level())));
+                loading_args,
+                self.demo_state.as_ref().borrow().graphics_level(),
+                )));
 
         let webgpu_ref = self.webgpu.clone();
 
@@ -362,19 +378,19 @@ impl WasmInterface {
         let webgpu_config = self.webgpu_config.clone();
         let demo_state = self.demo_state.clone();
         let demo_clone = self.demo.clone();
+        let global_uniform = self.global_uniform.clone();
         // let demo_state_history = self.demo_state_history.clone();
         // let demo_history_playback = self.demo_history_playback.clone();
         let mut demo_state_history = renderer::DemoStateHistory::new();
         let mut demo_history_playback = renderer::DemoHistoryPlayback::new();
         let mut previous_timestamp_ms = 0.0;
         let window = js_interop::window();
-
         #[cfg(feature = "imgui_web")] {
             let surface_config = webgpu_config.borrow();
             let (width, height) = (surface_config.width as usize, surface_config.height as usize);
             let hidpi_scale = 1.0;
-            let (mut imgui, imgui_platform) = renderer::imgui::init_from_raw(
-                renderer::imgui::web_platform::PhysicalSize { width, height },
+            let (mut imgui, imgui_platform) = renderer::imgui_web::init_from_raw(
+                renderer::imgui_web::web_platform::PhysicalSize { width, height },
                 hidpi_scale,
             );
             let mut imgui_renderer = imgui_wgpu::Renderer::new(&mut imgui, &webgpu.device, &webgpu.queue, imgui_wgpu::RendererConfig {
@@ -395,9 +411,9 @@ impl WasmInterface {
             // engine step
             let webgpu = webgpu.as_ref();
             if let (
-                Ok(mut demo), Ok(mut demo_state), Ok(surface_texture),
+                Ok(mut demo), Ok(mut demo_state), Ok(surface_texture), Ok(mut global_uniform)
             ) = (
-                demo_clone.try_borrow_mut(), demo_state.try_borrow_mut(), webgpu_surface.get_current_texture(),
+                demo_clone.try_borrow_mut(), demo_state.try_borrow_mut(), webgpu_surface.get_current_texture(), global_uniform.try_borrow_mut()
             ) {
                 {
                     let keyboard = demo_state.keyboard().borrow().clone();
@@ -414,10 +430,18 @@ impl WasmInterface {
                 // engine tick
                 let tick_timestamp_ms = demo_history_playback.playback_timestamp_ms().unwrap_or(now_timestamp_ms);
                 demo_state.tick(tick_timestamp_ms);
+                global_uniform.update_cpu(&demo_state);
+                global_uniform.update_gpu(&webgpu.queue);
                 demo.tick(&demo_state);
-                
+
                 // engine render
-                match demo.render(webgpu, &surface_texture, demo_state.time_delta_sec()) {
+                let render_args = RenderArgs {
+                    webgpu,
+                    backbuffer: &surface_texture,
+                    global_uniform: &global_uniform,
+                    time_delta_sec: demo_state.time_delta_sec(),
+                };
+                match demo.render(render_args) {
                     Ok(_) => {}
                     Err(wgpu::SurfaceError::Lost) => {
                         let _ = webgpu_config.try_borrow()

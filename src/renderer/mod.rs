@@ -1,20 +1,24 @@
-pub mod stub_demo;
 pub mod webgpu;
 pub mod imgui_web;
 use futures::Future;
 pub use webgpu::Webgpu;
 pub mod demo_state;
 pub use demo_state::*;
+pub mod history;
+pub use history::*;
+pub mod global_uniform;
+pub use global_uniform::*;
 mod pipeline_loader;
 mod shader_loader;
-pub mod triangle;
-pub mod fractal;
+pub mod demo_stub;
+pub mod demo_uv;
+pub mod demo_fractal;
 mod preprocessor;
 
 use crate::GraphicsLevel;
 use wgpu::SurfaceTexture;
 
-use std::{pin::Pin, rc::Rc};
+use std::{cell::RefCell, pin::Pin, rc::Rc};
 
 //#[cfg(feature = "web")]
 pub mod wasm {
@@ -23,33 +27,48 @@ use super::*;
 use crate::DemoId;
 
 #[allow(unused)]
-pub fn start_loading_demo(id: DemoId, webgpu: Rc<Webgpu>, color_target_format: wgpu::TextureFormat, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture> {
+pub fn start_loading_demo(id: DemoId, args: LoadingArgs, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture> {
+   // TOOD: remove option, always require it in demos
    match id {
-      DemoId::Triangle =>
-         triangle::Demo::start_loading(webgpu, color_target_format, graphics_level),
+      DemoId::Uv =>
+         demo_uv::Demo::start_loading(args, graphics_level),
       DemoId::Fractal =>
-         fractal::Demo::start_loading(webgpu, color_target_format, graphics_level),
+         demo_fractal::Demo::start_loading(args, graphics_level),
       DemoId::FrameGeneration =>
-         triangle::Demo::start_loading(webgpu, color_target_format, graphics_level),
+         demo_uv::Demo::start_loading(args, graphics_level),
       DemoId::HeadAvatar =>
-         triangle::Demo::start_loading(webgpu, color_target_format, graphics_level),
+         demo_uv::Demo::start_loading(args, graphics_level),
       DemoId::FullBodyAvatar =>
-         triangle::Demo::start_loading(webgpu, color_target_format, graphics_level),
+         demo_uv::Demo::start_loading(args, graphics_level),
       DemoId::ProceduralGeneration =>
-         triangle::Demo::start_loading(webgpu, color_target_format,graphics_level),
-      _ => stub_demo::Demo::start_loading(),
+         demo_uv::Demo::start_loading(args, graphics_level),
+      _ => demo_stub::Demo::start_loading(),
    }
 }
 
 } // mod wasm
 
+pub struct RenderArgs<'a> {
+   pub webgpu: &'a Webgpu,
+   pub backbuffer: &'a SurfaceTexture,
+   pub global_uniform: &'a GlobalUniform,
+   pub time_delta_sec: f64,
+}
+
+#[derive(Clone)]
+pub struct LoadingArgs {
+   pub webgpu: Rc<Webgpu>,
+   pub color_texture_format: wgpu::TextureFormat,
+   pub global_uniform: Rc<RefCell<GlobalUniform>>,
+}
+
 pub trait IDemo {
    fn tick(&mut self, state: &ExternalState);
-   fn start_switching_graphics_level(&mut self, webgpu: &Webgpu, level: GraphicsLevel) -> Result<(), wgpu::SurfaceError>;
+   fn start_switching_graphics_level(&mut self, args: LoadingArgs, graphics_level: GraphicsLevel) -> Result<(), wgpu::SurfaceError>;
    fn poll_switching_graphics_level(&mut self, webgpu: &Webgpu) -> Result<std::task::Poll<()>, wgpu::SurfaceError>;
    fn progress_switching_graphics_level(&self) -> f32;
-   fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, delta_sec: f64) -> Result<(), wgpu::SurfaceError>;
-   fn rebuild_pipelines(&mut self, webgpu: Rc<Webgpu>, color_texture_format: wgpu::TextureFormat);
+   fn render(&mut self, args: RenderArgs) -> Result<(), wgpu::SurfaceError>;
+   fn rebuild_pipelines(&mut self, args: LoadingArgs);
    #[cfg(any(feature = "imgui_win", feature = "imgui_web"))]
    fn render_imgui(&mut self, ui: &imgui::Ui, args: imgui_web::ImguiRenderArgs);
    fn drop_demo(&mut self, webgpu: &Webgpu);

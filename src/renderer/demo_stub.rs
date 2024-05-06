@@ -1,8 +1,7 @@
-use std::{rc::Rc, task::Poll};
+use std::task::Poll;
 use futures::Future;
-use wgpu::SurfaceTexture;
 
-use super::{webgpu::Utils, DemoLoadingFuture, DemoLoadingSimpleFuture, Dispose, ExternalState, GraphicsLevel, IDemo, Progress, SimpleFuture, Webgpu};
+use super::{webgpu::Utils, DemoLoadingFuture, DemoLoadingSimpleFuture, Dispose, ExternalState, GraphicsLevel, IDemo, LoadingArgs, Progress, RenderArgs, SimpleFuture, Webgpu};
 
 pub struct Demo;
 
@@ -17,9 +16,9 @@ impl Dispose for Demo {
 impl IDemo for Demo {
    fn tick(&mut self, _input: &ExternalState) { }
 
-   fn render(&mut self, webgpu: &Webgpu, backbuffer: &SurfaceTexture, _delta_sec: f64) -> Result<(), wgpu::SurfaceError> {
-      let view = Utils::surface_view(backbuffer);
-      let mut encoder = webgpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+   fn render(&mut self, args: RenderArgs) -> Result<(), wgpu::SurfaceError> {
+      let view = Utils::surface_view(args.backbuffer);
+      let mut encoder = args.webgpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
          label: Some("Render Encoder"),
       });
 
@@ -45,11 +44,11 @@ impl IDemo for Demo {
       }
 
       // submit will accept anything that implements IntoIter
-      webgpu.queue.submit(std::iter::once(encoder.finish()));
+      args.webgpu.queue.submit(std::iter::once(encoder.finish()));
       Ok(())
    }
 
-   fn rebuild_pipelines(&mut self, _webgpu: Rc<Webgpu>, _color_texture_format: wgpu::TextureFormat) {
+   fn rebuild_pipelines(&mut self, _args: LoadingArgs) {
 
    }
 
@@ -58,7 +57,7 @@ impl IDemo for Demo {
 
    }
 
-   fn start_switching_graphics_level(&mut self, _webgpu: &Webgpu, _level: GraphicsLevel) -> Result<(), wgpu::SurfaceError> {
+   fn start_switching_graphics_level(&mut self, _args: LoadingArgs, _level: GraphicsLevel) -> Result<(), wgpu::SurfaceError> {
       Ok(())
    }
 

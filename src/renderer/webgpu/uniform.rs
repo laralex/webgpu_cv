@@ -1,6 +1,6 @@
 use crate::timer::ScopedTimer;
 
-pub struct BindGroup {
+pub struct BindGroupInfo {
    pub bind_group: wgpu::BindGroup,
    pub bind_group_layout: wgpu::BindGroupLayout,
    pub bind_group_layout_entries: Vec<wgpu::BindGroupLayoutEntry>,
@@ -11,7 +11,7 @@ pub struct BindGroupBuilfer<'a> {
    group_entries: Vec<wgpu::BindGroupEntry<'a>>,
 }
 
-impl BindGroup {
+impl BindGroupInfo {
    pub fn builder<'a>() -> BindGroupBuilfer<'a> {
       BindGroupBuilfer {
          layout_entries: vec![],
@@ -65,7 +65,7 @@ impl<'a> BindGroupBuilfer<'a> {
       self
    }
 
-   pub fn build(self, device: &wgpu::Device, group_label: Option<&str>, layout_label: Option<&str>) -> BindGroup {
+   pub fn build(self, device: &wgpu::Device, group_label: Option<&str>, layout_label: Option<&str>) -> BindGroupInfo {
       let _t = ScopedTimer::new("uniform_group::build");
       let bind_group_layout = device.create_bind_group_layout(
          &wgpu::BindGroupLayoutDescriptor {
@@ -77,7 +77,7 @@ impl<'a> BindGroupBuilfer<'a> {
          layout: &bind_group_layout,
          entries: &self.group_entries,
       });
-      BindGroup {
+      BindGroupInfo {
          bind_group_layout_entries: self.layout_entries,
          bind_group_layout,
          bind_group,

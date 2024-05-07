@@ -1,12 +1,14 @@
 pub mod buffer;
 pub mod utils;
-use std::{cell::RefCell, rc::Rc};
-
 pub use utils::*;
-
-use super::{pipeline_loader::{PipelineLoader, RenderPipelineFlatDescriptor}, preprocessor::Preprocessor, shader_loader::{FragmentShaderVariant, ShaderLoader, VertexShaderVariant}};
 pub mod draw;
 pub mod uniform;
+pub mod texture;
+pub mod premade;
+pub use premade::*;
+
+use std::{cell::RefCell, rc::Rc};
+use super::{pipeline_loader::{PipelineLoader, RenderPipelineFlatDescriptor}, preprocessor::Preprocessor, shader_loader::{FragmentShaderVariant, ShaderLoader, VertexShaderVariant}};
 
 #[cfg(feature = "web")]
 const USE_SHADER_CACHE: bool = true;

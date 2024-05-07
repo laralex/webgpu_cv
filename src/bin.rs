@@ -23,7 +23,7 @@ use imgui_wgpu::{Renderer, RendererConfig};
 use imgui_winit_support::winit::{event_loop::EventLoop, window::WindowBuilder};
 
 use my_renderer::renderer::{demo_mesh, GlobalUniform, LoadingArgs, RenderArgs};
-use my_renderer::renderer::{handle_keyboard, demo_uv, imgui_web, FrameStateRef, webgpu::Webgpu, demo_stub, demo_fractal, DemoHistoryPlayback, DemoStateHistory, ExternalState, IDemo};
+use my_renderer::renderer::{handle_keyboard, demo_uv, imgui_web, FrameStateRef, webgpu::{Webgpu, Premade}, demo_stub, demo_fractal, DemoHistoryPlayback, DemoStateHistory, ExternalState, IDemo};
 use my_renderer::{DemoId, GraphicsLevel};
 use my_renderer::env::log_init;
 
@@ -70,6 +70,7 @@ struct State<'window> {
    imgui_exports: ImguiExports,
    demos_ids: &'static [&'static DemoId],
    demo_idx: i32,
+   premade: Rc<Premade>,
 }
 
 #[derive(Default)]
@@ -93,6 +94,7 @@ impl<'window> State<'window> {
          webgpu: self.webgpu.clone(),
          global_uniform: self.global_uniform.clone(),
          color_texture_format: self.webgpu_config.format,
+         premade: self.premade.clone(),
       };
       let loader = match id {
         DemoId::Stub => demo_stub::Demo::start_loading(),
@@ -116,10 +118,12 @@ impl<'window> State<'window> {
       demo_state.set_time_delta_limit_ms(1.0);
       demo_state.set_debug_mode(Some(1));
       let global_uniform = Rc::new(RefCell::new(GlobalUniform::new(&webgpu.device)));
+      let premade = Rc::new(Premade::new(&webgpu.device));
       let loading_args = LoadingArgs {
          webgpu: webgpu.clone(),
          global_uniform: global_uniform.clone(),
          color_texture_format: surface.config.format,
+         premade: premade.clone(),
       };
       let demo = demo_fractal::Demo::start_loading(loading_args, demo_state.graphics_level()).await;
       let demo_idx = 0 as i32;
@@ -164,6 +168,7 @@ impl<'window> State<'window> {
          imgui_renderer,
          imgui_last_cursor: None,
          imgui_exports,
+         premade,
      }
    }
 
@@ -234,6 +239,7 @@ impl<'window> State<'window> {
          webgpu: self.webgpu.clone(),
          global_uniform: self.global_uniform.clone(),
          color_texture_format: self.webgpu_config.format,
+         premade: self.premade.clone(),
       };
       self.demo.start_switching_graphics_level(loading_args, level)
          .expect("Failed to start switching graphics level");
@@ -265,7 +271,7 @@ impl<'window> State<'window> {
 
       let imgui_common_args = imgui_web::ImguiRenderArgs {
          position: [10.0, 10.0],
-         size: [350.0, 350.0],
+         size: [350.0, 50.0],
       };
       let imgui_demo_args = imgui_web::ImguiRenderArgs::new_right_from(
          &imgui_common_args, [10.0, 0.0]);
@@ -278,82 +284,86 @@ impl<'window> State<'window> {
          .size(imgui_common_args.size, Condition::FirstUseEver)
          .position(imgui_common_args.position, Condition::FirstUseEver)
          .movable(false)
+         .always_auto_resize(true)
          .build(|| {
-         if ui.list_box("Demo",&mut self.demo_idx,
-         &self.demos_ids, self.demos_ids.len() as i32) {
-            self.demo = futures::executor::block_on(
-               self.load_demo(*self.demos_ids[self.demo_idx as usize]));
-         }
-
-         if ui.combo("Graphics level", &mut self.imgui_exports.graphics_level_idx, 
-            &GRAPHICS_LEVELS, |level| level.as_ref().into()) {
-            self.swtich_graphics_level(GRAPHICS_LEVELS[self.imgui_exports.graphics_level_idx])
-         }
-
-         ui.separator();
-         let mut upd_debug_mode = false;
-         upd_debug_mode |= ui.checkbox("Enable debug mode", &mut self.imgui_exports.debug_mode_enabled);
-         upd_debug_mode |= ui.input_int("Debug mode", &mut self.imgui_exports.debug_mode).step_fast(0).build();
-         if upd_debug_mode {
-            self.demo_state.set_debug_mode(self.imgui_exports.debug_mode_enabled
-               .then_some(self.imgui_exports.debug_mode as u16));
-         }
          if ui.button("Recompile shaders") {
             let loading_args = LoadingArgs {
                webgpu: self.webgpu.clone(),
                global_uniform: self.global_uniform.clone(),
                color_texture_format: self.webgpu_config.format,
+               premade: self.premade.clone(),
             };
             self.demo.rebuild_pipelines(loading_args);
          }
+         if ui.collapsing_header("Settings", TreeNodeFlags::SPAN_FULL_WIDTH) {
+            if ui.list_box("Demo",&mut self.demo_idx,
+         &self.demos_ids, self.demos_ids.len() as i32) {
+               self.demo = futures::executor::block_on(
+                  self.load_demo(*self.demos_ids[self.demo_idx as usize]));
+            }
 
-         ui.separator();
-         if ui.checkbox("Enable frame playback", &mut self.imgui_exports.playback_enabled) {
-            if self.imgui_exports.playback_enabled {
-               self.demo_history_playback.start_playback(
-                  now_timestamp_ms, self.demo_state.time_now_ms())
-            } else {
-               if let Some((_, resume_time_ms)) = self.demo_history_playback.cancel_playback() {
-                  self.demo_state_history.reset_history();
-                  let frame_idx = 0;
-                  self.demo_state.override_time(now_timestamp_ms, resume_time_ms, frame_idx);
+            if ui.combo("Graphics level", &mut self.imgui_exports.graphics_level_idx, 
+               &GRAPHICS_LEVELS, |level| level.as_ref().into()) {
+               self.swtich_graphics_level(GRAPHICS_LEVELS[self.imgui_exports.graphics_level_idx])
+            }
+
+            ui.separator();
+            let mut upd_debug_mode = false;
+            upd_debug_mode |= ui.checkbox("Enable debug mode", &mut self.imgui_exports.debug_mode_enabled);
+            upd_debug_mode |= ui.input_int("Debug mode", &mut self.imgui_exports.debug_mode).step_fast(0).build();
+            if upd_debug_mode {
+               self.demo_state.set_debug_mode(self.imgui_exports.debug_mode_enabled
+                  .then_some(self.imgui_exports.debug_mode as u16));
+            }
+
+            ui.separator();
+            if ui.checkbox("Enable frame playback", &mut self.imgui_exports.playback_enabled) {
+               if self.imgui_exports.playback_enabled {
+                  self.demo_history_playback.start_playback(
+                     now_timestamp_ms, self.demo_state.time_now_ms())
+               } else {
+                  if let Some((_, resume_time_ms)) = self.demo_history_playback.cancel_playback() {
+                     self.demo_state_history.reset_history();
+                     let frame_idx = 0;
+                     self.demo_state.override_time(now_timestamp_ms, resume_time_ms, frame_idx);
+                  }
                }
             }
-         }
-         let mut play_back = false;
-         ui.same_line();
-         play_back |= ui.button("<<") || ui.is_item_active();
-         ui.same_line();
-         play_back |= ui.button("<");
-         if play_back {
-            self.demo_history_playback.play_back(&self.demo_state_history);
-         }
-         let mut play_forward = false;
-         ui.same_line();
-         play_forward |= ui.button(">");
-         ui.same_line();
-         play_forward |= ui.button(">>") || ui.is_item_active();
-         if play_forward{
-            self.demo_history_playback.play_forward(&self.demo_state_history);
-         }
-         ui.separator();
-         if ui.checkbox("Screen size override", &mut self.imgui_exports.screen_override_enabled) {
-            if self.imgui_exports.screen_override_enabled {
-               let (w, h) = self.demo_state.screen_size();
-               self.imgui_exports.screen_backup = [w, h];
-               self.imgui_exports.screen_override = self.imgui_exports.screen_backup;
-            } else {
-               self.demo_state.set_screen_size(
-                  (self.imgui_exports.screen_backup[0], self.imgui_exports.screen_backup[1]));
+            let mut play_back = false;
+            ui.same_line();
+            play_back |= ui.button("<<") || ui.is_item_active();
+            ui.same_line();
+            play_back |= ui.button("<");
+            if play_back {
+               self.demo_history_playback.play_back(&self.demo_state_history);
             }
-         }
-         if self.imgui_exports.screen_override_enabled &&
-            imgui::Drag::new("W/H")
-            .range(100, 3000)
-            .speed(2.0)
-            .build_array(ui,&mut self.imgui_exports.screen_override) {
-            self.demo_state.set_screen_size(
-               (self.imgui_exports.screen_override[0], self.imgui_exports.screen_override[1]));
+            let mut play_forward = false;
+            ui.same_line();
+            play_forward |= ui.button(">");
+            ui.same_line();
+            play_forward |= ui.button(">>") || ui.is_item_active();
+            if play_forward{
+               self.demo_history_playback.play_forward(&self.demo_state_history);
+            }
+            ui.separator();
+            if ui.checkbox("Screen size override", &mut self.imgui_exports.screen_override_enabled) {
+               if self.imgui_exports.screen_override_enabled {
+                  let (w, h) = self.demo_state.screen_size();
+                  self.imgui_exports.screen_backup = [w, h];
+                  self.imgui_exports.screen_override = self.imgui_exports.screen_backup;
+               } else {
+                  self.demo_state.set_screen_size(
+                     (self.imgui_exports.screen_backup[0], self.imgui_exports.screen_backup[1]));
+               }
+            }
+            if self.imgui_exports.screen_override_enabled &&
+               imgui::Drag::new("W/H")
+               .range(100, 3000)
+               .speed(2.0)
+               .build_array(ui,&mut self.imgui_exports.screen_override) {
+               self.demo_state.set_screen_size(
+                  (self.imgui_exports.screen_override[0], self.imgui_exports.screen_override[1]));
+            }
          }
       });
       self.imgui = Some(imgui_local);

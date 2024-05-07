@@ -21,6 +21,8 @@ use wgpu::SurfaceTexture;
 
 use std::{cell::RefCell, pin::Pin, rc::Rc};
 
+use self::webgpu::Premade;
+
 //#[cfg(feature = "web")]
 pub mod wasm {
 
@@ -61,6 +63,7 @@ pub struct LoadingArgs {
    pub webgpu: Rc<Webgpu>,
    pub color_texture_format: wgpu::TextureFormat,
    pub global_uniform: Rc<RefCell<GlobalUniform>>,
+   pub premade: Rc<Premade>,
 }
 
 pub trait IDemo {

@@ -1,12 +1,14 @@
 use std::rc::Rc;
 use futures::Future;
-use wgpu::BufferUsages;
+use wgpu::{BufferUsages, TextureView};
 
 use crate::renderer::pipeline_loader::RenderPipelineFlatDescriptor;
 use crate::renderer::webgpu::Utils;
 
 use super::shader_loader::{FragmentShaderVariant, VertexShaderVariant};
 use super::webgpu::buffer::{Buffer, IndexBuffer, VertexBuffer, VertexPosUv};
+use super::webgpu::uniform::BindGroupInfo;
+use super::webgpu::PipelineLayoutBuilder;
 use super::{DemoLoadingFuture, DemoLoadingSimpleFuture, Dispose, ExternalState, GraphicsLevel, IDemo, LoadingArgs, Progress, RenderArgs, SimpleFuture, Webgpu};
 
 const VERTEX_SHADER_VARIANT:   VertexShaderVariant   = VertexShaderVariant::Passthrough;
@@ -34,6 +36,7 @@ struct DemoLoadingProcess {
    vertex_buffer: Option<VertexBuffer>,
    render_pipeline: Option<Rc<wgpu::RenderPipeline>>,
    loaded_demo: Option<Demo>,
+   uniform_groups: Vec<BindGroupInfo>
 }
 
 impl Dispose for DemoLoadingProcess {
@@ -98,7 +101,7 @@ impl SimpleFuture for DemoLoadingProcess {
             self.stage = BuildUniforms;
          },
          BuildUniforms => {
-            self.build_uniforms();
+            self.make_bind_groups();
             self.stage_percent = 0.4;
             self.stage = BuildVertexData;
          },
@@ -154,12 +157,13 @@ impl DemoLoadingProcess {
          index_buffer: Default::default(),
          vertex_buffer: Default::default(),
          loaded_demo: Default::default(),
+         uniform_groups: vec![],
       }
    }
 
    fn rebuild_pipelines(&mut self) {
       self.compile_shaders();
-      self.build_uniforms();
+      self.make_bind_groups();
       self.build_pipelines();
    }
 
@@ -170,8 +174,16 @@ impl DemoLoadingProcess {
          .get_fragment_shader(FRAGMENT_SHADER_VARIANT, None));
    }
 
-   fn build_uniforms(&mut self) {
+   fn make_bind_groups(&mut self) {
+      // let view = wgpu::TextureView {};
+      // let texture_bind_group = BindGroupInfo::builder()
+      //    .with_texture_2d(0, wgpu::ShaderStages::FRAGMENT,
+      //       wgpu::TextureSampleType::Float { filterable:true }, &view)
+      //    .with_sampler(1, wgpu::ShaderStages::FRAGMENT,
+      //       &self.loading_args.premade.bilinear_sampler)
+      //    .build(&self.loading_args.webgpu.device, Some("Fractal Bind Group"), None);
 
+      // self.uniform_groups = vec![texture_bind_group];
    }
 
    fn build_vertex_data(&mut self) {
@@ -198,14 +210,19 @@ impl DemoLoadingProcess {
    }
 
    fn build_pipelines(&mut self) {
-      let global_uniform = self.loading_args.global_uniform.clone();
+      let mut builder = PipelineLayoutBuilder::new();
+      let global_uniform = self.loading_args.global_uniform.borrow();
+      builder = builder.with(&global_uniform.bind_group_info);
+      for group in self.uniform_groups.iter() {
+         builder = builder.with(group);
+      }
       let layout_descriptor = wgpu::PipelineLayoutDescriptor {
          label: Some("Render Pipeline Layout"),
-         bind_group_layouts: &[&global_uniform.borrow().bind_group_info.bind_group_layout],
+         bind_group_layouts: &[&global_uniform.bind_group_info.bind_group_layout],
          push_constant_ranges: &[],
       };
-      let render_pipeline_layout = self.loading_args.webgpu.device.create_pipeline_layout(
-         &layout_descriptor);
+      let render_pipeline_layout = self.loading_args.webgpu.device
+         .create_pipeline_layout(&layout_descriptor);
       let vs = self.vertex_shader.take().unwrap();
       let fs = self.fragment_shader.take().unwrap();
       self.render_pipeline = Some(self.loading_args.webgpu.get_pipeline(
@@ -301,6 +318,7 @@ impl IDemo for Demo {
       window
          .size(args.size, Condition::FirstUseEver)
          .position(args.position, Condition::FirstUseEver)
+         .always_auto_resize(true)
          .build(|| {
          });
    }

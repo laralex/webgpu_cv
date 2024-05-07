@@ -39,7 +39,7 @@ struct DemoLoadingProcess {
    vertex_shader: Option<Rc<wgpu::ShaderModule>>,
    fragment_shader_default: Option<Rc<wgpu::ShaderModule>>,
    fragment_shader_antialiasing: Option<Rc<wgpu::ShaderModule>>,
-   uniform_groups: Option<Vec<BindGroupInfo>>,
+   uniform_groups: Vec<BindGroupInfo>,
    fractal_uniform_buffer: Option<UniformBuffer>,
    loaded_demo: Option<Demo>,
 }
@@ -52,7 +52,6 @@ impl Dispose for DemoLoadingProcess {
             // shouldn't free its resources
          },
          _ => {
-            self.uniform_groups.take();
             self.render_pipelines.take();
             self.vertex_shader.take();
             self.fragment_shader_default.take();
@@ -98,7 +97,7 @@ impl SimpleFuture for DemoLoadingProcess {
             std::task::Poll::Pending
          },
          CreateUniforms => {
-            self.build_uniforms();
+            self.make_bind_groups();
             self.stage_percent += 0.1;
             self.stage = CreatePipelines;
             std::task::Poll::Pending
@@ -186,7 +185,7 @@ impl DemoLoadingProcess {
 
    fn rebuild_pipelines(&mut self) {
       self.compile_shaders();
-      self.build_uniforms();
+      self.make_bind_groups();
       self.build_pipelines();
    }
 
@@ -211,7 +210,7 @@ impl DemoLoadingProcess {
       self.fragment_shader_antialiasing = Some(fragment_shader_antialiasing);
    }
 
-   fn build_uniforms(&mut self) {
+   fn make_bind_groups(&mut self) {
       let _t = ScopedTimer::new("create_uniforms");
 
       let fractal_buffer = Buffer::new_uniform::<FractalUniformData>(
@@ -223,7 +222,7 @@ impl DemoLoadingProcess {
          .build(&self.loading_args.webgpu.device, Some("Fractal Bind Group"), None);
       self.fractal_uniform_buffer = Some(fractal_buffer);
 
-      self.uniform_groups = Some(vec![fractal_uniform_group]);
+      self.uniform_groups = vec![fractal_uniform_group];
    }
 
    fn build_pipelines(&mut self) {
@@ -231,13 +230,10 @@ impl DemoLoadingProcess {
       let mut builder = PipelineLayoutBuilder::new();
       let global_uniform = self.loading_args.global_uniform.borrow();
       builder = builder.with(&global_uniform.bind_group_info);
-      if let Some(uniform_groups) = self.uniform_groups.as_ref() {
-         for group in uniform_groups {
-            builder = builder.with(group);
-         }
+      for group in self.uniform_groups.iter() {
+         builder = builder.with(group);
       }
       let pipeline_layout_descr = builder.build_descriptor(Some("Render Pipeline Layout"));
-      
       let vs = self.vertex_shader.take().unwrap();
       let fs = self.fragment_shader_default.take().unwrap();
       let fs_aa = self.fragment_shader_antialiasing.take().unwrap();
@@ -286,7 +282,7 @@ impl DemoLoadingProcess {
 
    fn switch_graphics_level(&mut self) {
       let default_fractal_zoom = 2.0;
-      self.loaded_demo = Some(Demo {
+      let mut loaded_demo = Demo {
          current_graphics_level: self.graphics_level,
          render_pipelines: self.render_pipelines.take().unwrap(),
          use_antialiasing: false,
@@ -301,8 +297,10 @@ impl DemoLoadingProcess {
          },
          fractal_buffer_offset: 0,
          fractal_uniform_buffer: self.fractal_uniform_buffer.take().unwrap(),
-         uniform_groups: self.uniform_groups.take().unwrap(),
-      });
+         uniform_groups: vec![],
+      };
+      std::mem::swap(&mut loaded_demo.uniform_groups, &mut self.uniform_groups);
+      self.loaded_demo = Some(loaded_demo);
       let loading_args = self.loading_args.clone();
       self.loaded_demo.as_mut().unwrap()
             .start_switching_graphics_level(loading_args, self.graphics_level)
@@ -379,6 +377,7 @@ impl IDemo for Demo {
       window
          .size(args.size, Condition::FirstUseEver)
          .position(args.position, Condition::FirstUseEver)
+         .always_auto_resize(true)
          .build(|| {
             imgui::Drag::new("Num iterations")
                .range(1, 2000)
@@ -484,17 +483,19 @@ impl GraphicsSwitchingProcess {
 #[cfg(test)]
 mod tests {
    use std::cell::RefCell;
-   use crate::renderer::GlobalUniform;
+   use crate::renderer::{webgpu::Premade, GlobalUniform};
    use super::*;
 
     #[test]
    fn shaders_compile() {
       let webgpu = futures::executor::block_on(Webgpu::new_offscreen());
       let global_uniform = GlobalUniform::new(&webgpu.device);
+      let premade = Premade::new(&webgpu.device);
       let loading_args = LoadingArgs {
          webgpu: Rc::new(webgpu),
          global_uniform: Rc::new(RefCell::new(global_uniform)),
          color_texture_format: wgpu::TextureFormat::Rgba8Unorm,
+         premade: Rc::new(premade),
       };
       let mut demo_loader = DemoLoadingProcess::new(loading_args, GraphicsLevel::Medium);
       demo_loader.compile_shaders();

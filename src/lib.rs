@@ -62,6 +62,7 @@ impl AsRef<str> for DemoId {
 mod wasm {
 
 use crate::env::log_init;
+use crate::renderer::webgpu::Premade;
 use crate::renderer::{self, LoadingArgs, RenderArgs};
 use crate::renderer::{handle_keyboard, FrameStateRef};
 use crate::timer::ScopedTimer;
@@ -105,6 +106,7 @@ pub struct WasmInterface {
     previous_demo_id: Rc<RefCell<DemoId>>,
     pending_loading_demo: Rc<RefCell<Option<Pin<Box<dyn DemoLoadingFuture>>>>>,
     global_uniform: Rc<RefCell<renderer::GlobalUniform>>,
+    premade: Rc<Premade>,
     // canvas: Option<web_sys::HtmlCanvasElement>,
     // gl: Rc<web_sys::WebGl2RenderingContext>,
     // demo_state_history: Rc<RefCell<renderer::DemoStateHistory>>, //::new();
@@ -168,6 +170,7 @@ impl WasmInterface {
         demo_loading_apply_progress(0.7);
         demo_loading_finish();
 
+        let premade = Premade::new(&webgpu.device);
         Ok(Self {
             canvas,
             webgpu: Rc::new(webgpu),
@@ -182,6 +185,7 @@ impl WasmInterface {
             // demo_state_history: Rc::new(RefCell::new(renderer::DemoStateHistory::new())),
             // demo_history_playback: Rc::new(RefCell::new(renderer::DemoHistoryPlayback::new())),
             global_uniform,
+            premade: Rc::new(premade),
             #[cfg(feature = "imgui_web")]
             imgui: Rc::new(RefCell::new(None)),
         })
@@ -248,6 +252,7 @@ impl WasmInterface {
             webgpu: self.webgpu.clone(),
             global_uniform: self.global_uniform.clone(),
             color_texture_format: self.webgpu_config.borrow().format,
+            premade: self.premade.clone(),
         };
         self.demo.borrow_mut().as_mut()
             .start_switching_graphics_level(loading_args, level)
@@ -311,6 +316,7 @@ impl WasmInterface {
             webgpu: self.webgpu.clone(),
             global_uniform: self.global_uniform.clone(),
             color_texture_format: self.webgpu_config.borrow().format,
+            premade: self.premade.clone(),
         };
         *pending_loading_demo_ref.borrow_mut() = Some(
             Box::into_pin(renderer::wasm::start_loading_demo(demo_id,

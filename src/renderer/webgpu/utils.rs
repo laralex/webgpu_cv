@@ -68,6 +68,40 @@ impl Utils {
      }
    }
 
+   pub fn bilinear_sampler() -> wgpu::SamplerDescriptor<'static> {
+      wgpu::SamplerDescriptor {
+         label: Some("Sampler Bilinear"),
+         address_mode_u: wgpu::AddressMode::ClampToEdge,
+         address_mode_v: wgpu::AddressMode::ClampToEdge,
+         address_mode_w: wgpu::AddressMode::ClampToEdge,
+         mag_filter: wgpu::FilterMode::Linear,
+         min_filter: wgpu::FilterMode::Nearest,
+         mipmap_filter: wgpu::FilterMode::Nearest,
+         lod_min_clamp: 0.0,
+         lod_max_clamp: 32.0,
+         compare: None,
+         anisotropy_clamp: 1,
+         border_color: None,
+      }
+   }
+
+   pub fn nearest_sampler() -> wgpu::SamplerDescriptor<'static> {
+      wgpu::SamplerDescriptor {
+         label: Some("Sampler Nearest"),
+         address_mode_u: wgpu::AddressMode::ClampToEdge,
+         address_mode_v: wgpu::AddressMode::ClampToEdge,
+         address_mode_w: wgpu::AddressMode::ClampToEdge,
+         mag_filter: wgpu::FilterMode::Nearest,
+         min_filter: wgpu::FilterMode::Nearest,
+         mipmap_filter: wgpu::FilterMode::Nearest,
+         lod_min_clamp: 0.0,
+         lod_max_clamp: 32.0,
+         compare: None,
+         anisotropy_clamp: 1,
+         border_color: None,
+      }
+   }
+
    pub fn default_device_descriptor() -> wgpu::DeviceDescriptor<'static> {
       Utils::make_device_descriptor(wgpu::Features::PUSH_CONSTANTS)
    }

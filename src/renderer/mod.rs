@@ -13,6 +13,7 @@ mod shader_loader;
 pub mod demo_stub;
 pub mod demo_uv;
 pub mod demo_fractal;
+pub mod demo_mesh;
 mod preprocessor;
 
 use crate::GraphicsLevel;

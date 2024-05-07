@@ -22,7 +22,7 @@ use imgui::*;
 use imgui_wgpu::{Renderer, RendererConfig};
 use imgui_winit_support::winit::{event_loop::EventLoop, window::WindowBuilder};
 
-use my_renderer::renderer::{GlobalUniform, LoadingArgs, RenderArgs};
+use my_renderer::renderer::{demo_mesh, GlobalUniform, LoadingArgs, RenderArgs};
 use my_renderer::renderer::{handle_keyboard, demo_uv, imgui_web, FrameStateRef, webgpu::Webgpu, demo_stub, demo_fractal, DemoHistoryPlayback, DemoStateHistory, ExternalState, IDemo};
 use my_renderer::{DemoId, GraphicsLevel};
 use my_renderer::env::log_init;
@@ -68,8 +68,7 @@ struct State<'window> {
    imgui_platform: imgui_winit_support::WinitPlatform,
    imgui_last_cursor: Option<Option<imgui::MouseCursor>>,
    imgui_exports: ImguiExports,
-   // demos_names: [&str; 3],
-   demos_ids: [&'static DemoId; 3],
+   demos_ids: &'static [&'static DemoId],
    demo_idx: i32,
 }
 
@@ -99,6 +98,7 @@ impl<'window> State<'window> {
         DemoId::Stub => demo_stub::Demo::start_loading(),
         DemoId::Uv => demo_uv::Demo::start_loading(loading_args, self.demo_state.graphics_level()),
         DemoId::Fractal => demo_fractal::Demo::start_loading(loading_args, self.demo_state.graphics_level()),
+        DemoId::Mesh => demo_mesh::Demo::start_loading(loading_args, self.demo_state.graphics_level()),
         _ => demo_stub::Demo::start_loading(),
       //   DemoId::FrameGeneration => todo!(),
       //   DemoId::HeadAvatar => todo!(),
@@ -123,8 +123,9 @@ impl<'window> State<'window> {
       };
       let demo = demo_fractal::Demo::start_loading(loading_args, demo_state.graphics_level()).await;
       let demo_idx = 0 as i32;
-      let demos_ids = [
+      const DEMOS_IDS: &[&DemoId] = &[
          &DemoId::Fractal,
+         &DemoId::Mesh,
          &DemoId::Uv,
          &DemoId::Stub,
       ];
@@ -154,7 +155,7 @@ impl<'window> State<'window> {
          demo_state,
          demo,
          demo_idx,
-         demos_ids,
+         demos_ids: &DEMOS_IDS,
          demo_state_history: DemoStateHistory::new(),
          demo_history_playback: DemoHistoryPlayback::new(),
          previous_timestamp_ms: 0.0,

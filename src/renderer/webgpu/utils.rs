@@ -5,6 +5,32 @@ use super::uniform::BindGroupInfo;
 pub struct Utils;
 
 impl Utils {
+   pub fn default_renderpass<'a>(encoder: &'a mut wgpu::CommandEncoder, color: &'a Option<wgpu::TextureView>, depth: &'a Option<wgpu::TextureView>) -> wgpu::RenderPass<'a> {
+      encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+         label: Some("Render Pass"),
+         color_attachments: &[color.as_ref().map(|c| wgpu::RenderPassColorAttachment {
+            view: c,
+            resolve_target: None,
+            ops: wgpu::Operations {
+               load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+               store: wgpu::StoreOp::Store,
+            },
+         })],
+         depth_stencil_attachment: depth.as_ref().map(|d| wgpu::RenderPassDepthStencilAttachment {
+            view: d,
+            depth_ops: Some(wgpu::Operations {
+               load: wgpu::LoadOp::Clear(1.0),
+               store: wgpu::StoreOp::Discard,
+            }),
+            stencil_ops: Some(wgpu::Operations {
+               load: wgpu::LoadOp::Clear(0),
+               store: wgpu::StoreOp::Discard,
+            }),
+         }),
+         occlusion_query_set: None,
+         timestamp_writes: None,
+      })
+   }
    pub fn surface_view(surface_texture: &SurfaceTexture) -> wgpu::TextureView {
       surface_texture.texture.create_view(
          &wgpu::TextureViewDescriptor::default())

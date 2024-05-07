@@ -1,6 +1,6 @@
 use std::ops::RangeBounds;
 
-use wgpu::{util::DeviceExt, BufferAddress, VertexAttribute};
+use wgpu::util::DeviceExt;
 
 pub struct Buffer {
     pub buffer: wgpu::Buffer,
@@ -54,6 +54,20 @@ impl<'a> Buffer {
         }
     }
 
+    pub fn new_index_init(device: &wgpu::Device, contents: &[u8], dtype: wgpu::IndexFormat, usage: wgpu::BufferUsages, label: Option<&str>) -> IndexBuffer {
+        let usage = wgpu::BufferUsages::INDEX.union(usage);
+        let buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor { label, contents, usage }
+        );
+        let num_indices = contents.len() as u32 / match dtype {
+            wgpu::IndexFormat::Uint16 => 2,
+            wgpu::IndexFormat::Uint32 => 4,
+        };
+        IndexBuffer {
+            buffer, dtype, num_indices
+        }
+    }
+
 }
 
 pub struct VertexBuffer {
@@ -70,7 +84,7 @@ impl<'a> VertexBuffer {
         render_pass.set_vertex_buffer(slot, self.buffer.slice(..));
     }
 
-    pub fn bind_slice<S>(&'a self, render_pass: &mut wgpu::RenderPass<'a>, slot: u32, bounds: S) where S: RangeBounds<BufferAddress> {
+    pub fn bind_slice<S>(&'a self, render_pass: &mut wgpu::RenderPass<'a>, slot: u32, bounds: S) where S: RangeBounds<wgpu::BufferAddress> {
         render_pass.set_vertex_buffer(slot, self.buffer.slice(bounds));
     }
 }
@@ -95,20 +109,6 @@ pub struct IndexBuffer {
 
 #[allow(unused)]
 impl<'a> IndexBuffer {
-    pub fn new(device: &wgpu::Device, contents: &[u8], dtype: wgpu::IndexFormat, usage: wgpu::BufferUsages, label: Option<&str>) -> Self {
-        let usage = wgpu::BufferUsages::INDEX.union(usage);
-        let buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor { label, contents, usage }
-        );
-        let num_indices = contents.len() as u32 / match dtype {
-            wgpu::IndexFormat::Uint16 => 2,
-            wgpu::IndexFormat::Uint32 => 4,
-        };
-        Self {
-            buffer, dtype, num_indices
-        }
-    }
-
     pub fn bind(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
         render_pass.set_index_buffer(self.buffer.slice(..), self.dtype);
     }
@@ -117,12 +117,12 @@ impl<'a> IndexBuffer {
         render_pass.set_index_buffer(self.buffer.slice(..), dtype);
     }
 
-    pub fn bind_slice<S>(&'a self, render_pass: &'a mut wgpu::RenderPass<'a>, bounds: S) where S: RangeBounds<BufferAddress> {
+    pub fn bind_slice<S>(&'a self, render_pass: &'a mut wgpu::RenderPass<'a>, bounds: S) where S: RangeBounds<wgpu::BufferAddress> {
         render_pass.set_index_buffer(self.buffer.slice(bounds), self.dtype);
     }
 }
 
-fn vertex_layout<T: Sized>(attributes: &[VertexAttribute]) -> wgpu::VertexBufferLayout {
+fn vertex_layout<T: Sized>(attributes: &[wgpu::VertexAttribute]) -> wgpu::VertexBufferLayout {
     wgpu::VertexBufferLayout {
         array_stride: std::mem::size_of::<T>() as wgpu::BufferAddress,
         step_mode: wgpu::VertexStepMode::Vertex,
@@ -133,8 +133,8 @@ fn vertex_layout<T: Sized>(attributes: &[VertexAttribute]) -> wgpu::VertexBuffer
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct VertexPosUv {
-    position: [f32; 3],
-    uv: [f32; 2],
+    pub position: [f32; 3],
+    pub uv: [f32; 2],
 }
 
 #[allow(unused)]
@@ -150,9 +150,9 @@ impl VertexPosUv {
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct VertexPosUvNormal {
-    position: [f32; 3],
-    uv: [f32; 2],
-    normal: [f32; 3],
+    pub position: [f32; 3],
+    pub uv: [f32; 2],
+    pub normal: [f32; 3],
 }
 
 #[allow(unused)]

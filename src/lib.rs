@@ -34,6 +34,7 @@ impl AsRef<str> for GraphicsLevel {
 pub enum DemoId {
     Stub,
     Uv,
+    Mesh,
     Fractal,
     FrameGeneration,
     HeadAvatar,
@@ -47,6 +48,7 @@ impl AsRef<str> for DemoId {
         match self {
             DemoId::Stub => "Stub",
             DemoId::Uv => "Uv Sandbox",
+            DemoId::Mesh => "Mesh",
             DemoId::Fractal => "Mandelbrot Fractal",
             DemoId::FrameGeneration => "Frame Generation",
             DemoId::HeadAvatar => "Head Avatar",

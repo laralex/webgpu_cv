@@ -7,6 +7,7 @@ use super::{preprocessor::Preprocessor, webgpu::utils::Utils};
 pub enum VertexShaderVariant {
    TriangleFullscreen = 0,
    TriangleColored = 1,
+   Passthrough = 2,
 }
 
 // shader enum -> source code during compilation
@@ -16,6 +17,7 @@ impl AsRef<str> for VertexShaderVariant {
       match self {
          TriangleFullscreen => include_str!("shaders/triangle_fullscreen.vs.wgsl"),
          TriangleColored => include_str!("shaders/triangle_colored.vs.wgsl"),
+         Passthrough => include_str!("shaders/passthrough.vs.wgsl"),
       }
    }
 }
@@ -27,6 +29,7 @@ impl AsRef<std::path::Path> for VertexShaderVariant {
       match self {
          TriangleFullscreen => "shaders/triangle_fullscreen.vs.wgsl".as_ref(),
          TriangleColored => "shaders/triangle_colored.vs.wgsl".as_ref(),
+         Passthrough => "shaders/passthrough.vs.wgsl".as_ref(),
       }
     }
 }

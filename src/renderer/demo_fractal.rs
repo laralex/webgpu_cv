@@ -350,26 +350,12 @@ impl IDemo for Demo {
          self.fractal_uniform_buffer.write(&args.webgpu.queue, self.fractal_buffer_offset, &[self.fractal_uniform_data]);
       }
 
-      let view = Utils::surface_view(args.backbuffer);
+      let color = Some(Utils::surface_view(args.backbuffer));
       let mut encoder = args.webgpu.device.create_command_encoder(
          &wgpu::CommandEncoderDescriptor { label: Some("Render Encoder"), });
 
       {
-         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-               label: Some("Render Pass"),
-               color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                  view: &view,
-                  resolve_target: None,
-                  ops: wgpu::Operations {
-                     load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                     store: wgpu::StoreOp::Store,
-                  },
-               })],
-               depth_stencil_attachment: None,
-               occlusion_query_set: None,
-               timestamp_writes: None,
-         });
-
+         let mut render_pass = Utils::default_renderpass(&mut encoder, &color, &None);
          render_pass.set_pipeline(
             if self.use_antialiasing { &self.render_pipelines.antialiasing }
             else { &self.render_pipelines.default }
@@ -470,18 +456,6 @@ impl Demo {
 pub struct GraphicsSwitchingProcess {
    progress: f32,
    graphics_level: GraphicsLevel,
-}
-
-impl Dispose for GraphicsSwitchingProcess {
-   fn dispose(&mut self) {
-      log::warn!("Rust graphics switching drop {}", std::module_path!());
-   }
-}
-
-impl Drop for GraphicsSwitchingProcess {
-   fn drop(&mut self) {
-      self.dispose();
-   }
 }
 
 impl Progress for GraphicsSwitchingProcess {

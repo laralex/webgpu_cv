@@ -251,7 +251,7 @@
    justify-content: space-between;
    align-items: center;
    color: var(--color-theme-bold);
-   margin: 0rem 1rem 0rem 1rem;
+   margin: 0rem 1rem 0rem 0rem;
 }
 
 .year-separator {    

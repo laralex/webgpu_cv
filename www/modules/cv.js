@@ -3,6 +3,7 @@ import { DemoId } from '/wasm/index.js';
 import { localizeString, localizeUi } from '/modules/localization.js';
 import { Util } from '/modules/util.js';
 import { CURRENT_GRAPHICS_SWITCHING_PROGRESS } from '/modules/exports_to_wasm.js';
+import { localizeUiPostprocess } from './localization.js';
 
 const {div, button, i, label, img, svg, path, input, details, summary, p, br, li, a, option, select, span, ul, h1, h2, h3} = van.tags
 const SMOOTH = true;
@@ -133,7 +134,6 @@ function CvChapter({uniqueId, titleElement, isDefaultActive, bgValue, borderBgVa
       button({
          class: "cv-chapter-button btn expand-button ",
          style: "text-align: left; padding-left: 1rem;",
-         //style: () => getBackgroundColorStyle(bgValue, false, false),
          onclick: e => { onclick(); },
       }, div({
          class:"bg",
@@ -145,8 +145,7 @@ function CvChapter({uniqueId, titleElement, isDefaultActive, bgValue, borderBgVa
          style: () => `background: ${borderBgValue};`
       })),
       div({
-         class: () => extraInsideClasses + " inside flex-column " /* + (isDefaultActive.val ? " active " : " inactive ") */,
-         //style: () => getBackgroundColorStyle(bgValue, false, false) /* + ` box-shadow: inset 1em 0 0 0 rgb(${bgValue});` */,
+         class: () => extraInsideClasses + " inside flex-column "
       }, insideConstructor()),
    );
 }
@@ -237,9 +236,6 @@ function CvCareer(currentCvPage, chapterConnections, chapterId, chapterArgs) {
 
    return CvChapter({...chapterArgs,
       insideConstructor: () => {
-         // if (!currentCvPage.val) {
-         //    currentCvPage.val = data[0].id;
-         // }
          return Array.from(data, (x, i) => {
             const isActive = van.derive(() => x.id == currentCvPage.val);
             const onChange = () => { currentCvPage.val = x.id; };
@@ -262,9 +258,6 @@ function CvCareer(currentCvPage, chapterConnections, chapterId, chapterArgs) {
             const chapter = x.constructor(args);
             return chapter;
          });
-         // CvButton("button_career_earliest", "#FFF", () => {
-         //    activeCareer.val = ids[ids.length - 1];
-         // })
       }});
 }
 
@@ -332,9 +325,6 @@ function CvEducation(currentCvPage, chapterConnections, chapterId, chapterArgs) 
    populateConnections(chapterConnections, chapterId, data.map(x => x.id));
    return CvChapter({...chapterArgs,
       insideConstructor: () => {
-         // if (!currentCvPage.val) {
-         //    currentCvPage.val = data[0].id;
-         // }
          return Array.from(data, (x, i) => {
             const isActive = van.derive(() => x.id == currentCvPage.val);
             const onChange = () => { currentCvPage.val = x.id; };
@@ -354,14 +344,14 @@ function CvHuawei(chapterArgs) {
    chapterArgs.insideConstructor = () => {
       return div({class: "font-normalsize"},
          div({class: "flex-row flex-center", style: "margin-bottom: 0.5rem;"},
-            YearsBlock(Util.getYearsSpan(huaweiSeniorEmploymentDate, currentDate).concat(["Current"])),
+            YearsBlock(Util.getYearsSpan(huaweiSeniorEmploymentDate, currentDate).concat([localizeUi("current")])),
             div({class: "flex-column header"},
                div({class: "flex-row", style: "gap:0.9rem;margin-bottom: 0.5rem;"},
                   img({id: "cv-huawei-logo", src: "../assets/huawei-small.svg"}),
-                  p({class: "font-Large bold"}, "Frame prediction SDK for mobile games"),
+                  p({class: "font-Large bold"}, localizeUi("huawei_job_title")),
                ),
                LeftRightAlignedList({
-                  leftItems: [ () => p("Senior engineer"), ],
+                  leftItems: [ () => p(localizeUi("senior_engineer")), ],
                   rightItems: [ () => {
                      const seniorStr = formatDateDiff(huaweiSeniorEmploymentDate, currentDate);
                      return p(seniorStr.yearStr + " " + seniorStr.monthStr);
@@ -375,9 +365,9 @@ function CvHuawei(chapterArgs) {
          //    img({class: "huge", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/unity/unity-original-wordmark.svg" }),
          // ),
          ul(
-            li(Highlight("OpenGL / C++: "), "Experimented to speed up rendering of \"Genshin Impact\" game, via hooks of OpenGL commands"),
-            li(Highlight("Unity / C#: "), "Integrated an in-house frame prediction SDK as a Unity plugin (URP pipeline)"),
-            li("Overall, assisted to develop the ecosystem of the mobile operating system OpenHarmony"),
+            li(Highlight("OpenGL / C++: "), localizeUi("huawei_hooks")),
+            li(Highlight("Unity / C# / C++: "), localizeUi("huawei_unity_ff_sdk")),
+            li(localizeUi("huawei_ohos")),
          ),
        )
    }
@@ -392,13 +382,13 @@ function CvSamsung(chapterArgs) {
          div({class: "flex-column header"},
             div({class: "flex-row", style: "gap:1rem;margin-bottom: 0.5rem;"},
                img({id: "cv-samsung-logo", src: "../assets/samsung.svg"}),
-               p({class: "font-Large bold"}, "Neural Networks R&D"),
+               p({class: "font-Large bold"}, localizeUi("samsung_job_title")),
             ),
                LeftRightAlignedList({
                   leftItems: [
-                     () => p("Middle engineer"),
-                     () => p("Junior engineer"),
-                     () => p("Intern"),],
+                     () => p(localizeUi("middle_engineer")),
+                     () => p(localizeUi("junior_engineer")),
+                     () => p(localizeUi("intern_engineer")),],
                   rightItems: [
                      () => {
                         const middleStr = formatDateDiff(samsungMiddleEmploymentDate, samsungResignationDate, {yearsFullWord: false, monthsFullWord: false});
@@ -429,14 +419,14 @@ function CvSamsung(chapterArgs) {
          //    // img({class: "large", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/unity/unity-original-wordmark.svg" }),
          // ),
          ul(
-            li(Highlight("OpenGL / Java / Android: "), "Solely created a techdemo to render realistic human avatars, with:", ul(
-                li("rendering by neural networks, running 60 FPS in resolution 512x512px on Qualcomm NPU"),
-                li("my animation system and mesh skinning"),
-                li("augmented reality via ARCore"),
+            li(Highlight("OpenGL / Java / Android: "), localizeUi("samsung_ar_avatars"), ul(
+                li(localizeUi("samsung_rendering_nn")),
+                li(localizeUi("samsung_animation_system")),
+                li(localizeUi("samsung_arcore")),
                 )),
-            li(Highlight("Unity / C#: "), "Ported the techdemo as a Unity AR application"),
-            li(Highlight("Python / PyTorch: "), "Researched and published a paper on neural networks, at WACV 2024 conference: ", a({"href": "https://openaccess.thecvf.com/content/WACV2024/html/Bashirov_MoRF_Mobile_Realistic_Fullbody_Avatars_From_a_Monocular_Video_WACV_2024_paper.html"}, "Link")),
-            li("Completed a crucial yearly KPI of another team, being a solo developer among research scientists"),
+            li(Highlight("Unity / C#: "), localizeUi("samsung_unity")),
+            li(Highlight("Python / PyTorch: "), localizeUi("samsung_wacv"), a({"href": "https://openaccess.thecvf.com/content/WACV2024/html/Bashirov_MoRF_Mobile_Realistic_Fullbody_Avatars_From_a_Monocular_Video_WACV_2024_paper.html"}, localizeUi("link"))),
+            li(localizeUi("samsung_kpi")),
          )
       );
    };
@@ -462,16 +452,16 @@ function CvWacv2024(chapterArgs) {
 
          div({class: "flex-row flex-center", style: "margin-bottom:0.5rem;gap:1rem;"},
             span(
-               span("Project page"), ": ",
-               a({"href": "https://samsunglabs.github.io/MoRF-project-page/"}, "link")
+               span(localizeUi("project_page")), ": ",
+               a({"href": "https://samsunglabs.github.io/MoRF-project-page/"}, localizeUi("link"))
             ),
             span(
-               span("Proceedings"), ": ",
-               a({"href": "https://openaccess.thecvf.com/content/WACV2024/html/Bashirov_MoRF_Mobile_Realistic_Fullbody_Avatars_From_a_Monocular_Video_WACV_2024_paper.html"}, "link")
+               span(localizeUi("proceedings")), ": ",
+               a({"href": "https://openaccess.thecvf.com/content/WACV2024/html/Bashirov_MoRF_Mobile_Realistic_Fullbody_Avatars_From_a_Monocular_Video_WACV_2024_paper.html"}, localizeUi("link"))
             ),
             span(
                span("arXiv"), ": ",
-               a({"href": "https://arxiv.org/abs/2303.10275"}, "link")
+               a({"href": "https://arxiv.org/abs/2303.10275"}, localizeUi("link"))
             ),
          ),
          // LeftRightAlignedList({
@@ -486,12 +476,12 @@ function CvWacv2024(chapterArgs) {
          //          () => a({"href": "https://arxiv.org/abs/2303.10275"}, "link"),
          //       ],
          // }),
-         p(Highlight("Abstract: "), "The paper improves \"Deferred Neural Rendering\" approach, reducing overfitting to inconsistent training data, by learning offsets to neural texture coordinates for each training image, then discarding them to preserve real-time inference on mobile hardware"),
+         p(Highlight(localizeUi("abstract")), ": ", localizeUi("wacv2024_abstract")),
          ul({style: "margin-top:0.5rem;"},
-            li("I'm the second author of the paper"),
-            li("Researched the \"morphing\" idea of the paper"),
-            li("Developed the mobile phone demo that computes avatar images on mobile GPU and Qualcomm NPU in 30-60 FPS"),
-            li("Prepared a big part of the paper's text and all illustrations"),
+            li(localizeUi("wacv2024_author")),
+            li(localizeUi("wacv2024_morphing")),
+            li(localizeUi("wacv2024_demo")),
+            li(localizeUi("wacv2024_text")),
          ),
       )
    };
@@ -501,12 +491,12 @@ function CvWacv2024(chapterArgs) {
 function CvProjectWebcv(chapterArgs) {
    chapterArgs.insideConstructor = () => {
       return div({class: "font-normalsize"},
-         div({class: "flex-row flex-center", style: "margin-bottom:0.5rem;gap:0.7rem;"},
-            YearsBlock(["6 months", "2024"]),
-            div({class: "flex-column"},
-               "By Aleksei Larionov",
+         div({class: "flex-row flex-center", style: "margin-bottom:0.5rem;gap:1.0rem;"},
+            YearsBlock([localizeUiPostprocess("month_short", (s) => "6 " + s), "2024"]),
+            div({class: "flex-column", style:"width:min-content;flex-grow:0.5;"},
+               localizeUi("webcv_author"),
                
-               a({href: "https://creativecommons.org/licenses/by/4.0/legalcode.en", target:"_blank", rel:"license noopener noreferrer", style: "display:inline-block;"}, "License: CC BY 4.0"),
+               a({href: "https://creativecommons.org/licenses/by/4.0/legalcode.en", target:"_blank", rel:"license noopener noreferrer", style: "display:inline-block;"}, localizeUi("webcv_license"), "CC BY 4.0"),
             ),
             div({class: "flex-column"},
                img({
@@ -516,7 +506,7 @@ function CvProjectWebcv(chapterArgs) {
                }),
                div(
                   // span("Source code"), ": ",
-                  a({"href": "https://github.com/laralex/my_web_cv"}, "Source code")
+                  a({"href": "https://github.com/laralex/my_web_cv"}, localizeUi("webcv_repo"))
                ),
             ),
             div({class: "flex-column"},
@@ -532,21 +522,21 @@ function CvProjectWebcv(chapterArgs) {
             ),
             
          ),
-         ul(li("Everything is designed and programmed from scratch"),
-            li("Graphics demos:",
+         ul(li(localizeUi("webcv_scratch")),
+            li(localizeUi("webcv_demos"),
                ul(
-                  li("All made with: ", Highlight("Rust, WebAssembly, WebGPU")),
-                  li("My implementation of non-blocking demo loading via ", a({href: "https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame"}, "requestAnimationFrame"), " API")
+                  li(localizeUi("webcv_made_with"), Highlight("Rust, WebAssembly, WebGPU")),
+                  li(localizeUi("webcv_loading"), a({href: "https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame"}, "requestAnimationFrame"), " API")
                ),
             ),
-            li("Web UI:",
+            li(localizeUi("webcv_web"),
                ul(
-                  li("Plain", Highlight(" JS, HTML, CSS "), "and tiny library VanJS for reactive UI"),
-                  li("The navigation over CV chapters supports mouse wheel scrolling, with transition animations in plain CSS"),
-                  li("Easy deployment, no complexity of NodeJS, no webpack"),
+                  li(localizeUi("webcv_plain"), Highlight(" JS, HTML, CSS "), localizeUi("webcv_vanjs")),
+                  li(localizeUi("webcv_wheel")),
+                  li(localizeUi("webcv_easy")),
                )
             ),
-            li("Deployed on my web-server (lighttpd) via GitHub CI/CD"),
+            li(localizeUi("webcv_deploy")),
          ),
       )
    }
@@ -557,7 +547,7 @@ function CvProjectTreesRuler(chapterArgs) {
    chapterArgs.insideConstructor = () => {
       return div({class: "font-normalsize"},
          div({class: "flex-row flex-center", style: "margin-bottom:0.5rem;gap:0.8rem;"},
-            YearsBlock(["3 weeks", "2023"]),
+            YearsBlock(["1 month", "2023"]),
             div({class: "flex-column"},
                "By Aleksei Larionov",
                

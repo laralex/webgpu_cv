@@ -11,6 +11,7 @@ CARGO_BUILD_COMMAND?=build
 
 .PHONY: install
 install:
+	sudo apt install lld
 	rustup toolchain install stable-x86_64-unknown-linux-gnu
 	rustup $(CARGO_TOOLCHAIN) target add wasm32-unknown-unknown
 	cargo install -f wasm-bindgen-cli

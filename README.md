@@ -1,17 +1,10 @@
 # Web CV of Alexey Larionov
-WebGL2 + Rust + JS (VanJS) + GitHub actions CI
+WebGPU + Rust + JS (VanJS) + CI
 
 Known issues:
-- No chapters content
-   - publication WACV 2024
-   - project web-site
-   - project trees-ruler
 - Demos overall:
-   - imgui (own platform support crate?)
    - fullscreen with F11 is weird (js error in firefox)
    - dynamic resolution confgurable per demo / pixel budget of the screen
-   - standalone app without wasm (for faster debugging)
-      - compiles for eternity
    - simple draw abstractions:
       - blit texture
       - axes
@@ -26,7 +19,6 @@ Known issues:
       - triangle count
       - vertex count
       - resolution
-      - debug mode 
 - Demos:
    - frame prediction
    - fractal with high precision (perturbation)
@@ -38,3 +30,4 @@ Known issues:
    - procedural generation
 - Mobile layout
 - Sometimes English font is not loaded
+- CV localization (Russian, Korean, French?)

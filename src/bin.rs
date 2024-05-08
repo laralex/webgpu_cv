@@ -125,11 +125,11 @@ impl<'window> State<'window> {
          color_texture_format: surface.config.format,
          premade: premade.clone(),
       };
-      let demo = demo_fractal::Demo::start_loading(loading_args, demo_state.graphics_level()).await;
+      let demo = demo_mesh::Demo::start_loading(loading_args, demo_state.graphics_level()).await;
       let demo_idx = 0 as i32;
       const DEMOS_IDS: &[&DemoId] = &[
-         &DemoId::Fractal,
          &DemoId::Mesh,
+         &DemoId::Fractal,
          &DemoId::Uv,
          &DemoId::Stub,
       ];

@@ -492,10 +492,9 @@ function CvProjectWebcv(chapterArgs) {
    chapterArgs.insideConstructor = () => {
       return div({class: "font-normalsize"},
          div({class: "flex-row flex-center", style: "margin-bottom:0.5rem;gap:1.0rem;"},
-            YearsBlock([localizeUiPostprocess("month_short", (s) => "6 " + s), "2024"]),
+            YearsBlock([localizeUiPostprocess("months_many_full", (s) => "6 " + s), "2024"]),
             div({class: "flex-column", style:"width:min-content;flex-grow:0.5;"},
                localizeUi("webcv_author"),
-               
                a({href: "https://creativecommons.org/licenses/by/4.0/legalcode.en", target:"_blank", rel:"license noopener noreferrer", style: "display:inline-block;"}, localizeUi("webcv_license"), "CC BY 4.0"),
             ),
             div({class: "flex-column"},
@@ -547,11 +546,10 @@ function CvProjectTreesRuler(chapterArgs) {
    chapterArgs.insideConstructor = () => {
       return div({class: "font-normalsize"},
          div({class: "flex-row flex-center", style: "margin-bottom:0.5rem;gap:0.8rem;"},
-            YearsBlock(["1 month", "2023"]),
-            div({class: "flex-column"},
-               "By Aleksei Larionov",
-               
-               a({href: "https://github.com/laralex/TreesRuler?tab=MIT-1-ov-file", target:"_blank", rel:"license noopener noreferrer", style: "display:inline-block;"}, "License: MIT"),
+            YearsBlock([localizeUiPostprocess("month_full", (s) => "1 " + s), "2023"]),
+            div({class: "flex-column", style: "width:min-content;flex-grow:0.5;"},
+               localizeUi("webcv_author"),
+               a({href: "https://github.com/laralex/TreesRuler?tab=MIT-1-ov-file", target:"_blank", rel:"license noopener noreferrer", style: "display:inline-block;"}, localizeUi("webcv_license"), "MIT"),
             ),
             div({class: "flex-column"},
                img({
@@ -561,7 +559,7 @@ function CvProjectTreesRuler(chapterArgs) {
                }),
                div(
                   // span("Source code"), ": ",
-                  a({"href": "https://github.com/laralex/TreesRuler"}, "Source code")
+                  a({"href": "https://github.com/laralex/TreesRuler"}, localizeUi("webcv_repo"))
                ),
             ),
             div({class: "flex-column"},
@@ -572,20 +570,20 @@ function CvProjectTreesRuler(chapterArgs) {
                }),
                div(
                   // span("PDF CV"), ": ",
-                  a({"href": localizeUi("trees_ruler_href")}, "Link")
+                  a({"href": localizeUi("treesruler_href")}, localizeUi("link"))
                ),
             ),
          ),
          // Highlight("Description: "),
-         p({style: "margin-bottom:0.5rem;"}, "The tool allows to", " ", span({class:"bold"}, "collect measurements of trees from photos")),
-         p("I designed it for forest scientists. It allows to:"),
+         p({style: "margin-bottom:0.5rem;"}, localizeUi("treesruler_tool"), " ", span({class:"bold"}, localizeUi("treesruler_collect"))),
+         p(localizeUi("treesruler_audience")),
          ul(
-            li("Freely adjust measurements by mouse, snap them to a grid, or set precisely in UI"),
-            li("Export or import the measurements from a local YAML file"),
-            li("Add, delete, duplicate, group measurements"),
-            li("Adjusting visualization and localization"),
+            li(localizeUi("treesruler_adjust")),
+            li(localizeUi("treesruler_yaml")),
+            li(localizeUi("treesruler_grouping")),
+            li(localizeUi("treesruler_settings")),
          ),
-         p({style: "margin-top:0.5rem;"}, "Made with: ", Highlight("JavaScript / p5.js"))
+         p({style: "margin-top:0.5rem;"}, localizeUi("treesruler_libs"), Highlight("JavaScript / p5.js"))
       )
    }
    return CvChapter(chapterArgs);
@@ -595,7 +593,7 @@ function CvProjectWillAndReason(chapterArgs) {
    chapterArgs.insideConstructor = () => {
       return div({class: "font-normalsize"},
          div({class: "flex-row flex-center", style: "margin-bottom:0.5rem;gap:0.8rem;"},
-            YearsBlock(["4 months", "2017"]),
+            YearsBlock([localizeUiPostprocess("months_full", (s) => "4 " + s), "2017"]),
             // div({class: "flex-column"},
             //    "Volunteering",
             //    // a({href: "https://github.com/laralex/TreesRuler?tab=MIT-1-ov-file", target:"_blank", rel:"license noopener noreferrer", style: "display:inline-block;"}, "License: MIT"),
@@ -608,7 +606,7 @@ function CvProjectWillAndReason(chapterArgs) {
                }),
                div(
                   // span("Source code"), ": ",
-                  a({"href": "https://vk.com/willreason"}, "Project page")
+                  a({"href": "https://vk.com/willreason"}, localizeUi("willreason_page"))
                ),
             ),
             div({class: "flex-column"},
@@ -618,20 +616,20 @@ function CvProjectWillAndReason(chapterArgs) {
                   width: "40",
                }),
                div(
-                  a({"href": "https://vk.com/video/@willreason"}, "Demo videos")
+                  a({"href": "https://vk.com/video/@willreason"}, localizeUi("willreason_videos"))
                )
             ),
          ),
          // Highlight("Description: "),
          p({class: "flex-row flex-center font-Large bold"}, "Will & Reason"),
-         p({class: "flex-row flex-center font-large italic"}, "(4X strategy game, unreleased)"),
-         p({style: "margin-top:0.5rem;"}, "I volunteered during inception of the project:"),
+         p({class: "flex-row flex-center font-large italic"}, localizeUi("willreason_strategy")),
+         p({style: "margin-top:0.5rem;"}, localizeUi("willreason_volunteer")),
          ul(
-            li("Implemented pathfinding prototype (A* algorithm)"),
-            li("Developed parts of HUD and game logic of units"),
-            li("Engaged in game design process"),
+            li(localizeUi("willreason_pathfinding")),
+            li(localizeUi("willreason_ui")),
+            li(localizeUi("willreason_game_design")),
          ),
-         p({style: "margin-top:0.5rem;"}, "Made with: ", Highlight("Unity / C#"))
+         p({style: "margin-top:0.5rem;"}, localizeUi("willreason_libs"), Highlight("Unity / C#"))
       )
    }
    return CvChapter(chapterArgs);
@@ -643,11 +641,11 @@ function CvMaster(chapterArgs) {
          div({class: "flex-row flex-center", style: "margin-bottom: 0.5rem;"},
             YearsBlock(Util.getYearsSpan(new Date(2020, 0), new Date(2022, 0))),
             div({class: "flex-column", style: "align-items:center; gap:0.2rem;"},
-               p({class: "font-Large"}, "MSc of Information Science"),
-               LeftRightAlignedList({leftItems: [ () => p("with Honors"), ], rightItems: [ () => p("GPA 5/5"), ], }),
+               p({class: "font-Large"}, localizeUi("master_title")),
+               LeftRightAlignedList({leftItems: [ () => p(localizeUi("master_honors")), ], rightItems: [ () => p(localizeUi("master_gpa")), ], }),
                div({style: "height:0.5rem;"}),
                img({id: "cv-skoltech-logo", src: "../assets/Skoltech_Logo.svg"}),
-               p("Skolkovo Institute of Science & Technology"),
+               p(localizeUi("master_university")),
             )
          ),
          // div({class: "icons"},
@@ -656,9 +654,9 @@ function CvMaster(chapterArgs) {
          //    img({class: "huge", src: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/unity/unity-original-wordmark.svg" }),
          // ),
          ul(
-            li("Researched augmented reality based on neural networks, supervised by renowned ", a({href: "https://scholar.google.com/citations?user=gYYVokYAAAAJ&hl=en"}, "Dr. Victor Lempitsky")),
-            li("Defended the thesis on real-time rendering via neural networks on mobile hardware"),
-            li("Have taken courses on:", ul(li("Machine Learning / Deep Learning"),li("3D Computer Vision"),li("Parallel computing"),li("Unity game engine"),)
+            li(localizeUi("master_research"), a({href: "https://scholar.google.com/citations?user=gYYVokYAAAAJ&hl=en"}, localizeUi("master_victor"))),
+            li(localizeUi("master_thesis")),
+            li(localizeUi("master_courses"), ul(li(localizeUi("master_deeplearning")),li(localizeUi("master_3dcv")),li(localizeUi("master_parallel")),li(localizeUi("master_unity")),)
             ),
          ),
        )
@@ -673,11 +671,11 @@ function CvBachelor(chapterArgs) {
             // YearsBlock([2016, '•••', 2020]),
             YearsBlock(Util.getYearsSpan(new Date(2016, 0), new Date(2020, 0))),
             div({class: "flex-column", style: "align-items:center; gap:0.2rem;"},
-               p({class: "font-Large"}, "BSc of Computer Science"),
-               LeftRightAlignedList({leftItems: [ () => p("with Honors"), ], rightItems: [ () => p("GPA 5/5"), ], }),
+               p({class: "font-Large"}, localizeUi("bachelor_title")),
+               LeftRightAlignedList({leftItems: [ () => p(localizeUi("master_honors")), ], rightItems: [ () => p(localizeUi("master_gpa")), ], }),
                div({style: "height:0.5rem;"}),
                img({id: "cv-polytech-logo", src: "../assets/polytech_logo_small.svg"}),
-               p("Peter The Great St. Petersburg Polytechnic University"),
+               p(localizeUi("bachelor_university")),
             )
          ),
          // div({class: "icons"},
@@ -687,11 +685,11 @@ function CvBachelor(chapterArgs) {
          //    img({class: "huge", src: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/oracle/oracle-original.svg" }),
          // ),
          ul(
-            li("Winner of a project marathon jointly with TU Graz (Austria)"),
-            li("Twice half-finalist of ICPC world olympiad"),
-            li("\"Student of the year\" badge"),
-            li("Defended the thesis on procedural generation of 3D meshes"),
-            li("Have taken courses on:", ul(li("Math (all core fields)"),li("Computer Architecture"),li("Parallel computing"),li("Oracle Database administration"))),
+            li(localizeUi("bachelor_austria")),
+            li(localizeUi("bachelor_icpc")),
+            li(localizeUi("bachelor_badge")),
+            li(localizeUi("bachelor_thesis")),
+            li(localizeUi("master_courses"), ul(li(localizeUi("bachelor_math")),li(localizeUi("bachelor_architecture")),li(localizeUi("master_parallel")),li(localizeUi("bachelor_oracle")))),
          ),
        )
    }

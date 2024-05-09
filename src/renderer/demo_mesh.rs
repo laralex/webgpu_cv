@@ -1,6 +1,6 @@
 use std::rc::Rc;
 use futures::Future;
-use wgpu::{BufferUsages, TextureView};
+use wgpu::BufferUsages;
 
 use crate::renderer::pipeline_loader::RenderPipelineFlatDescriptor;
 use crate::renderer::webgpu::Utils;

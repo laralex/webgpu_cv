@@ -1,4 +1,3 @@
-
 const {div, button, i, label, img, svg, path, input, details, summary, p, li, a, option, select, span, ul, h1, h2, h3} = van.tags
 
 const ADD_PARALLAX = true;
@@ -43,7 +42,7 @@ export const BUILD_DATA = {
 // import mywasm from 'my-wasm';
 // import init, { renderLoop, resize, wasm_startup, setFpsLimit, setGraphicsLevel } from '/wasm/index.js';
 import init, { WasmInterface, GraphicsLevel } from '/wasm/index.js';
-import { UI_STRINGS, CURRENT_LANGUAGE, localizeString, localizeUi, localizeUiPostprocess } from '/modules/localization.js';
+import { UI_STRINGS, CURRENT_LANGUAGE, localizeString, localizeUi, localizeUiPostprocess, reportMissingLocalization } from '/modules/localization.js';
 import { Util } from '/modules/util.js';
 import { CvContent, DemoDescription, getDemoId } from '/modules/cv.js';
 import { CURRENT_DEMO_LOADING_PROGRESS, CURRENT_GRAPHICS_SWITCHING_PROGRESS, demo_loading_apply_progress, demo_loading_finish } from '/modules/exports_to_wasm.js';
@@ -849,6 +848,7 @@ window.onload = function() {
    loadBuildData().finally(() => {
       console.log("LOADED BUILD_DATA", BUILD_DATA);
       if (BUILD_DATA.debug) {
+         reportMissingLocalization();
          IS_INTRO_SHOWN.val = false;
       }
       if (IS_INTRO_SHOWN.val === true) {

@@ -30,4 +30,5 @@ Known issues:
    - procedural generation
 - Mobile layout
 - Sometimes English font is not loaded
-- CV localization (Russian, Korean, French?)
+- CV localization (Korean, French?)
+- Choose wgpu backend from JS, check backend in wasm

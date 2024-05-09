@@ -23,7 +23,7 @@ export const UI_STRINGS = (function getLocalization() {
       cv: {en: "CV", ru: "CV", kr: "이력서"},
       pdf: {en: "in PDF", ru: "в PDF", kr: "PDF"},
       pdf_cv_href: {en: "./assets/__softlink_cv_eng.pdf", ru: "./assets/__softlink_cv_rus.pdf", kr: "./assets/__softlink_cv_eng.pdf"},
-      trees_ruler_href: {en: "./trees_ruler/eng", ru: "./trees_ruler/rus", kr: "./trees_ruler/eng"},
+      treesruler_href: {en: "./trees_ruler/eng", ru: "./trees_ruler/rus", kr: "./trees_ruler/eng"},
       web_cv_github: {en: "Source code", ru: "Исходный код", kr: "데모 소스 코드"},
       clear_cookies_button: {en: "Reload CV", ru: "Сбросить сайт", kr: "설정을 초기화"},
       skills_title: {en: "Extra skills", ru: "Прочие компетенции", kr: "다른 기술들"},
@@ -49,18 +49,18 @@ export const UI_STRINGS = (function getLocalization() {
       career_samsung: {en: "Samsung AI Center", ru: "Samsung AI Center", kr: "삼성 AI 연구센터"},
       career_freelance: {en: "Freelancing", ru: "Фриланс", kr: "프리랜소"},
       publications_wacv_2024: {en: "Scientific paper, WACV 2024", ru: "Научная статья на WACV 2024", kr: "연구 논문 (WACV 2024)"},
-      project_this_cv: {en: "Interactive web-CV, you're here :)", ru: "Интерактивное веб-CV, вы тут :)", kr: "이 이력서"},
+      project_this_cv: {en: "Interactive web-CV, you're here :)", ru: "Интерактивное веб-резюме, Вы тут :)", kr: "이 이력서"},
       project_image_processing_tool: {en: "Image processing web-tool", ru: "Веб инструмент для фотографий", /*kr: ""*/},
       // project_infinite_fractal: {en: "High precision fractal visualization", ru: "Визуализация фракталов высокой точности", /*kr: "이 이력서"*/},
       project_will_and_reason: {en: "GameDev volunteering", ru: "Волонтер в GameDev проекте", /*kr: ""*/},
       education_master: {en: "Master of Information Science", ru: "Магистратура", kr: "석사"},
       education_bachelor: {en: "Bachelor of Computer Science", ru: "Бакалавриат", kr: "학사"},
-      demo_triangle: {en: "Triangle", /* ru: "", kr: "" */},
-      demo_frame_generation: {en: "Frame generation", /* ru: "", kr: "" */},
-      demo_head_avatar: {en: "Head avatar animation", /* ru: "", kr: "" */ },
-      demo_full_body_avatar: {en: "Full-body avatar animation", /* ru: "", kr: "" */ },
-      demo_fractal: {en: "The fractal zooming has increased precision compared to naive float32, by using Dekker's double-double arithmetic and perturbation theory", /* ru: "", kr: "" */},
-      demo_procedural_generation: {en: "Procedural mesh generation", /* ru: "", kr: "" */ },
+      demo_triangle: {en: "Triangle", ru: "Просто треугольник", /*kr: "" */},
+      demo_frame_generation: {en: "Frame generation", ru: "Генерация кадров", /* kr: "" */},
+      demo_head_avatar: {en: "Head avatar animation", ru: "Анимированный аватар головы", /* kr: "" */ },
+      demo_full_body_avatar: {en: "Full-body avatar animation",  ru: "Анимированный аватар тела человека", /* kr: "" */ },
+      demo_fractal: {en: "The fractal zooming has increased precision compared to naive float32, by using Dekker's double-double arithmetic and perturbation theory", ru: "Зум во фрактал, при этом точность выше чем у наивного подсчета во float32, за счет подходов: Dekker double-double arithmetic, perturbation theory", /*  kr: "" */},
+      demo_procedural_generation: {en: "Procedural mesh generation",  ru: "Процедурная генерация меша", /* kr: "" */ },
       intro_hi: {en: "Hi, I'm Alexey :)", ru: "Привет, меня зовут Лёша :)", kr: "안녕하세요! 저는 \"료샤\"라고 합니다 :)"},
       intro_enjoy_resume: {en: "Enjoy my interactive résumé !", ru: "Вы наткнулись на мое интерактивное резюме", kr: "제 이력서를 방문해줘서 반갑습니다!"},
       intro_using: {en: "I made everything from scratch, using", ru: "Все здесь разработано мной с нуля:", kr: "여기에 모두 것을 저 스스로 만들었습니다."},
@@ -115,10 +115,67 @@ export const UI_STRINGS = (function getLocalization() {
       webcv_wheel: { en: "The navigation over CV chapters supports mouse wheel scrolling, with transition animations in plain CSS", ru: "Перемещение по главам резюме с помощью колеса мыши, анимации на простом CSS", /* kr: "" */ },
       webcv_easy: { en: "Easy deployment, no complexity of NodeJS, no webpack", ru: "Простой деплой, без NodeJS или WebPack", /* kr: "" */ },
       webcv_deploy: { en: "Deployed on my web-server (lighttpd) via GitHub CI/CD", ru: "Хостится на моем личном сервере lighttpd, деплой через GitHub CI/CD", /* kr: "" */ },
-      a: { en: "", ru: "", /* kr: "" */ },
-      a: {en: "", ru: "", /* kr: "" */ },
+      treesruler_tool: {en: "The tool helps to", ru: "Позволяет", /* kr: "" */ },
+      treesruler_collect: {en: "collect measurements of trees from photos", ru: "замерять деревья по фото", /* kr: "" */ },
+      treesruler_audience: {en: "I designed it for forest scientists. It allows to:", ru: "Я разработал его для ученых лесотехников. Можно:", /* kr: "" */ },
+      treesruler_adjust: {en: "Freely adjust measurements by mouse, snap them to a grid, or set precisely in UI", ru: "Свободно размещать линии, выравнивать по сетке, или точно настраивать в UI", /* kr: "" */ },
+      treesruler_yaml: {en: "Export or import the measurements from a local YAML file", ru: "Делать экспорт/импорт в YAML файлы", /* kr: "" */ },
+      treesruler_grouping: {en: "Add, delete, duplicate, group measurements", ru: "Клонировать, удалять, группировать замеры", /* kr: "" */ },
+      treesruler_settings: {en: "Adjusting visualization and localization", ru: "Конфигурировать стиль отрисовки", /* kr: "" */ },
+      treesruler_libs: {en: "Made with: ", ru: "Сделал с помощью: ", /* kr: "" */ },
+      willreason_page: {en: "Project page", ru: "Страница проекта", /* kr: "" */ },
+      willreason_videos: {en: "Demo videos", ru: "Демо ролики", /* kr: "" */ },
+      willreason_strategy: {en: "(4X strategy game, unreleased)", ru: "4X стратегическая игра, не выпущена", /* kr: "" */ },
+      willreason_volunteer: {en: "I volunteered during inception of the project:", ru: "Волонтерствовал с самого начала проекта", /* kr: "" */ },
+      willreason_pathfinding: {en: "Implemented pathfinding prototype (A* algorithm)", ru: "Реализовал прототип поиска путей на гексогональной карте (А*)", /* kr: "" */ },
+      willreason_ui: {en: "Developed parts of HUD and game logic of units", ru: "Разрабатывал части UI и игровую логику юнитов", /* kr: "" */ },
+      willreason_game_design: {en: "Engaged in the game design process", ru: "Обсуждал детали гейм-дизайна", /* kr: "" */ },
+      willreason_libs: {en: "Made with: ", ru: "Сделано на: ", /* kr: "" */ },
+      master_title: {en: "MSc of Information Science", ru: "Магистр: Информационные науки и технологии", /* kr: "" */ },
+      master_honors: {en: "with Honors", ru: "с отличием", /* kr: "" */ },
+      master_gpa: {en: "GPA 5/5", ru: "балл 5/5", /* kr: "" */ },
+      master_university: {en: "Skolkovo Institute of Science & Technology", ru: "Сколковский Институт Науки и Технологий", kr: "Skolkovo Institute of Science & Technology" },
+      master_research: {en: "Researched augmented reality based on neural networks, supervised by renowned ", ru: "Исследовал дополненную реальность с рендерингом нейронными сетями, под руководством ", /* kr: "" */ },
+      master_victor: {en: "Dr. Victor Lempitsky", ru: "Виктора Лемпитского", /* kr: "" */ },
+      master_thesis: {en: "Defended the thesis on real-time rendering via neural networks on mobile hardware", ru: "Дипломная работа про рендеринг нейронными сетями в реальном времени на мобильных устройствах", /* kr: "" */ },
+      master_courses: {en: "I've taken courses on:", ru: "Прослушал курсы про", /* kr: "" */ },
+      master_deeplearning: {en: "Machine Learning / Deep Learning", ru: "Машинное / Глубинное обучение", /* kr: "" */ },
+      master_3dcv: {en: "3D Computer Vision", ru: "3D компьютерное зрение", /* kr: "" */ },
+      master_parallel: {en: "Parallel computing", ru: "Параллельные вычисления", /* kr: "" */ },
+      master_unity: {en: "Unity game engine", ru: "Игровой движок Unity", /* kr: "" */ },
+      bachelor_title: {en: "BSc of Computer Science", ru: "Бакалавр: Математическое обеспечение информационных систем", /* kr: "" */ },
+      bachelor_university: {en: "Peter The Great St. Petersburg Polytechnic University", ru: "Санкт-Петербургский Политехнический Университет Петра Великого", kr: "Peter The Great St. Petersburg Polytechnic University" },
+      bachelor_austria: {en: "Winner of a project marathon jointly with TU Graz (Austria)", ru: "Победитель проектного марафона совместно с TU Graz (Австрия)", /* kr: "" */ },
+      bachelor_icpc: {en: "Twice half-finalist of ICPC world olympiad", ru: "Дважды полуфиналист всемирной олимпиады ICPC", /* kr: "" */ },
+      bachelor_badge: {en: "\"Student of the year\" badge", ru: "Именные стипендии и звание \"Студент года\"", /* kr: "" */ },
+      bachelor_thesis: {en: "Defended the thesis on procedural generation of 3D meshes", ru: "Дипломная работа про процедурную генерацию 3D моделей зданий", /* kr: "" */ },
+      bachelor_math: {en: "Math (all core fields)", ru: "Основные разделы математики", /* kr: "" */ },
+      bachelor_architecture: {en: "Computer Architecture", ru: "Архитектуру компьютера", /* kr: "" */ },
+      bachelor_oracle: {en: "Oracle Database administration", ru: "Администрирование Oracle баз данных", /* kr: "" */ },
+      // a: {en: "", ru: "", /* kr: "" */ },
    };
 })()
+
+export function reportMissingLocalization() {
+  let missing = {
+    en: [], 
+    ru: [], 
+    kr: [], 
+    // fr: [],
+  }
+  Object.entries(UI_STRINGS).forEach((kv) => {
+    let key = kv[0];
+    let localizations = kv[1];
+    Object.keys(missing).forEach((lang) => {
+      if (!(lang in localizations) || !localizations[lang]) {
+        missing[lang].push(key);
+      }
+    })
+  });
+  Object.entries(missing).forEach((kv) =>
+    (kv[1].length > 0) ?
+    console.log("! missing localization lang=", kv[0], "keys=", kv[1]) : {});
+}
 
 export function localizeString(key, nullIfMissing = false) {
   return function() {

@@ -33,14 +33,14 @@ const samsungInternEmploymentDate   = new Date(2021,  6 - 1, 1);
 
 const CHAPTERS_DEMOS = {
    "__stub__":                         DemoId.Stub,
-   "career_huawei":                    DemoId.FrameGeneration,
-   "career_samsung":                   DemoId.HeadAvatar,
-   "publications_wacv_2024":           DemoId.FullBodyAvatar,
-   "project_this_cv":                  DemoId.Fractal,
-   "project_will_and_reason":          DemoId.Stub,
-   "project_image_processing_tool":    DemoId.Stub,
-   "education_master":                 DemoId.Stub,
-   "education_bachelor":               DemoId.ProceduralGeneration,
+   "career_huawei":                    DemoId.Fractal,
+   "career_samsung":                   DemoId.FullBodyAvatar,
+   "publications_wacv_2024":           DemoId.Fractal,
+   "project_this_cv":                  DemoId.FullBodyAvatar,
+   "project_will_and_reason":          DemoId.Fractal,
+   "project_image_processing_tool":    DemoId.FullBodyAvatar,
+   "education_master":                 DemoId.Fractal,
+   "education_bachelor":               DemoId.Stub,
 }
 
 const DEMOS_DATA = {};

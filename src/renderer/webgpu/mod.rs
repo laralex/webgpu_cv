@@ -5,19 +5,9 @@ pub mod draw;
 pub mod uniform;
 pub mod texture;
 
-use std::{cell::RefCell, rc::Rc};
-use super::{pipeline_loader::{PipelineLoader, RenderPipelineFlatDescriptor}, preprocessor::Preprocessor, shader_loader::{FragmentShaderVariant, ShaderLoader, VertexShaderVariant}};
-
-#[cfg(feature = "web")]
-const USE_SHADER_CACHE: bool = true;
-#[cfg(not(feature = "web"))]
-const USE_SHADER_CACHE: bool = false;
-const USE_PIPELINE_CACHE: bool = true;
 pub struct Webgpu {
    pub device: wgpu::Device,
    pub queue: wgpu::Queue,
-   shader_loader: RefCell<ShaderLoader>,
-   pipeline_loader: RefCell<PipelineLoader>,
 }
 
 pub struct WebgpuSurface<'window> {
@@ -123,9 +113,8 @@ impl Webgpu {
       };
 
       surface.configure(&device, &config);
-      let shader_loader = RefCell::new(ShaderLoader::new(USE_SHADER_CACHE));
-      let pipeline_loader = RefCell::new(PipelineLoader::new(USE_PIPELINE_CACHE));
-      ( canvas, Self { device, queue, shader_loader, pipeline_loader }, WebgpuSurface{surface, config} )
+      
+      ( canvas, Self { device, queue }, WebgpuSurface{surface, config} )
    }
 
    #[cfg(feature = "win")]
@@ -178,9 +167,7 @@ impl Webgpu {
       };
       surface.configure(&device, &config);
 
-      let shader_loader = RefCell::new(ShaderLoader::new(USE_SHADER_CACHE));
-      let pipeline_loader = RefCell::new(PipelineLoader::new(USE_PIPELINE_CACHE));
-      ( Self { device, queue, shader_loader, pipeline_loader }, WebgpuSurface{ surface, config } )
+      ( Self { device, queue }, WebgpuSurface{ surface, config } )
    }
 
    #[allow(unused)]
@@ -202,20 +189,6 @@ impl Webgpu {
          .await
          .unwrap();
 
-      let shader_loader = RefCell::new(ShaderLoader::new(USE_SHADER_CACHE));
-      let pipeline_loader = RefCell::new(PipelineLoader::new(USE_PIPELINE_CACHE));
-      Self {device, queue, shader_loader, pipeline_loader }
-   }
-
-   pub fn get_vertex_shader(&self, variant: VertexShaderVariant, preprocessor: Option<&mut Preprocessor>) -> Rc<wgpu::ShaderModule> {
-      self.shader_loader.borrow_mut().get_shader(&self.device, variant, preprocessor)
-   }
-
-   pub fn get_fragment_shader(&self, variant: FragmentShaderVariant, preprocessor: Option<&mut Preprocessor>) -> Rc<wgpu::ShaderModule> {
-      self.shader_loader.borrow_mut().get_shader(&self.device, variant, preprocessor)
-   }
-
-   pub fn get_pipeline(&self, flat_descriptor: &RenderPipelineFlatDescriptor) -> Rc<wgpu::RenderPipeline> {
-      self.pipeline_loader.borrow_mut().get_pipeline(&self.device, flat_descriptor)
+      Self {device, queue }
    }
 }

@@ -168,9 +168,9 @@ impl DemoLoadingProcess {
    }
 
    fn compile_shaders(&mut self) {
-      self.vertex_shader = Some(self.loading_args.webgpu
+      self.vertex_shader = Some(self.loading_args
          .get_vertex_shader(VERTEX_SHADER_VARIANT, None));
-      self.fragment_shader = Some(self.loading_args.webgpu
+      self.fragment_shader = Some(self.loading_args
          .get_fragment_shader(FRAGMENT_SHADER_VARIANT, None));
    }
 
@@ -225,7 +225,7 @@ impl DemoLoadingProcess {
          .create_pipeline_layout(&layout_descriptor);
       let vs = self.vertex_shader.take().unwrap();
       let fs = self.fragment_shader.take().unwrap();
-      self.render_pipeline = Some(self.loading_args.webgpu.get_pipeline(
+      self.render_pipeline = Some(self.loading_args.get_pipeline(
          &RenderPipelineFlatDescriptor::new(
          &layout_descriptor,
          &wgpu::RenderPipelineDescriptor {
@@ -381,13 +381,21 @@ impl GraphicsSwitchingProcess {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+   use std::cell::RefCell;
+   use crate::renderer::Premade;
 
-    #[test]
-    fn shaders_compile() {
-        let webgpu = futures::executor::block_on(Webgpu::new_offscreen());
-        webgpu.get_vertex_shader(VERTEX_SHADER_VARIANT, None);
-        webgpu.get_fragment_shader(FRAGMENT_SHADER_VARIANT, None);
-    }
+   use super::*;
 
+   #[test]
+   fn shaders_compile() {
+      let webgpu = futures::executor::block_on(Webgpu::new_offscreen());
+      let premade = Premade::new(&webgpu.device);
+      let loading_args = LoadingArgs {
+         webgpu: Rc::new(webgpu),
+         color_texture_format: wgpu::TextureFormat::Rgba8Unorm,
+         premade: Rc::new(RefCell::new(premade)),
+      };
+      let mut demo_loader = DemoLoadingProcess::new(loading_args, GraphicsLevel::Medium);
+      demo_loader.compile_shaders();
+   }
 }

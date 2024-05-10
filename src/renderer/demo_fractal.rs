@@ -191,14 +191,14 @@ impl DemoLoadingProcess {
 
    fn compile_shader_vert(&mut self) {
       let _t = ScopedTimer::new("compile_shader_vert");
-      let vertex_shader = self.loading_args.webgpu.get_vertex_shader(VERTEX_SHADER_VARIANT, None);
+      let vertex_shader = self.loading_args.get_vertex_shader(VERTEX_SHADER_VARIANT, None);
       self.vertex_shader = Some(vertex_shader);
    }
 
    fn compile_shader_frag_default(&mut self) {
       let _t = ScopedTimer::new("compile_shader_frag_default");
       let mut preprocessor = Preprocessor::new();
-      let fragment_shader_default = self.loading_args.webgpu.get_fragment_shader(FRAGMENT_SHADER_VARIANT, Some(&mut preprocessor));
+      let fragment_shader_default = self.loading_args.get_fragment_shader(FRAGMENT_SHADER_VARIANT, Some(&mut preprocessor));
       self.fragment_shader_default = Some(fragment_shader_default);
    }
 
@@ -206,7 +206,7 @@ impl DemoLoadingProcess {
       let _t = ScopedTimer::new("compile_shader_frag_aa");
       let mut preprocessor = Preprocessor::new();
       preprocessor.define("USE_ANTIALIASING", "1");
-      let fragment_shader_antialiasing = self.loading_args.webgpu.get_fragment_shader(FRAGMENT_SHADER_VARIANT, Some(&mut preprocessor));
+      let fragment_shader_antialiasing = self.loading_args.get_fragment_shader(FRAGMENT_SHADER_VARIANT, Some(&mut preprocessor));
       self.fragment_shader_antialiasing = Some(fragment_shader_antialiasing);
    }
 
@@ -228,12 +228,12 @@ impl DemoLoadingProcess {
    fn build_pipelines(&mut self) {
       let _t = ScopedTimer::new("create_pipelines");
       let mut builder = PipelineLayoutBuilder::new();
-      let premade = self.loading_args.premade.borrow();
-      builder = builder.with(&premade.global_uniform.bind_group_info);
+      // let premade = self.loading_args.premade.borrow_mut();
+      // builder = builder.with(&premade.global_uniform.bind_group_info);
       for group in self.uniform_groups.iter() {
          builder = builder.with(group);
       }
-      let pipeline_layout_descr = builder.build_descriptor(Some("Render Pipeline Layout"));
+      let pipeline_layout_descr = builder.build_descriptor(Some("Render Pipeline Layout")).clone();
       let vs = self.vertex_shader.take().unwrap();
       let fs = self.fragment_shader_default.take().unwrap();
       let fs_aa = self.fragment_shader_antialiasing.take().unwrap();
@@ -248,7 +248,7 @@ impl DemoLoadingProcess {
    fn build_render_pipeline(&self, label: &str, layout_descriptor: &wgpu::PipelineLayoutDescriptor, vs: &wgpu::ShaderModule, fs: &wgpu::ShaderModule) -> Rc<wgpu::RenderPipeline> {
       let _t = ScopedTimer::new("create_render_pipeline");
       let render_pipeline_layout = self.loading_args.webgpu.device.create_pipeline_layout(&layout_descriptor);
-      self.loading_args.webgpu.get_pipeline(&RenderPipelineFlatDescriptor::new(
+      self.loading_args.get_pipeline(&RenderPipelineFlatDescriptor::new(
          // &self.uniform_groups,
          layout_descriptor,
          &wgpu::RenderPipelineDescriptor {

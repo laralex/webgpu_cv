@@ -23,6 +23,8 @@ use wgpu::SurfaceTexture;
 
 use std::{cell::RefCell, pin::Pin, rc::Rc};
 
+use self::{pipeline_loader::RenderPipelineFlatDescriptor, preprocessor::Preprocessor, shader_loader::{FragmentShaderVariant, VertexShaderVariant}};
+
 //#[cfg(feature = "web")]
 pub mod wasm {
 
@@ -63,6 +65,20 @@ pub struct LoadingArgs {
    pub webgpu: Rc<Webgpu>,
    pub color_texture_format: wgpu::TextureFormat,
    pub premade: Rc<RefCell<Premade>>,
+}
+
+impl LoadingArgs {
+   pub fn get_vertex_shader(&self, variant: VertexShaderVariant, preprocessor: Option<&mut Preprocessor>) -> Rc<wgpu::ShaderModule> {
+      self.premade.borrow_mut().shader_loader.get_shader(&self.webgpu.device, variant, preprocessor)
+   }
+
+   pub fn get_fragment_shader(&self, variant: FragmentShaderVariant, preprocessor: Option<&mut Preprocessor>) -> Rc<wgpu::ShaderModule> {
+      self.premade.borrow_mut().shader_loader.get_shader(&self.webgpu.device, variant, preprocessor)
+   }
+
+   pub fn get_pipeline(&self, flat_descriptor: &RenderPipelineFlatDescriptor) -> Rc<wgpu::RenderPipeline> {
+      self.premade.borrow_mut().pipeline_loader.get_pipeline(&self.webgpu.device, flat_descriptor)
+   }
 }
 
 pub trait IDemo {

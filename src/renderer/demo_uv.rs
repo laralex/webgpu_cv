@@ -87,8 +87,8 @@ impl SimpleFuture for DemoLoadingProcess {
       use DemoLoadingStage::*;
       match self.stage {
          CompileShaders => {
-            let vertex_shader = self.loading_args.webgpu.get_vertex_shader(VERTEX_SHADER_VARIANT, None);
-            let fragment_shader = self.loading_args.webgpu.get_fragment_shader(FRAGMENT_SHADER_VARIANT, None);
+            let vertex_shader = self.loading_args.get_vertex_shader(VERTEX_SHADER_VARIANT, None);
+            let fragment_shader = self.loading_args.get_fragment_shader(FRAGMENT_SHADER_VARIANT, None);
             self.vertex_shader = Some(vertex_shader);
             self.fragment_shader = Some(fragment_shader);
             self.stage_percent = 0.6;
@@ -106,7 +106,7 @@ impl SimpleFuture for DemoLoadingProcess {
                &layout_descriptor);
             let vs = self.vertex_shader.take().unwrap();
             let fs = self.fragment_shader.take().unwrap();
-            self.render_pipeline = Some(self.loading_args.webgpu.get_pipeline(
+            self.render_pipeline = Some(self.loading_args.get_pipeline(
                &RenderPipelineFlatDescriptor::new(
                &layout_descriptor,
                &wgpu::RenderPipelineDescriptor {
@@ -290,13 +290,22 @@ impl GraphicsSwitchingProcess {
 
 #[cfg(test)]
 mod tests {
+    use std::cell::RefCell;
+
+    use crate::renderer::Premade;
+
     use super::*;
 
     #[test]
     fn shaders_compile() {
-        let webgpu = futures::executor::block_on(Webgpu::new_offscreen());
-        webgpu.get_vertex_shader(VERTEX_SHADER_VARIANT, None);
-        webgpu.get_fragment_shader(FRAGMENT_SHADER_VARIANT, None);
+        let webgpu = Rc::new(futures::executor::block_on(Webgpu::new_offscreen()));
+        let loader = LoadingArgs{
+            webgpu,
+            color_texture_format: wgpu::TextureFormat::Rgba8Unorm,
+            premade: Rc::new(RefCell::new(Premade::new(&webgpu.device))),
+        };
+        loader.get_vertex_shader(VERTEX_SHADER_VARIANT, None);
+        loader.get_fragment_shader(FRAGMENT_SHADER_VARIANT, None);
     }
 
 }

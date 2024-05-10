@@ -23,7 +23,7 @@ use imgui_wgpu::{Renderer, RendererConfig};
 use imgui_winit_support::winit::{event_loop::EventLoop, window::WindowBuilder};
 
 use my_renderer::renderer::{demo_mesh, GlobalUniform, LoadingArgs, RenderArgs};
-use my_renderer::renderer::{handle_keyboard, demo_uv, imgui_web, FrameStateRef, webgpu::{Webgpu, Premade}, demo_stub, demo_fractal, DemoHistoryPlayback, DemoStateHistory, ExternalState, IDemo};
+use my_renderer::renderer::{handle_keyboard, demo_uv, imgui_web, FrameStateRef, webgpu::Webgpu, demo_stub, demo_fractal, DemoHistoryPlayback, DemoStateHistory, ExternalState, IDemo, Premade};
 use my_renderer::{DemoId, GraphicsLevel};
 use my_renderer::env::log_init;
 

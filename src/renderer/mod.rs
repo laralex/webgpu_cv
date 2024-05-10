@@ -2,8 +2,8 @@ pub mod webgpu;
 pub mod imgui_web;
 use futures::Future;
 pub use webgpu::Webgpu;
-pub mod demo_state;
-pub use demo_state::*;
+pub mod engine_state;
+pub use engine_state::*;
 pub mod history;
 pub use history::*;
 pub mod global_uniform;
@@ -15,13 +15,13 @@ pub mod demo_uv;
 pub mod demo_fractal;
 pub mod demo_mesh;
 mod preprocessor;
+pub mod premade;
+pub use premade::*;
 
 use crate::GraphicsLevel;
 use wgpu::SurfaceTexture;
 
 use std::{cell::RefCell, pin::Pin, rc::Rc};
-
-use self::webgpu::Premade;
 
 //#[cfg(feature = "web")]
 pub mod wasm {
@@ -62,8 +62,7 @@ pub struct RenderArgs<'a> {
 pub struct LoadingArgs {
    pub webgpu: Rc<Webgpu>,
    pub color_texture_format: wgpu::TextureFormat,
-   pub global_uniform: Rc<RefCell<GlobalUniform>>,
-   pub premade: Rc<Premade>,
+   pub premade: Rc<RefCell<Premade>>,
 }
 
 pub trait IDemo {

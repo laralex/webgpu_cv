@@ -211,14 +211,14 @@ impl DemoLoadingProcess {
 
    fn build_pipelines(&mut self) {
       let mut builder = PipelineLayoutBuilder::new();
-      let global_uniform = self.loading_args.global_uniform.borrow();
-      builder = builder.with(&global_uniform.bind_group_info);
+      let premade = self.loading_args.premade.borrow();
+      builder = builder.with(&premade.global_uniform.bind_group_info);
       for group in self.uniform_groups.iter() {
          builder = builder.with(group);
       }
       let layout_descriptor = wgpu::PipelineLayoutDescriptor {
          label: Some("Render Pipeline Layout"),
-         bind_group_layouts: &[&global_uniform.bind_group_info.bind_group_layout],
+         bind_group_layouts: &[&premade.global_uniform.bind_group_info.bind_group_layout],
          push_constant_ranges: &[],
       };
       let render_pipeline_layout = self.loading_args.webgpu.device

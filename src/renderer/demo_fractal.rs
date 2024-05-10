@@ -228,8 +228,8 @@ impl DemoLoadingProcess {
    fn build_pipelines(&mut self) {
       let _t = ScopedTimer::new("create_pipelines");
       let mut builder = PipelineLayoutBuilder::new();
-      let global_uniform = self.loading_args.global_uniform.borrow();
-      builder = builder.with(&global_uniform.bind_group_info);
+      let premade = self.loading_args.premade.borrow();
+      builder = builder.with(&premade.global_uniform.bind_group_info);
       for group in self.uniform_groups.iter() {
          builder = builder.with(group);
       }
@@ -483,19 +483,17 @@ impl GraphicsSwitchingProcess {
 #[cfg(test)]
 mod tests {
    use std::cell::RefCell;
-   use crate::renderer::{webgpu::Premade, GlobalUniform};
+   use crate::renderer::Premade;
    use super::*;
 
     #[test]
    fn shaders_compile() {
       let webgpu = futures::executor::block_on(Webgpu::new_offscreen());
-      let global_uniform = GlobalUniform::new(&webgpu.device);
       let premade = Premade::new(&webgpu.device);
       let loading_args = LoadingArgs {
          webgpu: Rc::new(webgpu),
-         global_uniform: Rc::new(RefCell::new(global_uniform)),
          color_texture_format: wgpu::TextureFormat::Rgba8Unorm,
-         premade: Rc::new(premade),
+         premade: Rc::new(RefCell::new(premade)),
       };
       let mut demo_loader = DemoLoadingProcess::new(loading_args, GraphicsLevel::Medium);
       demo_loader.compile_shaders();

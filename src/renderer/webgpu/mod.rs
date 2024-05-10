@@ -4,8 +4,6 @@ pub use utils::*;
 pub mod draw;
 pub mod uniform;
 pub mod texture;
-pub mod premade;
-pub use premade::*;
 
 use std::{cell::RefCell, rc::Rc};
 use super::{pipeline_loader::{PipelineLoader, RenderPipelineFlatDescriptor}, preprocessor::Preprocessor, shader_loader::{FragmentShaderVariant, ShaderLoader, VertexShaderVariant}};

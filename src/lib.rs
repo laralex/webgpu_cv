@@ -62,8 +62,7 @@ impl AsRef<str> for DemoId {
 mod wasm {
 
 use crate::env::log_init;
-use crate::renderer::webgpu::Premade;
-use crate::renderer::{self, LoadingArgs, RenderArgs};
+use crate::renderer::{self, Premade, LoadingArgs, RenderArgs};
 use crate::renderer::{handle_keyboard, FrameStateRef};
 use crate::timer::ScopedTimer;
 
@@ -105,8 +104,7 @@ pub struct WasmInterface {
     previous_demo: Rc<RefCell<Box<dyn IDemo>>>,
     previous_demo_id: Rc<RefCell<DemoId>>,
     pending_loading_demo: Rc<RefCell<Option<Pin<Box<dyn DemoLoadingFuture>>>>>,
-    global_uniform: Rc<RefCell<renderer::GlobalUniform>>,
-    premade: Rc<Premade>,
+    premade: Rc<RefCell<Premade>>,
     // canvas: Option<web_sys::HtmlCanvasElement>,
     // gl: Rc<web_sys::WebGl2RenderingContext>,
     // demo_state_history: Rc<RefCell<renderer::DemoStateHistory>>, //::new();
@@ -165,8 +163,6 @@ impl WasmInterface {
         }
 
         demo_loading_apply_progress(0.6);
-        let global_uniform = Rc::new(RefCell::new(
-            renderer::GlobalUniform::new(&webgpu.device)));
         demo_loading_apply_progress(0.7);
         demo_loading_finish();
 
@@ -184,8 +180,7 @@ impl WasmInterface {
             pending_loading_demo,
             // demo_state_history: Rc::new(RefCell::new(renderer::DemoStateHistory::new())),
             // demo_history_playback: Rc::new(RefCell::new(renderer::DemoHistoryPlayback::new())),
-            global_uniform,
-            premade: Rc::new(premade),
+            premade: Rc::new(RefCell::new(premade)),
             #[cfg(feature = "imgui_web")]
             imgui: Rc::new(RefCell::new(None)),
         })
@@ -250,7 +245,6 @@ impl WasmInterface {
         let switcher_callback2 = switcher_callback.clone();
         let loading_args = LoadingArgs {
             webgpu: self.webgpu.clone(),
-            global_uniform: self.global_uniform.clone(),
             color_texture_format: self.webgpu_config.borrow().format,
             premade: self.premade.clone(),
         };
@@ -314,7 +308,6 @@ impl WasmInterface {
         let pending_loading_demo_ref = self.pending_loading_demo.clone();
         let loading_args = LoadingArgs {
             webgpu: self.webgpu.clone(),
-            global_uniform: self.global_uniform.clone(),
             color_texture_format: self.webgpu_config.borrow().format,
             premade: self.premade.clone(),
         };
@@ -386,7 +379,7 @@ impl WasmInterface {
         let webgpu_config = self.webgpu_config.clone();
         let demo_state = self.demo_state.clone();
         let demo_clone = self.demo.clone();
-        let global_uniform = self.global_uniform.clone();
+        let premade = self.premade.clone();
         // let demo_state_history = self.demo_state_history.clone();
         // let demo_history_playback = self.demo_history_playback.clone();
         let mut demo_state_history = renderer::DemoStateHistory::new();
@@ -419,9 +412,9 @@ impl WasmInterface {
             // engine step
             let webgpu = webgpu.as_ref();
             if let (
-                Ok(mut demo), Ok(mut demo_state), Ok(surface_texture), Ok(mut global_uniform)
+                Ok(mut demo), Ok(mut demo_state), Ok(surface_texture), Ok(mut premade)
             ) = (
-                demo_clone.try_borrow_mut(), demo_state.try_borrow_mut(), webgpu_surface.get_current_texture(), global_uniform.try_borrow_mut()
+                demo_clone.try_borrow_mut(), demo_state.try_borrow_mut(), webgpu_surface.get_current_texture(), premade.try_borrow_mut()
             ) {
                 {
                     let keyboard = demo_state.keyboard().borrow().clone();
@@ -438,15 +431,15 @@ impl WasmInterface {
                 // engine tick
                 let tick_timestamp_ms = demo_history_playback.playback_timestamp_ms().unwrap_or(now_timestamp_ms);
                 demo_state.tick(tick_timestamp_ms);
-                global_uniform.update_cpu(&demo_state);
-                global_uniform.update_gpu(&webgpu.queue);
+                premade.global_uniform.update_cpu(&demo_state);
+                premade.global_uniform.update_gpu(&webgpu.queue);
                 demo.tick(&demo_state);
 
                 // engine render
                 let render_args = RenderArgs {
                     webgpu,
                     backbuffer: &surface_texture,
-                    global_uniform: &global_uniform,
+                    global_uniform: &premade.global_uniform,
                     time_delta_sec: demo_state.time_delta_sec(),
                 };
                 match demo.render(render_args) {

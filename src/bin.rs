@@ -70,7 +70,7 @@ struct State<'window> {
    imgui_exports: ImguiExports,
    demos_ids: &'static [&'static DemoId],
    demo_idx: i32,
-   premade: Rc<Premade>,
+   premade: Rc<RefCell<Premade>>,
 }
 
 #[derive(Default)]
@@ -92,7 +92,6 @@ impl<'window> State<'window> {
    async fn load_demo(&mut self, id: DemoId) -> Box<dyn IDemo> {
       let loading_args = LoadingArgs {
          webgpu: self.webgpu.clone(),
-         global_uniform: self.global_uniform.clone(),
          color_texture_format: self.webgpu_config.format,
          premade: self.premade.clone(),
       };
@@ -118,10 +117,9 @@ impl<'window> State<'window> {
       demo_state.set_time_delta_limit_ms(1.0);
       demo_state.set_debug_mode(Some(1));
       let global_uniform = Rc::new(RefCell::new(GlobalUniform::new(&webgpu.device)));
-      let premade = Rc::new(Premade::new(&webgpu.device));
+      let premade = Rc::new(RefCell::new(Premade::new(&webgpu.device)));
       let loading_args = LoadingArgs {
          webgpu: webgpu.clone(),
-         global_uniform: global_uniform.clone(),
          color_texture_format: surface.config.format,
          premade: premade.clone(),
       };
@@ -237,7 +235,6 @@ impl<'window> State<'window> {
       self.demo_state.set_graphics_level(level);
       let loading_args = LoadingArgs {
          webgpu: self.webgpu.clone(),
-         global_uniform: self.global_uniform.clone(),
          color_texture_format: self.webgpu_config.format,
          premade: self.premade.clone(),
       };
@@ -289,7 +286,6 @@ impl<'window> State<'window> {
          if ui.button("Recompile shaders") {
             let loading_args = LoadingArgs {
                webgpu: self.webgpu.clone(),
-               global_uniform: self.global_uniform.clone(),
                color_texture_format: self.webgpu_config.format,
                premade: self.premade.clone(),
             };

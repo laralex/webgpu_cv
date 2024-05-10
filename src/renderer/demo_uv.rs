@@ -96,10 +96,10 @@ impl SimpleFuture for DemoLoadingProcess {
             std::task::Poll::Pending
          },
          LinkPrograms => {
-            let global_uniform = self.loading_args.global_uniform.clone();
+            let premade = self.loading_args.premade.clone();
             let layout_descriptor = wgpu::PipelineLayoutDescriptor {
                label: Some("Render Pipeline Layout"),
-               bind_group_layouts: &[&global_uniform.borrow().bind_group_info.bind_group_layout],
+               bind_group_layouts: &[&premade.borrow().global_uniform.bind_group_info.bind_group_layout],
                push_constant_ranges: &[],
             };
             let render_pipeline_layout = self.loading_args.webgpu.device.create_pipeline_layout(

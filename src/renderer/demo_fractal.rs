@@ -228,8 +228,8 @@ impl DemoLoadingProcess {
    fn build_pipelines(&mut self) {
       let _t = ScopedTimer::new("create_pipelines");
       let mut builder = PipelineLayoutBuilder::new();
-      // let premade = self.loading_args.premade.borrow_mut();
-      // builder = builder.with(&premade.global_uniform.bind_group_info);
+      let premade = self.loading_args.premade.borrow();
+      builder = builder.with(&premade.global_uniform.bind_group_info);
       for group in self.uniform_groups.iter() {
          builder = builder.with(group);
       }

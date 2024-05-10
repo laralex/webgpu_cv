@@ -69,15 +69,15 @@ pub struct LoadingArgs {
 
 impl LoadingArgs {
    pub fn get_vertex_shader(&self, variant: VertexShaderVariant, preprocessor: Option<&mut Preprocessor>) -> Rc<wgpu::ShaderModule> {
-      self.premade.borrow_mut().shader_loader.get_shader(&self.webgpu.device, variant, preprocessor)
+      self.premade.borrow().shader_loader.borrow_mut().get_shader(&self.webgpu.device, variant, preprocessor)
    }
 
    pub fn get_fragment_shader(&self, variant: FragmentShaderVariant, preprocessor: Option<&mut Preprocessor>) -> Rc<wgpu::ShaderModule> {
-      self.premade.borrow_mut().shader_loader.get_shader(&self.webgpu.device, variant, preprocessor)
+      self.premade.borrow().shader_loader.borrow_mut().get_shader(&self.webgpu.device, variant, preprocessor)
    }
 
    pub fn get_pipeline(&self, flat_descriptor: &RenderPipelineFlatDescriptor) -> Rc<wgpu::RenderPipeline> {
-      self.premade.borrow_mut().pipeline_loader.get_pipeline(&self.webgpu.device, flat_descriptor)
+      self.premade.borrow().pipeline_loader.borrow_mut().get_pipeline(&self.webgpu.device, flat_descriptor)
    }
 }
 

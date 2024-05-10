@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use crate::renderer::GlobalUniform;
 use super::{pipeline_loader::PipelineLoader, shader_loader::ShaderLoader, webgpu::Utils};
 
@@ -15,8 +17,8 @@ pub struct Samplers {
 pub struct Premade {
    pub samplers: Samplers,
    pub global_uniform: GlobalUniform,
-   pub shader_loader: ShaderLoader,
-   pub pipeline_loader: PipelineLoader,
+   pub shader_loader: RefCell<ShaderLoader>,
+   pub pipeline_loader: RefCell<PipelineLoader>,
 }
 
 impl Samplers {
@@ -30,8 +32,8 @@ impl Samplers {
 
 impl Premade {
    pub fn new(device: &wgpu::Device) -> Self {
-      let shader_loader = ShaderLoader::new(USE_SHADER_CACHE);
-      let pipeline_loader = PipelineLoader::new(USE_PIPELINE_CACHE);
+      let shader_loader = RefCell::new(ShaderLoader::new(USE_SHADER_CACHE));
+      let pipeline_loader = RefCell::new(PipelineLoader::new(USE_PIPELINE_CACHE));
       Self {
          samplers: Samplers::new(device),
          global_uniform: GlobalUniform::new(device),

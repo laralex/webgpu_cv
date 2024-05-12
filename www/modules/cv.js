@@ -39,7 +39,7 @@ const CHAPTERS_DEMOS = {
    "project_this_cv":                  DemoId.FullBodyAvatar,
    "project_will_and_reason":          DemoId.Fractal,
    "project_image_processing_tool":    DemoId.FullBodyAvatar,
-   "education_master":                 DemoId.Fractal,
+   "education_master":                 DemoId.Mesh,
    "education_bachelor":               DemoId.Stub,
 }
 
@@ -51,6 +51,7 @@ DEMOS_DATA[DemoId.FrameGeneration] = {description_id: "demo_frame_generation" };
 DEMOS_DATA[DemoId.HeadAvatar] = {description_id: "demo_head_avatar" };
 DEMOS_DATA[DemoId.FullBodyAvatar] = {description_id: "demo_full_body_avatar"};
 DEMOS_DATA[DemoId.ProceduralGeneration] = {description_id: "demo_procedural_generation" };
+DEMOS_DATA[DemoId.Mesh] = {description_id: "demo_mesh" };
 
 export function getDemoId(currentCvChapter) {
    return CHAPTERS_DEMOS[currentCvChapter] || CHAPTERS_DEMOS["__stub__"];

@@ -90,9 +90,8 @@ impl Progress for DemoLoadingProcess {
 
 impl SimpleFuture for DemoLoadingProcess {
    type Output = Box<dyn IDemo>;
-   type Context = ();
 
-   fn simple_poll(self: std::pin::Pin<&mut Self>, _cx: &mut Self::Context) -> Poll<Self::Output> {
+   fn simple_poll(self: std::pin::Pin<&mut Self>, _cx: &mut std::task::Context) -> Poll<Self::Output> {
       Poll::Ready(Box::new(Demo{}))
    }
 }

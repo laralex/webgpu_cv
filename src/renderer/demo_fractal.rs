@@ -78,9 +78,8 @@ impl Progress for DemoLoadingProcess {
 
 impl SimpleFuture for DemoLoadingProcess {
    type Output = Box<dyn IDemo>;
-   type Context = ();
 
-   fn simple_poll(mut self: std::pin::Pin<&mut Self>, _cx: &mut Self::Context) -> std::task::Poll<Self::Output> {
+   fn simple_poll(mut self: std::pin::Pin<&mut Self>, _cx: &mut std::task::Context) -> std::task::Poll<Self::Output> {
       use DemoLoadingStage::*;
       match self.stage {
          CreateShaders => {
@@ -144,7 +143,7 @@ impl Future for DemoLoadingProcess {
    type Output = Box<dyn IDemo>;
    
    fn poll(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
-      match self.as_mut().simple_poll(&mut ()) {
+      match self.as_mut().simple_poll(cx) {
          std::task::Poll::Pending => {
             cx.waker().wake_by_ref();
             std::task::Poll::Pending

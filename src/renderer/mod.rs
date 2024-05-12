@@ -47,6 +47,8 @@ pub fn start_loading_demo(id: DemoId, args: LoadingArgs, graphics_level: Graphic
          demo_uv::Demo::start_loading(args, graphics_level),
       DemoId::ProceduralGeneration =>
          demo_uv::Demo::start_loading(args, graphics_level),
+      DemoId::Mesh =>
+         demo_mesh::Demo::start_loading(args, graphics_level),
       _ => demo_stub::Demo::start_loading(),
    }
 }
@@ -95,10 +97,10 @@ pub trait IDemo {
 
 pub trait SimpleFuture {
    type Output;
-   type Context;
+   // type Context;
    // std::future::Future uses std::task::Context<'_>
    // we use a mock argument        Self::Context
-   fn simple_poll(self: Pin<&mut Self>, cx: &mut Self::Context) -> std::task::Poll<Self::Output>;
+   fn simple_poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> std::task::Poll<Self::Output>;
 }
 
 pub trait Progress {
@@ -110,5 +112,5 @@ pub trait Dispose {
    fn dispose(&mut self);
 }
 
-pub trait DemoLoadingSimpleFuture : SimpleFuture<Output=Box<dyn IDemo>, Context=()> + Dispose + Progress {}
+pub trait DemoLoadingSimpleFuture : SimpleFuture<Output=Box<dyn IDemo>> + Dispose + Progress {}
 pub trait DemoLoadingFuture : Future<Output=Box<dyn IDemo>> + Unpin + DemoLoadingSimpleFuture {}

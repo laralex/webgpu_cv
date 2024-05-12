@@ -2,6 +2,9 @@ pub mod js_interop;
 pub mod renderer;
 pub mod timer;
 pub mod env;
+pub mod image_loader;
+
+use std::sync::Mutex;
 
 #[cfg(feature = "web")]
 use wasm_bindgen::prelude::*;
@@ -58,6 +61,15 @@ impl AsRef<str> for DemoId {
     }
 }
 
+
+struct SimpleWaker(Mutex<bool>);
+impl std::task::Wake for SimpleWaker {
+    fn wake(self: std::sync::Arc<Self>) {
+        let mut v = self.0.lock().unwrap();
+        *v = true;
+    }
+}
+
 #[cfg(feature = "web")]
 mod wasm {
 
@@ -72,6 +84,7 @@ use super::*;
 use renderer::{ExternalState, IDemo, Webgpu};
 use web_sys::Element;
 use std::pin::Pin;
+use std::sync::Arc;
 use std::{cell::RefCell, rc::Rc};
 
 #[wasm_bindgen(raw_module = "../modules/exports_to_wasm.js")]
@@ -327,11 +340,15 @@ impl WasmInterface {
             // wait +1 frame
             js_interop::request_animation_frame(&js_interop::window(), &finish);
         });
+
+        let waker = std::task::Waker::from(Arc::new(SimpleWaker(false)));
+        let waker2 = waker.clone();
         // request to advance the loading proecess once per frame
         *loader_callback.borrow_mut() = Some(Closure::new(move |_| {
             if let Ok(mut loading_process_ref) = pending_loading_demo_ref.try_borrow_mut() {
                 if let Some(loading_process) = loading_process_ref.as_mut() {
-                    match loading_process.as_mut().simple_poll(/*cx*/&mut ()) {
+                    let mut cx = std::task::Context::from_waker(&waker2);
+                    match loading_process.as_mut().simple_poll(/*cx*/&mut cx) {
                         std::task::Poll::Pending => {
                             demo_loading_apply_progress(loading_process.progress());
                             // run next loading step on the next frame

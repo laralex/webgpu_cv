@@ -30,5 +30,6 @@ Known issues:
    - procedural generation
 - Mobile layout
 - Sometimes English font is not loaded
+- Demo loading until minimal renderable state is loaded, then use demo to render every frame and continue to load
 - CV localization (Korean, French?)
 - Choose wgpu backend from JS, check backend in wasm

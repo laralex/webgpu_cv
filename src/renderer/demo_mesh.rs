@@ -1,7 +1,10 @@
 use std::rc::Rc;
-use futures::Future;
+use std::sync::{Arc, Mutex};
+use std::task::{Context, Poll, Wake, Waker};
+use futures::{Future, FutureExt};
 use wgpu::BufferUsages;
 
+use crate::{image_loader, SimpleWaker};
 use crate::renderer::pipeline_loader::RenderPipelineFlatDescriptor;
 use crate::renderer::webgpu::Utils;
 
@@ -13,6 +16,8 @@ use super::{DemoLoadingFuture, DemoLoadingSimpleFuture, Dispose, ExternalState, 
 
 const VERTEX_SHADER_VARIANT:   VertexShaderVariant   = VertexShaderVariant::Passthrough;
 const FRAGMENT_SHADER_VARIANT: FragmentShaderVariant = FragmentShaderVariant::Uv;
+const TEXTURE_ALBEDO_PATH: &str = "assets/materials/leather/Leather_Padded_001_basecolor.jpg";
+const TEXTURE_ROUGHNESS_PATH: &str = "assets/materials/leather/Leather_Padded_001_roughness.jpg";
 
 #[derive(Default)]
 enum DemoLoadingStage {
@@ -28,6 +33,7 @@ enum DemoLoadingStage {
 struct DemoLoadingProcess {
    stage: DemoLoadingStage,
    stage_percent: f32,
+   waker: Waker,
    graphics_level: GraphicsLevel,
    loading_args: LoadingArgs,
    vertex_shader: Option<Rc<wgpu::ShaderModule>>,
@@ -74,7 +80,7 @@ impl Future for DemoLoadingProcess {
    type Output = Box<dyn IDemo>;
    
    fn poll(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
-      match self.as_mut().simple_poll(&mut ()) {
+      match self.as_mut().simple_poll(cx) {
          std::task::Poll::Pending => {
             cx.waker().wake_by_ref();
             std::task::Poll::Pending
@@ -90,9 +96,9 @@ impl DemoLoadingFuture for DemoLoadingProcess {}
 
 impl SimpleFuture for DemoLoadingProcess {
    type Output = Box<dyn IDemo>;
-   type Context = ();
+   //type Context = std::task::Context<'a>;
 
-   fn simple_poll(mut self: std::pin::Pin<&mut Self>, _cx: &mut Self::Context) -> std::task::Poll<Self::Output> {
+   fn simple_poll(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context) -> std::task::Poll<Self::Output> {
       use DemoLoadingStage::*;
       match self.stage {
          CompileShaders => {
@@ -101,9 +107,18 @@ impl SimpleFuture for DemoLoadingProcess {
             self.stage = BuildUniforms;
          },
          BuildUniforms => {
-            self.make_bind_groups();
-            self.stage_percent = 0.4;
-            self.stage = BuildVertexData;
+            // let mut cx = Context::from_waker(&self.waker);
+            let poll = std::pin::pin!(self.make_bind_groups()).poll(cx);
+            match poll {
+               Poll::Pending => {
+                  self.stage_percent = 0.35;
+                  self.stage = BuildUniforms;
+               },
+               Poll::Ready(()) => {
+                  self.stage_percent = 0.4;
+                  self.stage = BuildVertexData;
+               }
+            }
          },
          BuildVertexData => {
             self.build_vertex_data();
@@ -149,6 +164,7 @@ impl DemoLoadingProcess {
       Self {
          stage: Default::default(),
          stage_percent: 0.0,
+         waker: Waker::from(Arc::new(SimpleWaker(Mutex::new(false)))),
          graphics_level,
          loading_args,
          render_pipeline: Default::default(),
@@ -174,7 +190,10 @@ impl DemoLoadingProcess {
          .get_fragment_shader(FRAGMENT_SHADER_VARIANT, None));
    }
 
-   fn make_bind_groups(&mut self) {
+   async fn make_bind_groups(&mut self) {
+      let (albedo_bytes, width, height) = image_loader::load_image(TEXTURE_ALBEDO_PATH)
+         .await;
+      log::info!("ALBEDO data {} bytes, {}x{}", albedo_bytes.len(), width, height);
       // let view = wgpu::TextureView {};
       // let texture_bind_group = BindGroupInfo::builder()
       //    .with_texture_2d(0, wgpu::ShaderStages::FRAGMENT,
@@ -354,7 +373,7 @@ impl IDemo for Demo {
 }
 
 impl Demo {
-   pub fn start_loading(args: LoadingArgs, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture> {
+   pub fn start_loading<'a>(args: LoadingArgs, graphics_level: GraphicsLevel) -> Box<dyn DemoLoadingFuture> {
       Box::new(DemoLoadingProcess::new(args, graphics_level))
    }
 }

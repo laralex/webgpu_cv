@@ -1,4 +1,4 @@
-const {div, button, i, label, img, svg, path, input, details, summary, p, li, a, option, select, span, ul, h1, h2, h3} = van.tags
+const {div, button, i, label, img, svg, path, input, details, summary, p, li, a, option, select, span, ul, h1, h2, h3, h4} = van.tags
 
 const ADD_PARALLAX = true;
 
@@ -44,7 +44,7 @@ export const BUILD_DATA = {
 import init, { WasmInterface, GraphicsLevel } from '/wasm/index.js';
 import { UI_STRINGS, CURRENT_LANGUAGE, localizeString, localizeUi, localizeUiPostprocess, reportMissingLocalization } from '/modules/localization.js';
 import { Util } from '/modules/util.js';
-import { CvContent, DemoDescription, getDemoId } from '/modules/cv.js';
+import { CvContent, DemoDescription, getDemoId, getExperienceMonths, formatYearsMonths } from '/modules/cv.js';
 import { CURRENT_DEMO_LOADING_PROGRESS, CURRENT_GRAPHICS_SWITCHING_PROGRESS, demo_loading_apply_progress, demo_loading_finish } from '/modules/exports_to_wasm.js';
 
 function dumpCvCookies() {
@@ -402,9 +402,19 @@ function ClearCookiesButton({width}) {
 }
 
 function PersonalCard() {
+   const experienceInfo = getExperienceMonths();
    return div({class: "profileinfo"},
       h1({class: "font-LARGE bold"}, localizeUi("name_surname")),
       h3(localizeUi("job_title")),
+      h4(() => {
+         const experienceFormat = formatYearsMonths({
+            years: experienceInfo.yearDiff,
+            months: experienceInfo.monthRemainder,
+            yearsFullWord: true,
+            monthsFullWord: true,
+         });
+         return experienceFormat.yearStr + " " + experienceFormat.monthStr
+      }),
       div({class: "specialization"}, () => {
          const cg = localizeUi("specialty_computer_graphics")();
          const deepLearning = localizeUi("specialty_deep_learning", true)();

@@ -23,7 +23,7 @@ const CHAPTER_BORDER_COLORS = ["#9bade8", "#91b4ee", "#87bcf3", "#7dc3f5", "#7dc
 const SUBCHAPTER_COLOR = ["#b0deff", "#b6d7f4", "#bbd0e8", "#bdcadc", "#bec4d0"];
 const SUBCHAPTER_BORDER_COLOR = ["#b6d7f4", "#bbd0e8", "#bdcadc", "#bec4d0", "#bec4d0"];
 
-const currentDate = new Date();
+const huaweiResignationDate = new Date();
 const huaweiSeniorEmploymentDate    = new Date(2023, 12 - 1, 7);
 const samsungResignationDate        = new Date(2023, 11 - 1, 31);
 const samsungMiddleEmploymentDate   = new Date(2022,  4 - 1, 26);
@@ -53,6 +53,15 @@ DEMOS_DATA[DemoId.FullBodyAvatar] = {description_id: "demo_full_body_avatar"};
 DEMOS_DATA[DemoId.ProceduralGeneration] = {description_id: "demo_procedural_generation" };
 DEMOS_DATA[DemoId.Mesh] = {description_id: "demo_mesh" };
 
+export function getExperienceMonths() {
+   return Util.yearMonthDiff([
+      Util.monthDiff(samsungInternEmploymentDate, samsungInternResignationDate),
+      Util.monthDiff(samsungJuniorEmploymentDate, samsungMiddleEmploymentDate),
+      Util.monthDiff(samsungMiddleEmploymentDate, samsungResignationDate),
+      Util.monthDiff(huaweiSeniorEmploymentDate, huaweiResignationDate),
+   ].reduce((prev, curr) => prev + curr))
+}
+
 export function getDemoId(currentCvChapter) {
    return CHAPTERS_DEMOS[currentCvChapter] || CHAPTERS_DEMOS["__stub__"];
 }
@@ -73,7 +82,7 @@ function getBackgroundColorStyle(bgValue, withBg=false, withBorder=false) {
          + (withBg === true ? `background-color:${bgValue};` : "");
 }
 
-function formatYearsMonths({years, months, yearsFullWord = true, monthsFullWord = true}) {
+export function formatYearsMonths({years, months, yearsFullWord = true, monthsFullWord = true}) {
    const getLocalized = (key) => localizeString(key)().text
    let monthStr = "";
    if (months > 0) {
@@ -219,7 +228,7 @@ function populateConnections(destinationConnections, chapterId, subchapterIds) {
 
 function CvCareer(currentCvPage, chapterConnections, chapterId, chapterArgs) {
 
-   const huaweiSpan = Util.yearMonthDiff(Util.monthDiff(huaweiSeniorEmploymentDate, currentDate));
+   const huaweiSpan = Util.yearMonthDiff(Util.monthDiff(huaweiSeniorEmploymentDate, huaweiResignationDate));
    const samsungSpan = Util.yearMonthDiff([
       Util.monthDiff(samsungInternEmploymentDate, samsungInternResignationDate),
       Util.monthDiff(samsungJuniorEmploymentDate, samsungMiddleEmploymentDate),
@@ -345,7 +354,7 @@ function CvHuawei(chapterArgs) {
    chapterArgs.insideConstructor = () => {
       return div({class: "font-normalsize"},
          div({class: "flex-row flex-center", style: "margin-bottom: 0.5rem;"},
-            YearsBlock(Util.getYearsSpan(huaweiSeniorEmploymentDate, currentDate).concat([localizeUi("current")])),
+            YearsBlock(Util.getYearsSpan(huaweiSeniorEmploymentDate, huaweiResignationDate).concat([localizeUi("current")])),
             div({class: "flex-column header"},
                div({class: "flex-row", style: "gap:0.9rem;margin-bottom: 0.5rem;"},
                   img({id: "cv-huawei-logo", src: "../assets/huawei-small.svg"}),
@@ -354,7 +363,7 @@ function CvHuawei(chapterArgs) {
                LeftRightAlignedList({
                   leftItems: [ () => p(localizeUi("senior_engineer")), ],
                   rightItems: [ () => {
-                     const seniorStr = formatDateDiff(huaweiSeniorEmploymentDate, currentDate);
+                     const seniorStr = formatDateDiff(huaweiSeniorEmploymentDate, huaweiResignationDate);
                      return p(seniorStr.yearStr + " " + seniorStr.monthStr);
                   }],
                }),

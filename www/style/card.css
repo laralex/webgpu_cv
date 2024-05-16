@@ -232,6 +232,11 @@
   text-align: center;
 }
 
+.firstinfo .profileinfo h4 {
+  color: var(--color-theme-bold-shadow);
+  text-align: center;
+}
+
 .firstinfo h1 em {
    /* font-style: normal;
    font-weight: 600; */

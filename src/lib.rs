@@ -341,7 +341,7 @@ impl WasmInterface {
             js_interop::request_animation_frame(&js_interop::window(), &finish);
         });
 
-        let waker = std::task::Waker::from(Arc::new(SimpleWaker(false)));
+        let waker = std::task::Waker::from(Arc::new(SimpleWaker(Mutex::new(false))));
         let waker2 = waker.clone();
         // request to advance the loading proecess once per frame
         *loader_callback.borrow_mut() = Some(Closure::new(move |_| {

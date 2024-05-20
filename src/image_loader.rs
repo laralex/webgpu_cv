@@ -29,9 +29,9 @@ pub async fn load_image(image_path: &str) -> (Vec<u8>, u32, u32) {
    (image_data, width, height)
 }
 
-#[cfg(feature="win")]
+#[cfg(feature="not_web")]
 pub async fn load_image(image_path: &str) -> (Vec<u8>, u32, u32) {
-   let t = crate::timer::ScopedTimer::new("load_image");
+   let _t = crate::timer::ScopedTimer::new("load_image");
    let cwd = std::env::current_dir().expect("Failed to get current working dir");
    let abs_filepath = cwd.join("www").join(image_path);
    let img = image::io::Reader::open(abs_filepath)

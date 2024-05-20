@@ -6,19 +6,26 @@ edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
+test = false
+bench = false
+required-features = ["web"]
 
 [[bin]]
 name = "windowed_demos"
 path = "src/bin.rs"
+test = false
+bench = false
+required-features = ["win"]
 
 [features]
 default = [ ]
 web = ["dep:console_error_panic_hook", "dep:wasm-bindgen-futures",
     "dep:js-sys", "dep:console_log", "dep:web-sys",
     "wgpu/webgl", "wgpu/webgpu"]
-win = ["dep:winit", "dep:env_logger", "imgui_win"]
+not_web = ["dep:image"]
+win = ["dep:winit", "dep:env_logger", "imgui_win", "not_web"]
 imgui_web = ["dep:imgui", "imgui/wasm", "dep:imgui-wgpu"]
-imgui_win = ["dep:imgui", "dep:imgui-wgpu", "dep:imgui-winit-support", "dep:tokio", "dep:image"]
+imgui_win = ["dep:imgui", "dep:imgui-wgpu", "dep:imgui-winit-support", "dep:tokio"]
 
 [dependencies]
 cfg-if = "1"
@@ -69,6 +76,7 @@ web-sys = { version = "0.3", optional = true, features = [
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
 pretty_assertions = "1.4"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"]}
 
 [profile.release]
 # Tell `rustc` to optimize for small code size.

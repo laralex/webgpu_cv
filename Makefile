@@ -6,6 +6,7 @@ SERVE_WASM_DIR?=${SERVE_DIR}/wasm
 CARGO_TOOLCHAIN?=+stable
 CARGO_WIN?=--bin windowed_demos --features win
 CARGO_WEB?=--lib --target=${RUST_TARGET} --features web
+CARGO_TEST?=--features win
 WASM_BINDGEN_FLAGS?=--target=web --omit-default-module-path --out-dir ${SERVE_WASM_DIR} --out-name index
 CARGO_BUILD_COMMAND?=build
 
@@ -19,35 +20,32 @@ install:
 
 .PHONY: cargo_win_debug
 cargo_win_debug:
-	cargo $(CARGO_TOOLCHAIN) $(CARGO_BUILD_COMMAND) $(CARGO_WIN)
+	CARGO_TARGET_DIR=build/win cargo $(CARGO_TOOLCHAIN) $(CARGO_BUILD_COMMAND) $(CARGO_WIN)
 
 .PHONY: cargo_win
 cargo_win:
-	cargo $(CARGO_TOOLCHAIN) $(CARGO_BUILD_COMMAND) $(CARGO_WIN) --release
+	CARGO_TARGET_DIR=build/win cargo $(CARGO_TOOLCHAIN) $(CARGO_BUILD_COMMAND) $(CARGO_WIN) --release
 
 .PHONY: cargo_debug
 cargo_web_debug:
-	cargo $(CARGO_TOOLCHAIN) $(CARGO_BUILD_COMMAND) $(CARGO_WEB)
+	CARGO_TARGET_DIR=build/web cargo $(CARGO_TOOLCHAIN) $(CARGO_BUILD_COMMAND) $(CARGO_WEB)
 
 .PHONY: cargo_web
 cargo_web:
-	cargo $(CARGO_TOOLCHAIN) $(CARGO_BUILD_COMMAND) $(CARGO_WEB) --release
+	CARGO_TARGET_DIR=build/web cargo $(CARGO_TOOLCHAIN) $(CARGO_BUILD_COMMAND) $(CARGO_WEB) --release
 
 .PHONY: test_shaders
 test_shaders:
-	cargo $(CARGO_TOOLCHAIN) test --no-run --locked
-	cargo $(CARGO_TOOLCHAIN) test shaders --no-fail-fast -j 2 \
-		-- --test-threads=2 --nocapture --quiet
+	CARGO_TARGET_DIR=build/win cargo $(CARGO_TOOLCHAIN) test $(CARGO_TEST) --locked --no-fail-fast -j 2 -- $(CARGO_TEST_RUN)
 
 .PHONY: test
 test:
 # wasm-pack test --node
-	cargo $(CARGO_TOOLCHAIN) test --lib --no-fail-fast -j 2 \
-		-- --test-threads=2 --nocapture --quiet
+	CARGO_TARGET_DIR=build/win cargo $(CARGO_TOOLCHAIN) test --lib $(CARGO_TEST) --no-fail-fast -j 2 -- $(CARGO_TEST_RUN)
 
 .PHONY: wasm_debug
 wasm_debug: cargo_web_debug
-#--keep-debug
+#--keep-debu g
 	wasm-bindgen $(WASM_BINDGEN_FLAGS) target/${RUST_TARGET}/debug/${WASM_NAME}.wasm
 
 .PHONY: wasm
@@ -88,7 +86,7 @@ codegen_debug:
 build_win: cargo_win_debug
 
 .PHONY: build_debug
-build_debug: wasm_debug codegen_debug test_shaders
+build_debug: wasm_debug codegen_debug
 
 # no `wasm_opt`
 .PHONY: build_ci

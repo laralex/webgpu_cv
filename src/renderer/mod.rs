@@ -15,6 +15,7 @@ pub mod demo_uv;
 pub mod demo_fractal;
 pub mod demo_mesh;
 mod preprocessor;
+pub mod asset_loader;
 pub mod premade;
 pub use premade::*;
 
@@ -23,7 +24,7 @@ use wgpu::SurfaceTexture;
 
 use std::{cell::RefCell, pin::Pin, rc::Rc};
 
-use self::{pipeline_loader::RenderPipelineFlatDescriptor, preprocessor::Preprocessor, shader_loader::{FragmentShaderVariant, VertexShaderVariant}};
+use self::{asset_loader::AssetLoader, pipeline_loader::RenderPipelineFlatDescriptor, preprocessor::Preprocessor, shader_loader::{FragmentShaderVariant, VertexShaderVariant}};
 
 //#[cfg(feature = "web")]
 pub mod wasm {
@@ -59,6 +60,7 @@ pub struct RenderArgs<'a> {
    pub webgpu: &'a Webgpu,
    pub backbuffer: &'a SurfaceTexture,
    pub global_uniform: &'a GlobalUniform,
+   pub asset_loader: &'a mut AssetLoader,
    pub time_delta_sec: f64,
 }
 
@@ -67,6 +69,7 @@ pub struct LoadingArgs {
    pub webgpu: Rc<Webgpu>,
    pub color_texture_format: wgpu::TextureFormat,
    pub premade: Rc<RefCell<Premade>>,
+   pub asset_loader: Rc<RefCell<AssetLoader>>,
 }
 
 impl LoadingArgs {

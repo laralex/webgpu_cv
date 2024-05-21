@@ -106,17 +106,9 @@ impl SimpleFuture for DemoLoadingProcess {
          },
          BuildUniforms => {
             // let mut cx = Context::from_waker(&self.waker);
-            let poll = std::pin::pin!(self.load_assets()).poll(cx);
-            match poll {
-               Poll::Pending => {
-                  self.stage_percent = 0.35;
-                  self.stage = BuildUniforms;
-               },
-               Poll::Ready(()) => {
-                  self.stage_percent = 0.4;
-                  self.stage = BuildVertexData;
-               }
-            }
+            self.load_assets();
+            self.stage_percent = 0.4;
+            self.stage = BuildVertexData;
          },
          BuildVertexData => {
             self.build_vertex_data();
@@ -174,7 +166,7 @@ impl DemoLoadingProcess {
       }
    }
 
-   async fn rebuild_pipelines(&mut self) {
+   fn rebuild_pipelines(&mut self) {
       self.compile_shaders();
       self.make_bind_groups();
       self.build_pipelines();
@@ -191,10 +183,13 @@ impl DemoLoadingProcess {
 
    }
    
-   async fn load_assets(&mut self) {
-      let (albedo_bytes, width, height) = image_loader::load_image(TEXTURE_ALBEDO_PATH)
-         .await;
-      log::info!("ALBEDO data {} byte, {}x{}", albedo_bytes.len(), width, height);
+   fn load_assets(&mut self) {
+      {
+         let mut asset_loader = self.loading_args.asset_loader.borrow_mut();
+         let guid = asset_loader.load_texture(TEXTURE_ALBEDO_PATH.to_owned());
+         let albedo_texture = asset_loader.get_texture(guid).unwrap();
+         log::info!("ALBEDO data {} byte, {}x{}", albedo_texture.data().len(), albedo_texture.dimensions().0, albedo_texture.dimensions().1);
+      }
       // let view = wgpu::TextureView {};
       // let texture_bind_group = BindGroupInfo::builder()
       //    .with_texture_2d(0, wgpu::ShaderStages::FRAGMENT,
@@ -402,7 +397,7 @@ impl GraphicsSwitchingProcess {
 #[cfg(test)]
 mod tests {
    use std::cell::RefCell;
-   use crate::renderer::Premade;
+   use crate::renderer::{asset_loader::AssetLoader, Premade};
 
    use super::*;
 
@@ -410,10 +405,12 @@ mod tests {
    fn shaders_compile() {
       let webgpu = futures::executor::block_on(Webgpu::new_offscreen());
       let premade = Premade::new(&webgpu.device);
+      let asset_loader = AssetLoader::new();
       let loading_args = LoadingArgs {
          webgpu: Rc::new(webgpu),
          color_texture_format: wgpu::TextureFormat::Rgba8Unorm,
          premade: Rc::new(RefCell::new(premade)),
+         asset_loader: Rc::new(RefCell::new(asset_loader)),
       };
       let mut demo_loader = DemoLoadingProcess::new(loading_args, GraphicsLevel::Medium);
       demo_loader.compile_shaders();

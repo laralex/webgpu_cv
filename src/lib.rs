@@ -118,6 +118,7 @@ pub struct WasmInterface {
     previous_demo_id: Rc<RefCell<DemoId>>,
     pending_loading_demo: Rc<RefCell<Option<Pin<Box<dyn DemoLoadingFuture>>>>>,
     premade: Rc<RefCell<Premade>>,
+    asset_loader: Rc<RefCell<renderer::asset_loader::AssetLoader>>,
     // canvas: Option<web_sys::HtmlCanvasElement>,
     // gl: Rc<web_sys::WebGl2RenderingContext>,
     // demo_state_history: Rc<RefCell<renderer::DemoStateHistory>>, //::new();
@@ -145,7 +146,7 @@ impl WasmInterface {
     #[wasm_bindgen(constructor)]
     pub async fn new(canvas_dom_id: &str, canvas_parent_element: JsValue, level: GraphicsLevel) -> Result<WasmInterface, JsValue> {
         log_init();
-        js_interop::js_log!("WASM Startup");
+        log::warn!("WasmInterface::new");
 
         let _t = ScopedTimer::new("WasmInterface::new");
 
@@ -191,6 +192,7 @@ impl WasmInterface {
             previous_demo: Rc::new(RefCell::new(Box::new(renderer::demo_stub::Demo{}))),
             previous_demo_id: Rc::new(RefCell::new(DemoId::Stub)),
             pending_loading_demo,
+            asset_loader: Rc::new(RefCell::new(renderer::asset_loader::AssetLoader::new())),
             // demo_state_history: Rc::new(RefCell::new(renderer::DemoStateHistory::new())),
             // demo_history_playback: Rc::new(RefCell::new(renderer::DemoHistoryPlayback::new())),
             premade: Rc::new(RefCell::new(premade)),
@@ -252,7 +254,6 @@ impl WasmInterface {
         // NOTE: If the current demo is switched prior to completion of graphics level switch,
         // then the graphics level is switched for the PREVIOUS demo ,
         // and the new demo will be initialized with new graphics level,
-
         self.demo_state.borrow_mut().set_graphics_level(level);
         let switcher_callback = Rc::new(RefCell::new(None));
         let switcher_callback2 = switcher_callback.clone();
@@ -260,6 +261,7 @@ impl WasmInterface {
             webgpu: self.webgpu.clone(),
             color_texture_format: self.webgpu_config.borrow().format,
             premade: self.premade.clone(),
+            asset_loader: self.asset_loader.clone(),
         };
         self.demo.borrow_mut().as_mut()
             .start_switching_graphics_level(loading_args, level)
@@ -323,6 +325,7 @@ impl WasmInterface {
             webgpu: self.webgpu.clone(),
             color_texture_format: self.webgpu_config.borrow().format,
             premade: self.premade.clone(),
+            asset_loader: self.asset_loader.clone(),
         };
         *pending_loading_demo_ref.borrow_mut() = Some(
             Box::into_pin(renderer::wasm::start_loading_demo(demo_id,
@@ -340,15 +343,15 @@ impl WasmInterface {
             // wait +1 frame
             js_interop::request_animation_frame(&js_interop::window(), &finish);
         });
-
+        
         let waker = std::task::Waker::from(Arc::new(SimpleWaker(Mutex::new(false))));
         let waker2 = waker.clone();
         // request to advance the loading proecess once per frame
         *loader_callback.borrow_mut() = Some(Closure::new(move |_| {
             if let Ok(mut loading_process_ref) = pending_loading_demo_ref.try_borrow_mut() {
                 if let Some(loading_process) = loading_process_ref.as_mut() {
-                    let mut cx = std::task::Context::from_waker(&waker2);
-                    match loading_process.as_mut().simple_poll(/*cx*/&mut cx) {
+                    let mut async_cx = std::task::Context::from_waker(&waker2);
+                    match loading_process.as_mut().simple_poll(/*cx*/&mut async_cx) {
                         std::task::Poll::Pending => {
                             demo_loading_apply_progress(loading_process.progress());
                             // run next loading step on the next frame
@@ -403,6 +406,8 @@ impl WasmInterface {
         let mut demo_history_playback = renderer::DemoHistoryPlayback::new();
         let mut previous_timestamp_ms = 0.0;
         let window = js_interop::window();
+        let waker = std::task::Waker::from(Arc::new(SimpleWaker(Mutex::new(false))));
+        let mut asset_loader = self.asset_loader.clone();
         #[cfg(feature = "imgui_web")] {
             let surface_config = webgpu_config.borrow();
             let (width, height) = (surface_config.width as usize, surface_config.height as usize);
@@ -429,9 +434,11 @@ impl WasmInterface {
             // engine step
             let webgpu = webgpu.as_ref();
             if let (
-                Ok(mut demo), Ok(mut demo_state), Ok(surface_texture), Ok(mut premade)
+                Ok(mut demo), Ok(mut demo_state), Ok(surface_texture), Ok(mut premade), Ok(mut asset_loader)
             ) = (
-                demo_clone.try_borrow_mut(), demo_state.try_borrow_mut(), webgpu_surface.get_current_texture(), premade.try_borrow_mut()
+                demo_clone.try_borrow_mut(), demo_state.try_borrow_mut(), 
+                webgpu_surface.get_current_texture(), premade.try_borrow_mut(),
+                asset_loader.try_borrow_mut(),
             ) {
                 {
                     let keyboard = demo_state.keyboard().borrow().clone();
@@ -447,6 +454,8 @@ impl WasmInterface {
 
                 // engine tick
                 let tick_timestamp_ms = demo_history_playback.playback_timestamp_ms().unwrap_or(now_timestamp_ms);
+                let mut async_cx = std::task::Context::from_waker(&waker);
+                asset_loader.tick_loading(&mut async_cx);
                 demo_state.tick(tick_timestamp_ms);
                 premade.global_uniform.update_cpu(&demo_state);
                 premade.global_uniform.update_gpu(&webgpu.queue);
@@ -458,6 +467,7 @@ impl WasmInterface {
                     backbuffer: &surface_texture,
                     global_uniform: &premade.global_uniform,
                     time_delta_sec: demo_state.time_delta_sec(),
+                    asset_loader: &mut asset_loader,
                 };
                 match demo.render(render_args) {
                     Ok(_) => {}

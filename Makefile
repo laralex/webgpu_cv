@@ -9,6 +9,7 @@ CARGO_WEB?=--lib --target=${RUST_TARGET} --features web
 CARGO_TEST?=--features win
 WASM_BINDGEN_FLAGS?=--target=web --omit-default-module-path --out-dir ${SERVE_WASM_DIR} --out-name index
 CARGO_BUILD_COMMAND?=build
+CARGO_TARGET_DIR?=build/web
 
 .PHONY: install
 install:
@@ -28,11 +29,11 @@ cargo_win:
 
 .PHONY: cargo_debug
 cargo_web_debug:
-	CARGO_TARGET_DIR=build/web cargo $(CARGO_TOOLCHAIN) $(CARGO_BUILD_COMMAND) $(CARGO_WEB)
+	CARGO_TARGET_DIR=${CARGO_TARGET_DIR} cargo $(CARGO_TOOLCHAIN) $(CARGO_BUILD_COMMAND) $(CARGO_WEB)
 
 .PHONY: cargo_web
 cargo_web:
-	CARGO_TARGET_DIR=build/web cargo $(CARGO_TOOLCHAIN) $(CARGO_BUILD_COMMAND) $(CARGO_WEB) --release
+	CARGO_TARGET_DIR=${CARGO_TARGET_DIR} cargo $(CARGO_TOOLCHAIN) $(CARGO_BUILD_COMMAND) $(CARGO_WEB) --release
 
 .PHONY: test_shaders
 test_shaders:
@@ -45,12 +46,12 @@ test:
 
 .PHONY: wasm_debug
 wasm_debug: cargo_web_debug
-#--keep-debu g
-	wasm-bindgen $(WASM_BINDGEN_FLAGS) target/${RUST_TARGET}/debug/${WASM_NAME}.wasm
+#--keep-debug
+	wasm-bindgen $(WASM_BINDGEN_FLAGS) ${CARGO_TARGET_DIR}/${RUST_TARGET}/debug/${WASM_NAME}.wasm
 
 .PHONY: wasm
 wasm: cargo_web
-	wasm-bindgen $(WASM_BINDGEN_FLAGS) target/${RUST_TARGET}/release/${WASM_NAME}.wasm
+	wasm-bindgen $(WASM_BINDGEN_FLAGS) ${CARGO_TARGET_DIR}/${RUST_TARGET}/release/${WASM_NAME}.wasm
 
 .PHONY: wasm_ci
 wasm_ci: CARGO_FLAGS += --jobs ${MAX_THREADS}

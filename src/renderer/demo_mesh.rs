@@ -15,8 +15,6 @@ use super::{DemoLoadingFuture, DemoLoadingSimpleFuture, Dispose, ExternalState, 
 
 const VERTEX_SHADER_VARIANT:   VertexShaderVariant   = VertexShaderVariant::Passthrough;
 const FRAGMENT_SHADER_VARIANT: FragmentShaderVariant = FragmentShaderVariant::Uv;
-const TEXTURE_ALBEDO_PATH: &str = "assets/materials/leather/Leather_Padded_001_basecolor.jpg";
-// const TEXTURE_ROUGHNESS_PATH: &str = "assets/materials/leather/Leather_Padded_001_roughness.jpg";
 
 #[derive(Default)]
 enum DemoLoadingStage {
@@ -184,12 +182,36 @@ impl DemoLoadingProcess {
    }
    
    fn load_assets(&mut self) {
+      let mut asset_loader = self.loading_args.asset_loader.borrow_mut();
+      let guid = asset_loader.load_texture("assets/materials/leather/Leather_Padded_001_basecolor.jpg".to_owned());
       {
-         let mut asset_loader = self.loading_args.asset_loader.borrow_mut();
-         let guid = asset_loader.load_texture(TEXTURE_ALBEDO_PATH.to_owned());
-         let albedo_texture = asset_loader.get_texture(guid).unwrap();
-         log::info!("ALBEDO data {} byte, {}x{}", albedo_texture.data().len(), albedo_texture.dimensions().0, albedo_texture.dimensions().1);
+         let _ = asset_loader.load_texture("assets/materials/leather/Leather_Padded_001_ambientOcclusion.jpg".to_owned());
+         let _ = asset_loader.load_texture("assets/materials/leather/Leather_Padded_001_normal.jpg".to_owned());
+         let _ = asset_loader.load_texture("assets/materials/leather/Leather_Padded_001_height.png".to_owned());
+         let _ = asset_loader.load_texture("assets/materials/leather/Leather_Padded_001_roughness.jpg".to_owned());
+
+         let _ = asset_loader.load_texture("assets/bg4-min.jpg".to_owned());
+         let _ = asset_loader.load_texture("assets/bg4.jpg".to_owned());
+         let _ = asset_loader.load_texture("assets/bg5-min.jpg".to_owned());
+         let _ = asset_loader.load_texture("assets/eye-human.jpg".to_owned());
+         let _ = asset_loader.load_texture("assets/lion-head.jpg".to_owned());
+         let _ = asset_loader.load_texture("assets/polytech_logo.jpg".to_owned());
+         let _ = asset_loader.load_texture("assets/1globe_ts.png".to_owned());
+         let _ = asset_loader.load_texture("assets/1globe_tss.png".to_owned());
+         let _ = asset_loader.load_texture("assets/bg6-min.png".to_owned());
+         let _ = asset_loader.load_texture("assets/bg7-min.png".to_owned());
+         let _ = asset_loader.load_texture("assets/bg8-min.png".to_owned());
+         let _ = asset_loader.load_texture("assets/bg9-min.png".to_owned());
+         let _ = asset_loader.load_texture("assets/bg10-min.png".to_owned());
+         let _ = asset_loader.load_texture("assets/cloud2.png".to_owned());
+         let _ = asset_loader.load_texture("assets/clouds.png".to_owned());
+         let _ = asset_loader.load_texture("assets/collapse-regular-240.png".to_owned());
+         let _ = asset_loader.load_texture("assets/moon.png".to_owned());
+         let _ = asset_loader.load_texture("assets/my_photo_tiny.png".to_owned());
+         let _ = asset_loader.load_texture("assets/my_photo.png".to_owned());
       }
+      let albedo_texture = asset_loader.get_texture(guid).unwrap();
+      log::warn!("ALBEDO data {} byte, {}x{}", albedo_texture.data().len(), albedo_texture.dimensions().0, albedo_texture.dimensions().1);
       // let view = wgpu::TextureView {};
       // let texture_bind_group = BindGroupInfo::builder()
       //    .with_texture_2d(0, wgpu::ShaderStages::FRAGMENT,

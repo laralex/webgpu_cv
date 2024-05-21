@@ -11,6 +11,8 @@ pub struct TextureInfo {
 pub async fn load_image_rgba8(image_path: String) -> TextureInfo {
    let t = crate::timer::ScopedTimer::new("load_image");
    cfg_if::cfg_if!{ if #[cfg(feature="web")] {
+      // TODO: don't create new canvas for each load
+      // store in an object?
       use wasm_bindgen::JsCast;
       use std::ops::Deref;
       let image = web_sys::HtmlImageElement::new().unwrap();

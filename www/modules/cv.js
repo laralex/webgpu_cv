@@ -34,7 +34,7 @@ const samsungInternEmploymentDate   = new Date(2021,  6 - 1, 1);
 const CHAPTERS_DEMOS = {
    "__stub__":                         DemoId.Stub,
    "career_huawei":                    DemoId.Fractal,
-   "career_samsung":                   DemoId.FullBodyAvatar,
+   "career_samsung":                   DemoId.Mesh,
    "publications_wacv_2024":           DemoId.Fractal,
    "project_this_cv":                  DemoId.FullBodyAvatar,
    "project_will_and_reason":          DemoId.Fractal,

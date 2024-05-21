@@ -25,20 +25,22 @@ impl AssetLoader {
    }
 
    pub fn tick_loading(&mut self, cx: &mut std::task::Context<'_>) {
-      log::info!("AssetLoader::tick_loading {}", self.textures_loading.len());
-      self.textures_loading.retain(|guid|{
-         // TODO: self.textures_get_many !
-         let asset = self.textures.get_mut(guid)
-            .expect("BUG in AssetLoader - self.textures_loading contains GUID of non-existing texture");
-         let mut keep = true;
-         if let TextureAsset::Loading(future) = asset {
-            if let Poll::Ready(texture) = future.as_mut().poll(cx) {
-               *asset = TextureAsset::Texture(texture);
-               keep = false;
-            }
+      if self.textures_loading.is_empty() {
+         return;
+      }
+      let guid = self.textures_loading.iter().take(1).next().unwrap().to_owned();
+      // TODO: self.textures_get_many !
+      let asset = self.textures.get_mut(&guid)
+         .expect("BUG in AssetLoader - self.textures_loading contains GUID of non-existing texture");
+      if let TextureAsset::Loading(future) = asset {
+         if let Poll::Ready(texture) = future.as_mut().poll(cx) {
+            *asset = TextureAsset::Texture(texture);
+            self.textures_loading.remove(&guid);
+            log::warn!("AssetLoader texture loaded GUID:{} res:{:?}", guid.0, asset.dimensions());
+         } else {
+            log::warn!("AssetLoader texture in progress GUID:{}", guid.0);
          }
-         keep
-      })
+      }
    }
 
    pub fn load_texture(&mut self, image_path: String) -> AssetGUID {
@@ -54,6 +56,10 @@ impl AssetLoader {
       } else {
          self.textures_guids[&image_path]
       }
+   }
+
+   pub fn unload_texture(&mut self, guid: AssetGUID) {
+      self.textures.remove(&guid);
    }
 
    pub fn get_texture(&mut self, guid: AssetGUID) -> Option<&TextureAsset> {

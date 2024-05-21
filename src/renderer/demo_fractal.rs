@@ -291,7 +291,7 @@ impl DemoLoadingProcess {
             fractal_center: [-1.1900443, 0.3043895],
             fractal_zoom: default_fractal_zoom,
             num_iterations: 1000,
-            color_bias: [3.0, 3.5, 4.0],
+            color_bias: [3.4, 3.1, 2.5],
             color_power: 0.22,
          },
          fractal_buffer_offset: 0,

@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 pub struct TextureInfo {
    pub data: Vec<u8>,
    pub width: u32,
@@ -9,7 +7,7 @@ pub struct TextureInfo {
 }
 
 pub async fn load_image_rgba8(image_path: String) -> TextureInfo {
-   let t = crate::timer::ScopedTimer::new("load_image");
+   let _t = crate::timer::ScopedTimer::new("load_image");
    cfg_if::cfg_if!{ if #[cfg(feature="web")] {
       // TODO: don't create new canvas for each load
       // store in an object?
@@ -18,7 +16,7 @@ pub async fn load_image_rgba8(image_path: String) -> TextureInfo {
       let image = web_sys::HtmlImageElement::new().unwrap();
       image.set_src(&image_path);
       let image_load_promise = image.decode();
-      let result = wasm_bindgen_futures::JsFuture::from(image_load_promise)
+      wasm_bindgen_futures::JsFuture::from(image_load_promise)
          .await
          .unwrap();
       let (width, height) = (image.width(), image.height());
@@ -29,7 +27,8 @@ pub async fn load_image_rgba8(image_path: String) -> TextureInfo {
          .unwrap()
          .dyn_into::<web_sys::OffscreenCanvasRenderingContext2d>()
          .unwrap();
-      context.draw_image_with_html_image_element(&image, 0.0, 0.0);
+      context.draw_image_with_html_image_element(&image, 0.0, 0.0)
+         .expect("Failed to draw_image_with_html_image_element");
       let image_data = context
          .get_image_data(0.0, 0.0, width as f64, height as f64)
          .unwrap()

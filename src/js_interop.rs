@@ -3,14 +3,6 @@
 use wasm_bindgen::{closure::Closure, JsCast};
 use web_sys::{self, Performance};
 
-// A macro to provide `println!(..)`-style syntax for `console.log` logging.
-macro_rules! js_log {
-    ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into());
-    }
-}
-pub(crate) use js_log;
-
 pub fn performance() -> Performance {
     web_sys::window()
        .expect("should have a Window")

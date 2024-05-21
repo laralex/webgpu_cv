@@ -1,9 +1,7 @@
 use std::rc::Rc;
-use std::task::Poll;
 use futures::Future;
 use wgpu::BufferUsages;
 
-use crate::image_loader;
 use crate::renderer::pipeline_loader::RenderPipelineFlatDescriptor;
 use crate::renderer::webgpu::Utils;
 
@@ -94,7 +92,7 @@ impl SimpleFuture for DemoLoadingProcess {
    type Output = Box<dyn IDemo>;
    //type Context = std::task::Context<'a>;
 
-   fn simple_poll(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context) -> std::task::Poll<Self::Output> {
+   fn simple_poll(mut self: std::pin::Pin<&mut Self>, _cx: &mut std::task::Context) -> std::task::Poll<Self::Output> {
       use DemoLoadingStage::*;
       match self.stage {
          CompileShaders => {
@@ -103,7 +101,6 @@ impl SimpleFuture for DemoLoadingProcess {
             self.stage = BuildUniforms;
          },
          BuildUniforms => {
-            // let mut cx = Context::from_waker(&self.waker);
             self.load_assets();
             self.stage_percent = 0.4;
             self.stage = BuildVertexData;

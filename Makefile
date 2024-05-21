@@ -128,4 +128,4 @@ app: build server_py
 
 .PHONY: app_win
 app_win: build_win
-	RUST_LOG=info cargo $(CARGO_TOOLCHAIN) run $(CARGO_WIN)
+	CARGO_TARGET_DIR=build/win RUST_LOG=info cargo $(CARGO_TOOLCHAIN) run $(CARGO_WIN)

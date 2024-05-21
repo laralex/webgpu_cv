@@ -62,7 +62,7 @@ impl AsRef<str> for DemoId {
 }
 
 
-struct SimpleWaker(Mutex<bool>);
+pub struct SimpleWaker(pub Mutex<bool>);
 impl std::task::Wake for SimpleWaker {
     fn wake(self: std::sync::Arc<Self>) {
         let mut v = self.0.lock().unwrap();
@@ -407,7 +407,7 @@ impl WasmInterface {
         let mut previous_timestamp_ms = 0.0;
         let window = js_interop::window();
         let waker = std::task::Waker::from(Arc::new(SimpleWaker(Mutex::new(false))));
-        let mut asset_loader = self.asset_loader.clone();
+        let asset_loader = self.asset_loader.clone();
         #[cfg(feature = "imgui_web")] {
             let surface_config = webgpu_config.borrow();
             let (width, height) = (surface_config.width as usize, surface_config.height as usize);

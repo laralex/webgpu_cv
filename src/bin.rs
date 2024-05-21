@@ -22,6 +22,7 @@ use imgui::*;
 use imgui_wgpu::{Renderer, RendererConfig};
 use imgui_winit_support::winit::{event_loop::EventLoop, window::WindowBuilder};
 
+use my_renderer::renderer::asset_loader::AssetLoader;
 use my_renderer::renderer::{demo_mesh, GlobalUniform, LoadingArgs, RenderArgs};
 use my_renderer::renderer::{handle_keyboard, demo_uv, imgui_web, FrameStateRef, webgpu::Webgpu, demo_stub, demo_fractal, DemoHistoryPlayback, DemoStateHistory, ExternalState, IDemo, Premade};
 use my_renderer::{DemoId, GraphicsLevel};
@@ -71,6 +72,8 @@ struct State<'window> {
    demos_ids: &'static [&'static DemoId],
    demo_idx: i32,
    premade: Rc<RefCell<Premade>>,
+   asset_loader: Rc<RefCell<AssetLoader>>,
+   waker: std::task::Waker,
 }
 
 #[derive(Default)]
@@ -94,6 +97,7 @@ impl<'window> State<'window> {
          webgpu: self.webgpu.clone(),
          color_texture_format: self.webgpu_config.format,
          premade: self.premade.clone(),
+         asset_loader: self.asset_loader.clone(),
       };
       let loader = match id {
         DemoId::Stub => demo_stub::Demo::start_loading(),
@@ -110,6 +114,9 @@ impl<'window> State<'window> {
    }
    #[cfg(feature = "win")]
    async fn new(window: &'window winit::window::Window) -> Self {
+      use std::sync::{Arc, Mutex};
+      use my_renderer::{renderer::asset_loader::AssetLoader, SimpleWaker};
+
       let (webgpu, surface) = Webgpu::new_with_winit(window).await;
       let webgpu = Rc::new(webgpu);
       let mut demo_state = ExternalState::default();
@@ -118,11 +125,14 @@ impl<'window> State<'window> {
       demo_state.set_debug_mode(Some(1));
       let global_uniform = Rc::new(RefCell::new(GlobalUniform::new(&webgpu.device)));
       let premade = Rc::new(RefCell::new(Premade::new(&webgpu.device)));
+      let asset_loader = Rc::new(RefCell::new(AssetLoader::new()));
       let loading_args = LoadingArgs {
          webgpu: webgpu.clone(),
          color_texture_format: surface.config.format,
          premade: premade.clone(),
+         asset_loader: asset_loader.clone(),
       };
+      let waker = std::task::Waker::from(Arc::new(SimpleWaker(Mutex::new(false))));
       let demo = demo_mesh::Demo::start_loading(loading_args, demo_state.graphics_level()).await;
       let demo_idx = 0 as i32;
       const DEMOS_IDS: &[&DemoId] = &[
@@ -167,6 +177,8 @@ impl<'window> State<'window> {
          imgui_last_cursor: None,
          imgui_exports,
          premade,
+         asset_loader,
+         waker,
      }
    }
 
@@ -184,7 +196,8 @@ impl<'window> State<'window> {
          };
          handle_keyboard(keyboard, frame_state);
       }
-
+      let mut async_cx = std::task::Context::from_waker(&self.waker);
+      self.asset_loader.borrow_mut().tick_loading(&mut async_cx);
       self.tick_imgui(now_timestamp_ms);
       let tick_timestamp_ms = self.demo_history_playback.playback_timestamp_ms().unwrap_or(now_timestamp_ms);
       self.demo_state.tick(tick_timestamp_ms);
@@ -231,12 +244,13 @@ impl<'window> State<'window> {
       self.webgpu.queue.submit(Some(encoder.finish()));
    }
    
-   fn swtich_graphics_level(&mut self, level: GraphicsLevel) {
+   fn switch_graphics_level(&mut self, level: GraphicsLevel) {
       self.demo_state.set_graphics_level(level);
       let loading_args = LoadingArgs {
          webgpu: self.webgpu.clone(),
          color_texture_format: self.webgpu_config.format,
          premade: self.premade.clone(),
+         asset_loader: self.asset_loader.clone()
       };
       self.demo.start_switching_graphics_level(loading_args, level)
          .expect("Failed to start switching graphics level");
@@ -288,6 +302,7 @@ impl<'window> State<'window> {
                webgpu: self.webgpu.clone(),
                color_texture_format: self.webgpu_config.format,
                premade: self.premade.clone(),
+               asset_loader: self.asset_loader.clone(),
             };
             self.demo.rebuild_pipelines(loading_args);
          }
@@ -300,7 +315,7 @@ impl<'window> State<'window> {
 
             if ui.combo("Graphics level", &mut self.imgui_exports.graphics_level_idx, 
                &GRAPHICS_LEVELS, |level| level.as_ref().into()) {
-               self.swtich_graphics_level(GRAPHICS_LEVELS[self.imgui_exports.graphics_level_idx])
+               self.switch_graphics_level(GRAPHICS_LEVELS[self.imgui_exports.graphics_level_idx])
             }
 
             ui.separator();
@@ -373,7 +388,9 @@ impl<'window> State<'window> {
          webgpu: &self.webgpu,
          backbuffer: &surface_texture,
          global_uniform: &self.global_uniform.borrow(),
-         time_delta_sec: self.demo_state.time_delta_sec()})?;
+         time_delta_sec: self.demo_state.time_delta_sec(),
+         asset_loader: &mut self.asset_loader.borrow_mut(),
+      })?;
       // render imgui
       self.render_imgui(&surface_texture);
 

@@ -2,8 +2,8 @@ use crate::timer::ScopedTimer;
 
 pub struct BindGroupInfo {
    pub bind_group: wgpu::BindGroup,
-   pub bind_group_layout: wgpu::BindGroupLayout,
-   pub bind_group_layout_entries: Vec<wgpu::BindGroupLayoutEntry>,
+   pub layout: wgpu::BindGroupLayout,
+   pub layout_entries: Vec<wgpu::BindGroupLayoutEntry>,
 }
 
 pub struct BindGroupBuilfer<'a> {
@@ -17,6 +17,14 @@ impl BindGroupInfo {
          layout_entries: vec![],
          group_entries: vec![],
       }
+   }
+
+   pub fn rebuild<'a>(&mut self, device: &wgpu::Device, entries: Vec<wgpu::BindGroupEntry<'a>>, group_label: Option<&str>) {
+      self.bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+         label: group_label,
+         layout: &self.layout,
+         entries: &entries,
+      });
    }
 }
 
@@ -121,19 +129,19 @@ impl<'a> BindGroupBuilfer<'a> {
 
    pub fn build(self, device: &wgpu::Device, group_label: Option<&str>, layout_label: Option<&str>) -> BindGroupInfo {
       let _t = ScopedTimer::new("uniform_group::build");
-      let bind_group_layout = device.create_bind_group_layout(
+      let layout = device.create_bind_group_layout(
          &wgpu::BindGroupLayoutDescriptor {
             label: layout_label,
             entries: &self.layout_entries,
          });
       let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-         label:group_label,
-         layout: &bind_group_layout,
+         label: group_label,
+         layout: &layout,
          entries: &self.group_entries,
       });
       BindGroupInfo {
-         bind_group_layout_entries: self.layout_entries,
-         bind_group_layout,
+         layout_entries: self.layout_entries,
+         layout,
          bind_group,
       }
    }

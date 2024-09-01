@@ -80,7 +80,7 @@ impl TextureAsset {
       match self {
          TextureAsset::Texture(info) => &info.data,
          TextureAsset::TextureLod(info) => &info.data,
-         TextureAsset::Loading(_) => &[0_u8],
+         TextureAsset::Loading(_) => &[255_u8, 0, 255, 255],
       }
    }
 

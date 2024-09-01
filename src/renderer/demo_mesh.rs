@@ -180,44 +180,44 @@ impl DemoLoadingProcess {
    
    fn load_assets(&mut self) {
       let mut asset_loader = self.loading_args.asset_loader.borrow_mut();
-      let guid = asset_loader.load_texture("assets/materials/leather/Leather_Padded_001_basecolor.jpg".to_owned());
-      {
-         let _ = asset_loader.load_texture("assets/materials/leather/Leather_Padded_001_ambientOcclusion.jpg".to_owned());
-         let _ = asset_loader.load_texture("assets/materials/leather/Leather_Padded_001_normal.jpg".to_owned());
-         let _ = asset_loader.load_texture("assets/materials/leather/Leather_Padded_001_height.png".to_owned());
-         let _ = asset_loader.load_texture("assets/materials/leather/Leather_Padded_001_roughness.jpg".to_owned());
+      let mut load_texture = |path: &str, format: wgpu::TextureFormat| {
+         let guid = asset_loader.load_texture(path.to_owned());
+         let image = asset_loader.get_texture(guid).unwrap();
+         let image_size = image.dimensions();
+         let texture_size = wgpu::Extent3d {
+            width: image_size.0,
+            height: image_size.1,
+            depth_or_array_layers: image_size.2,
+        };
+        self.loading_args.webgpu.device.create_texture(
+            &wgpu::TextureDescriptor {
+                size: texture_size,
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                // Most images are stored using sRGB, so we need to reflect that here.
+                format,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                label: Some(path),
+                view_formats: &[],
+            }
+        )
+      };
+      let albedo_texture = load_texture("assets/materials/leather/Leather_Padded_001_basecolor.jpg", wgpu::TextureFormat::Rgba8UnormSrgb);
+      let occlusion_texture = load_texture("assets/materials/leather/Leather_Padded_001_ambientOcclusion.jpg", wgpu::TextureFormat::Rgba8UnormSrgb);
+      let normal_texture = load_texture("assets/materials/leather/Leather_Padded_001_normal.jpg", wgpu::TextureFormat::Rgba8UnormSrgb);
+      let height_texture = load_texture("assets/materials/leather/Leather_Padded_001_height.png", wgpu::TextureFormat::Rgba8UnormSrgb);
+      let roughness_texture = load_texture("assets/materials/leather/Leather_Padded_001_roughness.jpg",
+         wgpu::TextureFormat::Rgba8UnormSrgb);
+      let texture_bind_group = BindGroupInfo::builder()
+         .with_texture_2d(0, wgpu::ShaderStages::FRAGMENT,
+            wgpu::TextureSampleType::Float { filterable:true },
+            &Utils::texture_view(&albedo_texture, Some("albedo_lod")),)
+         .with_sampler(1, wgpu::ShaderStages::FRAGMENT,
+            &self.loading_args.premade.borrow().samplers.bilinear_sampler)
+         .build(&self.loading_args.webgpu.device, Some("Fractal Bind Group"), None);
 
-         let _ = asset_loader.load_texture("assets/bg4-min.jpg".to_owned());
-         let _ = asset_loader.load_texture("assets/bg4.jpg".to_owned());
-         let _ = asset_loader.load_texture("assets/bg5-min.jpg".to_owned());
-         let _ = asset_loader.load_texture("assets/eye-human.jpg".to_owned());
-         let _ = asset_loader.load_texture("assets/lion-head.jpg".to_owned());
-         let _ = asset_loader.load_texture("assets/polytech_logo.jpg".to_owned());
-         let _ = asset_loader.load_texture("assets/1globe_ts.png".to_owned());
-         let _ = asset_loader.load_texture("assets/1globe_tss.png".to_owned());
-         let _ = asset_loader.load_texture("assets/bg6-min.png".to_owned());
-         let _ = asset_loader.load_texture("assets/bg7-min.png".to_owned());
-         let _ = asset_loader.load_texture("assets/bg8-min.png".to_owned());
-         let _ = asset_loader.load_texture("assets/bg9-min.png".to_owned());
-         let _ = asset_loader.load_texture("assets/bg10-min.png".to_owned());
-         let _ = asset_loader.load_texture("assets/cloud2.png".to_owned());
-         let _ = asset_loader.load_texture("assets/clouds.png".to_owned());
-         let _ = asset_loader.load_texture("assets/collapse-regular-240.png".to_owned());
-         let _ = asset_loader.load_texture("assets/moon.png".to_owned());
-         let _ = asset_loader.load_texture("assets/my_photo_tiny.png".to_owned());
-         let _ = asset_loader.load_texture("assets/my_photo.png".to_owned());
-      }
-      let albedo_texture = asset_loader.get_texture(guid).unwrap();
-      log::warn!("ALBEDO data {} byte, {}x{}", albedo_texture.data().len(), albedo_texture.dimensions().0, albedo_texture.dimensions().1);
-      // let view = wgpu::TextureView {};
-      // let texture_bind_group = BindGroupInfo::builder()
-      //    .with_texture_2d(0, wgpu::ShaderStages::FRAGMENT,
-      //       wgpu::TextureSampleType::Float { filterable:true }, &view)
-      //    .with_sampler(1, wgpu::ShaderStages::FRAGMENT,
-      //       &self.loading_args.premade.bilinear_sampler)
-      //    .build(&self.loading_args.webgpu.device, Some("Fractal Bind Group"), None);
-
-      // self.uniform_groups = vec![texture_bind_group];
+      self.uniform_groups = vec![texture_bind_group];
    }
 
    fn build_vertex_data(&mut self) {
@@ -252,7 +252,7 @@ impl DemoLoadingProcess {
       }
       let layout_descriptor = wgpu::PipelineLayoutDescriptor {
          label: Some("Render Pipeline Layout"),
-         bind_group_layouts: &[&premade.global_uniform.bind_group_info.bind_group_layout],
+         bind_group_layouts: &[&premade.global_uniform.bind_group_info.layout],
          push_constant_ranges: &[],
       };
       let render_pipeline_layout = self.loading_args.webgpu.device

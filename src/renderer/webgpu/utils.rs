@@ -1,4 +1,4 @@
-use wgpu::{Device, SurfaceTexture};
+use wgpu::{Device, SurfaceTexture, TextureViewDimension};
 
 use super::uniform::BindGroupInfo;
 
@@ -31,9 +31,23 @@ impl Utils {
          timestamp_writes: None,
       })
    }
-   pub fn surface_view(surface_texture: &SurfaceTexture) -> wgpu::TextureView {
+
+   pub fn surface_view(surface_texture: &wgpu::SurfaceTexture) -> wgpu::TextureView {
       surface_texture.texture.create_view(
          &wgpu::TextureViewDescriptor::default())
+   }
+
+   pub fn texture_view(texture: &wgpu::Texture, label: Option<&str>) -> wgpu::TextureView {
+      texture.create_view(&wgpu::TextureViewDescriptor {
+        label,
+        format: Default::default(),
+        dimension: Some(wgpu::TextureViewDimension::D2),
+        aspect: wgpu::TextureAspect::All,
+        base_mip_level: 0,
+        mip_level_count: None,
+        base_array_layer: 0,
+        array_layer_count: None,
+    })
    }
 
    pub fn make_shader(device: &Device, shader_code: &str, label: &str) -> wgpu::ShaderModule {
@@ -158,7 +172,7 @@ impl<'a> PipelineLayoutBuilder<'a> {
    }
 
    pub fn with_uniform_group(mut self, uniform_group: &'a BindGroupInfo) -> Self {
-      self.uniform_group_layouts.push(&uniform_group.bind_group_layout);
+      self.uniform_group_layouts.push(&uniform_group.layout);
       self
    }
 

@@ -3,7 +3,7 @@ on:
    workflow_dispatch:
    workflow_call:
    schedule:
-      - cron: "0 5,18 * * *"
+      - cron: "0 19 * * *"
 
 jobs:
    verify-deploy:
